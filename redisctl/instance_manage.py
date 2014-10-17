@@ -1,9 +1,5 @@
-import os
-import time
-import subprocess
 import socket
 import json
-import redis
 
 import db
 
@@ -46,8 +42,7 @@ def _flag_missing(client, instance_id):
 
 def _update_status(client, instance_id, max_mem):
     client.execute('''UPDATE `cache_instance`
-        SET `status`=0, `max_mem`=%s WHERE `id`=%s''',
-        (max_mem, instance_id))
+        SET `status`=0, `max_mem`=%s WHERE `id`=%s''', (max_mem, instance_id))
 
 
 def _remove(client, instance_id):
@@ -69,14 +64,12 @@ def _pick_available(client):
 
 def _distribute_to_app(client, instance_id, app_id):
     client.execute('''UPDATE `cache_instance`
-        SET `assignee_id`=%s WHERE `id`=%s''',
-        (app_id, instance_id))
+        SET `assignee_id`=%s WHERE `id`=%s''', (app_id, instance_id))
 
 
 def _get_id_from_app(client, app_name):
     client.execute('''SELECT `id` FROM `application`
-        WHERE `app_name`=%s LIMIT 1''',
-        app_name)
+        WHERE `app_name`=%s LIMIT 1''', app_name)
     r = client.fetchone()
     if r:
         return r[0]

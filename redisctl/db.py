@@ -5,11 +5,13 @@ class Connection(object):
     conn = None
 
     @staticmethod
-    def init(host, port, db, username, password):
+    def init(host, port, database, username, password):
         Connection.conn = MySQLdb.connect(
-            host=host, port=port, user=username, passwd=password, db=db)
+            host=host, port=int(port), user=username, passwd=str(password),
+            db=database)
 
     def __init__(self, quit):
+        self.cursor = None
         self.quit = quit
 
     def __enter__(self):

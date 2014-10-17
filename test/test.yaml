@@ -1,7 +1,5 @@
-listen_port: 8128
-log_level: info
+listen_port: 8998
 remote:
-  host: 127.0.0.1
   port: 8999
 mysql:
   host: 127.0.0.1
