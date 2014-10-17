@@ -1,0 +1,12 @@
+appname: test
+port:  8128
+runtime:
+  - python
+services:
+  - mysql
+cmd:  
+  - python main.py
+test:
+  - python test.py
+db:
+   mysql: "scripts/mysql.sql"
