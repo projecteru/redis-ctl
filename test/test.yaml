@@ -1,7 +1,4 @@
-log_level: info
-debug: 0
 remote:
-  host: 127.0.0.1
   port: 8999
 mysql:
   host: 127.0.0.1

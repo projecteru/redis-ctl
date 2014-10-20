@@ -1,5 +1,5 @@
-appname: test
-port:  8128
+appname: redis-ctl
+port: 5000
 runtime:
   - python
 services:
