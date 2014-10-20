@@ -13,9 +13,7 @@ def start(manager, debug):
         instance_info = manager.app_request(appname)
         logging.info('Distribute instance %s:%d to %s', instance_info['host'],
                      instance_info['port'], appname)
-        return json.dumps({
-            'host': instance_info['host'],
-            'port': instance_info['port'],
-        })
+        return flask.jsonify(host=instance_info['host'],
+                             port=instance_info['port'])
 
     return app

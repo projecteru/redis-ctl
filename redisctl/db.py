@@ -6,8 +6,10 @@ class Connection(object):
 
     @staticmethod
     def init(host, port, database, username, password):
+        if not isinstance(port, (int, long)):
+            raise ValueError('Invalid port: %s' % port)
         Connection.conn = MySQLdb.connect(
-            host=host, port=int(port), user=username, passwd=str(password),
+            host=host, port=port, user=username, passwd=str(password),
             db=database)
 
     def __init__(self, quit):
