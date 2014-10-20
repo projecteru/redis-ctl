@@ -1,12 +1,21 @@
 import unittest
 
 from test_utils import fake_remote
+from test_utils import testdb
 import redisctl.instance_manage
 import redisctl.db
 
 
 class InstanceManagement(unittest.TestCase):
+    def setUp(self):
+        testdb.reset_db()
+
     def test_request_instance(self):
+        fake_remote.FakeRemote.set_m([
+            {'host': '10.1.201.10', 'port': 9000, 'max_mem': 536870912},
+            {'host': '10.1.201.10', 'port': 9001, 'max_mem': 1000000000},
+            {'host': '10.1.201.12', 'port': 6376, 'max_mem': 536870912},
+        ])
         m = redisctl.instance_manage.InstanceManager(
             '127.0.0.1', fake_remote.FakeRemote.instance.port)
         with redisctl.db.query() as client:

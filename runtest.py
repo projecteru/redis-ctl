@@ -1,30 +1,24 @@
 import os
 import logging
 import unittest
+import unittest.loader
 
 import config
-import redisctl.db
 from test_utils import fake_remote
+from test_utils import testdb
 
 
 def main():
     logging.basicConfig(level=logging.DEBUG)
     conf = config.load(os.path.join(
         os.path.dirname(__file__), 'test', 'test.yaml'))
-    reset_db(conf)
+    testdb.DB_CONF = conf['mysql']
 
     fake_remote.FakeRemote.instance = fake_remote.FakeRemote(
         conf['remote']['port'])
     fake_remote.FakeRemote.instance.start()
 
     unittest.main()
-
-
-def reset_db(conf):
-    redisctl.db.Connection.init(**conf['mysql'])
-    with redisctl.db.update() as client:
-        client.execute('''DELETE FROM `cache_instance` WHERE 0=0''')
-        client.execute('''DELETE FROM `application` WHERE 0=0''')
 
 
 def load_tests(_, __, ___):

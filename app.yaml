@@ -1,4 +1,5 @@
 appname: redis-ctl
+port: 5000
 runtime:
   - python
 services:

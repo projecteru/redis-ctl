@@ -63,8 +63,8 @@ def _pick_available(client):
 
 
 def _distribute_to_app(client, instance_id, app_id):
-    client.execute('''UPDATE `cache_instance`
-        SET `assignee_id`=%s WHERE `id`=%s''', (app_id, instance_id))
+    client.execute('''UPDATE `cache_instance` SET `assignee_id`=%s
+        WHERE `id`=%s AND ISNULL(`assignee_id`)''', (app_id, instance_id))
 
 
 def _get_id_from_app(client, app_name):

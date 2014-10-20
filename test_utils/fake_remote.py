@@ -5,12 +5,11 @@ import json
 
 class FakeRemote(threading.Thread):
     instance = None
+    M = json.dumps([])
 
-    M = json.dumps([
-       {'host': '10.1.201.10', 'port': 9000, 'max_mem': 536870912 },
-       {'host': '10.1.201.10', 'port': 9001, 'max_mem': 1000000000 },
-       {'host': '10.1.201.12', 'port': 6376, 'max_mem': 536870912 },
-    ])
+    @classmethod
+    def set_m(cls, host_list):
+        cls.M = json.dumps(host_list)
 
     def __init__(self, port):
         threading.Thread.__init__(self)
@@ -24,6 +23,7 @@ class FakeRemote(threading.Thread):
         try:
             while True:
                 conn, addr = s.accept()
-                conn.send(FakeRemote.M)
+                conn.sendall(FakeRemote.M)
+                conn.close()
         finally:
             s.close()

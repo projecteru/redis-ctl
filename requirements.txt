@@ -1,3 +1,4 @@
 hiredis
 pyyaml
+Flask
 MySQL-python

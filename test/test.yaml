@@ -1,4 +1,3 @@
-listen_port: 8998
 remote:
   port: 8999
 mysql:
