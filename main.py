@@ -5,6 +5,7 @@ import config
 import redisctl.db
 import redisctl.instance_manage
 import redisctl.event_loop
+import redisctl.communicate
 
 
 def main():
@@ -16,7 +17,8 @@ def main():
     redisctl.db.Connection.init(**conf['mysql'])
 
     instmgr = redisctl.instance_manage.InstanceManager(
-        conf['remote']['host'], conf['remote']['port'])
+        conf['remote']['host'], conf['remote']['port'],
+        redisctl.communicate.start_cluster_at)
     app = redisctl.event_loop.start(instmgr, conf['debug'] == 1)
     app.run(host='0.0.0.0', port=config.listen_port())
 

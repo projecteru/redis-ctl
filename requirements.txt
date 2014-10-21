@@ -2,3 +2,4 @@ hiredis
 pyyaml
 Flask
 MySQL-python
+retrying
