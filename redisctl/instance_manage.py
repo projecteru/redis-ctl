@@ -1,7 +1,9 @@
 import socket
 import json
+import logging
 
 import db
+import communicate
 
 
 # Assume result in format
@@ -26,7 +28,9 @@ COL_MEM = 3
 COL_STAT = 4
 COL_APPID = 5
 STATUS_ONLINE = 0
-STATUS_MISSING = 1
+STATUS_MISSING = -1
+STATUS_BROKEN = -2
+STATUS_BUSY = 1
 
 
 def _create_instance(client, host, port, max_mem):
@@ -35,9 +39,9 @@ def _create_instance(client, host, port, max_mem):
         VALUES (%s, %s, %s, 0, null)''', (host, port, max_mem))
 
 
-def _flag_missing(client, instance_id):
-    client.execute('''UPDATE `cache_instance` SET `status`=1 WHERE `id`=%s''',
-                   (instance_id,))
+def _flag_instance(client, instance_id, status):
+    client.execute('''UPDATE `cache_instance` SET `status`=%s WHERE `id`=%s''',
+                   (status, instance_id))
 
 
 def _update_status(client, instance_id, max_mem):
@@ -104,7 +108,8 @@ class InstanceManager(object):
                 if other_instance[COL_APPID] is None:
                     _remove(client, other_instance[COL_ID])
                 else:
-                    _flag_missing(client, other_instance[COL_ID])
+                    _flag_instance(client, other_instance[COL_ID],
+                                   STATUS_MISSING)
 
     @staticmethod
     def _load_saved_instaces():
@@ -112,9 +117,10 @@ class InstanceManager(object):
             client.execute('''SELECT * FROM `cache_instance`''')
             return {(i[COL_HOST], i[COL_PORT]): i for i in client.fetchall()}
 
-    def __init__(self, remote_host, remote_port):
+    def __init__(self, remote_host, remote_port, start_cluster):
         self.remote_host = remote_host
         self.remote_port = remote_port
+        self.start_cluster = start_cluster
 
         self._sync_instance_status()
 
@@ -128,10 +134,22 @@ class InstanceManager(object):
                     'host': instance[COL_HOST],
                     'port': instance[COL_PORT],
                 }
-            instance = _pick_available(client)
-            if instance is None:
-                raise ValueError('No available instance')
-            _distribute_to_app(client, instance[COL_ID], app_id)
+        return self.pick_and_launch(app_id)
+
+    def pick_and_launch(self, app_id):
+        while True:
+            with db.update() as client:
+                instance = _pick_available(client)
+                if instance is None:
+                    raise ValueError('No available instance')
+                try:
+                    self.start_cluster(instance[COL_HOST], instance[COL_PORT])
+                except communicate.RedisStatusError, e:
+                    logging.exception(e)
+                    _flag_instance(client, instance[COL_ID], STATUS_BROKEN)
+                    continue
+
+                _distribute_to_app(client, instance[COL_ID], app_id)
             return {
                 'host': instance[COL_HOST],
                 'port': instance[COL_PORT],
