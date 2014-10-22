@@ -2,7 +2,7 @@ import logging
 import flask
 
 
-def start(manager, debug):
+def init_app(manager, debug):
     app = flask.Flask('RedisController', static_folder=None)
     app.debug = debug
 

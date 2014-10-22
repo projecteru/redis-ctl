@@ -1,13 +1,9 @@
-import threading
 import unittest
 import json
-import hiredis
-import socket
 
 from test_utils import fake_remote
 from test_utils import testdb
-import redisctl.event_loop
-import redisctl.communicate as comm
+import redisctl.handlers
 
 PORT = 9000
 
@@ -18,12 +14,12 @@ class HttpRequest(unittest.TestCase):
 
     def test_http(self):
         m = redisctl.instance_manage.InstanceManager(
-            '127.0.0.1', fake_remote.FakeRemote.instance.port,
+            '127.0.0.1', fake_remote.instance.port,
             lambda _, __: None)
-        fake_remote.FakeRemote.set_m([
+        fake_remote.instance.set_m([
             {'host': '127.0.0.1', 'port': PORT, 'max_mem': 536870912},
         ])
-        app = redisctl.event_loop.start(m, True)
+        app = redisctl.handlers.init_app(m, True)
 
         with app.test_client() as client:
             r = client.get('/reqinst/el-psy-congroo')

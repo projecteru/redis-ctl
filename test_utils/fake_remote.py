@@ -2,19 +2,19 @@ import threading
 import socket
 import json
 
+import testconf
+
 
 class FakeRemote(threading.Thread):
-    instance = None
-    M = json.dumps([])
-
-    @classmethod
-    def set_m(cls, host_list):
-        cls.M = json.dumps(host_list)
-
-    def __init__(self, port):
+    def __init__(self):
         threading.Thread.__init__(self)
         self.daemon = True
-        self.port = port
+        self.port = testconf.TEST_CONF['remote']['port']
+        self.m = json.dumps([])
+        self.start()
+
+    def set_m(self, host_list):
+        self.m = json.dumps(host_list)
 
     def run(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,7 +23,9 @@ class FakeRemote(threading.Thread):
         try:
             while True:
                 conn, addr = s.accept()
-                conn.sendall(FakeRemote.M)
+                conn.sendall(self.m)
                 conn.close()
         finally:
             s.close()
+
+instance = FakeRemote()

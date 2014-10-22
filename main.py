@@ -4,7 +4,7 @@ import logging
 import config
 import redisctl.db
 import redisctl.instance_manage
-import redisctl.event_loop
+import redisctl.handlers
 import redisctl.communicate
 
 
@@ -19,7 +19,7 @@ def main():
     instmgr = redisctl.instance_manage.InstanceManager(
         conf['remote']['host'], conf['remote']['port'],
         redisctl.communicate.start_cluster_at)
-    app = redisctl.event_loop.start(instmgr, conf['debug'] == 1)
+    app = redisctl.handlers.init_app(instmgr, conf['debug'] == 1)
     app.run(host='0.0.0.0', port=config.listen_port())
 
 if __name__ == '__main__':
