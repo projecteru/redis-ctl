@@ -1,6 +1,7 @@
 import redisctl.db
+import testconf
 
-DB_CONF = None
+DB_CONF = testconf.TEST_CONF['mysql']
 
 
 def reset_db():

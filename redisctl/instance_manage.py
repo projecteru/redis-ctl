@@ -71,12 +71,17 @@ def _distribute_to_app(client, instance_id, app_id):
         WHERE `id`=%s AND ISNULL(`assignee_id`)''', (app_id, instance_id))
 
 
-def _get_id_from_app(client, app_name):
+def _get_id_from_app_or_none(client, app_name):
     client.execute('''SELECT `id` FROM `application`
         WHERE `app_name`=%s LIMIT 1''', app_name)
     r = client.fetchone()
-    if r:
-        return r[0]
+    return None if r is None else r[0]
+
+
+def _get_id_from_app(client, app_name):
+    r = _get_id_from_app_or_none(client, app_name)
+    if r is not None:
+        return r
 
     client.execute('''INSERT INTO `application` (`app_name`) VALUES (%s)''',
                    (app_name,))
@@ -117,14 +122,15 @@ class InstanceManager(object):
             client.execute('''SELECT * FROM `cache_instance`''')
             return {(i[COL_HOST], i[COL_PORT]): i for i in client.fetchall()}
 
-    def __init__(self, remote_host, remote_port, start_cluster):
+    def __init__(self, remote_host, remote_port, start_cluster, join_node):
         self.remote_host = remote_host
         self.remote_port = remote_port
         self.start_cluster = start_cluster
+        self.join_node = join_node
 
         self._sync_instance_status()
 
-    def app_request(self, appname):
+    def app_start(self, appname):
         self._sync_instance_status()
         with db.update() as client:
             app_id = _get_id_from_app(client, appname)
@@ -154,3 +160,25 @@ class InstanceManager(object):
                 'host': instance[COL_HOST],
                 'port': instance[COL_PORT],
             }
+
+    def app_expand(self, appname):
+        self._sync_instance_status()
+        while True:
+            with db.update() as client:
+                app_id = _get_id_from_app_or_none(client, appname)
+                if app_id is None:
+                    raise ValueError(
+                        'Application [ %s ] not registered' % appname)
+                cluster = _pick_by_app(client, app_id)
+                new_node = _pick_available(client)
+                if new_node is None:
+                    raise ValueError('No available instance')
+                try:
+                    self.join_node(cluster[COL_HOST], cluster[COL_PORT],
+                                   new_node[COL_HOST], new_node[COL_PORT])
+                except communicate.RedisStatusError, e:
+                    logging.exception(e)
+                    _flag_instance(client, new_node[COL_ID], STATUS_BROKEN)
+                    continue
+
+                return _distribute_to_app(client, new_node[COL_ID], app_id)

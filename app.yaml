@@ -7,6 +7,6 @@ services:
 cmd:  
   - python main.py
 test:
-  - python test.py
+  - python -m unittest discover -s test/ -p "*.py"
 db:
    mysql: "scripts/mysql.sql"
