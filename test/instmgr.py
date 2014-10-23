@@ -18,7 +18,7 @@ class InstanceManagement(unittest.TestCase):
         ])
         m = redisctl.instance_manage.InstanceManager(
             '127.0.0.1', fake_remote.instance.port,
-            lambda _, __: None)
+            lambda _, __: None, lambda _, _0, _1, _2: None)
         with redisctl.db.query() as client:
             client.execute('''SELECT * FROM `application` LIMIT 1''')
             self.assertEqual(None, client.fetchone())

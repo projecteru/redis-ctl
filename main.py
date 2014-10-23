@@ -18,7 +18,8 @@ def main():
 
     instmgr = redisctl.instance_manage.InstanceManager(
         conf['remote']['host'], conf['remote']['port'],
-        redisctl.communicate.start_cluster_at)
+        redisctl.communicate.start_cluster_at,
+        redisctl.communicate.join_cluster)
     app = redisctl.handlers.init_app(instmgr, conf['debug'] == 1)
     app.run(host='0.0.0.0', port=config.listen_port())
 
