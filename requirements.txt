@@ -3,3 +3,4 @@ pyyaml
 Flask
 MySQL-python
 retrying
+redis-trib

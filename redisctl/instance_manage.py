@@ -1,9 +1,9 @@
 import socket
 import json
 import logging
+import redistrib.communicate as comm
 
 import db
-import communicate
 
 
 # Assume result in format
@@ -150,7 +150,7 @@ class InstanceManager(object):
                     raise ValueError('No available instance')
                 try:
                     self.start_cluster(instance[COL_HOST], instance[COL_PORT])
-                except communicate.RedisStatusError, e:
+                except comm.RedisStatusError, e:
                     logging.exception(e)
                     _flag_instance(client, instance[COL_ID], STATUS_BROKEN)
                     continue
@@ -176,7 +176,7 @@ class InstanceManager(object):
                 try:
                     self.join_node(cluster[COL_HOST], cluster[COL_PORT],
                                    new_node[COL_HOST], new_node[COL_PORT])
-                except communicate.RedisStatusError, e:
+                except comm.RedisStatusError, e:
                     logging.exception(e)
                     _flag_instance(client, new_node[COL_ID], STATUS_BROKEN)
                     continue

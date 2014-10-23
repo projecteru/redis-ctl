@@ -1,11 +1,11 @@
 import sys
 import logging
+import redistrib.communicate as comm
 
 import config
 import redisctl.db
 import redisctl.instance_manage
 import redisctl.handlers
-import redisctl.communicate
 
 
 def main():
@@ -18,8 +18,7 @@ def main():
 
     instmgr = redisctl.instance_manage.InstanceManager(
         conf['remote']['host'], conf['remote']['port'],
-        redisctl.communicate.start_cluster_at,
-        redisctl.communicate.join_cluster)
+        comm.start_cluster, comm.join_cluster)
     app = redisctl.handlers.init_app(instmgr, conf['debug'] == 1)
     app.run(host='0.0.0.0', port=config.listen_port())
 
