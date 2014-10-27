@@ -1,9 +1,11 @@
 import socket
 import json
 import logging
+import MySQLdb
+import redistrib.communicate as comm
 
 import db
-import communicate
+import errors
 
 
 # Assume result in format
@@ -62,8 +64,33 @@ def _pick_by_app(client, app_id):
 
 def _pick_available(client):
     client.execute('''SELECT * FROM `cache_instance`
-        WHERE ISNULL(`assignee_id`) LIMIT 1''')
+        WHERE ISNULL(`assignee_id`) AND ISNULL(`occupier_id`) LIMIT 1''')
     return client.fetchone()
+
+
+def _lock_instance(instance_id, app_id):
+    try:
+        with db.update() as client:
+            client.execute('''UPDATE `cache_instance` SET `occupier_id`=%s
+                WHERE `id`=%s AND
+                ISNULL(`occupier_id`)''', (app_id, instance_id))
+    except MySQLdb.IntegrityError:
+        raise errors.AppMutexError()
+
+    try:
+        with db.query() as client:
+            client.execute('''SELECT `id` FROM `cache_instance`
+                WHERE `id`=%s AND `occupier_id`=%s''', (instance_id, app_id))
+            return client.fetchone() is not None
+    except:
+        with db.update() as client:
+            _unlock_instance(client, instance_id)
+        raise
+
+
+def _unlock_instance(client, instance_id):
+    client.execute('''UPDATE `cache_instance` SET `occupier_id`=NULL
+        WHERE `id`=%s''', (instance_id,))
 
 
 def _distribute_to_app(client, instance_id, app_id):
@@ -140,22 +167,31 @@ class InstanceManager(object):
                     'host': instance[COL_HOST],
                     'port': instance[COL_PORT],
                 }
-        return self.pick_and_launch(app_id)
+        return self._pick_and_launch(app_id)
 
-    def pick_and_launch(self, app_id):
+    def _pick_and_launch(self, app_id):
         while True:
             with db.update() as client:
                 instance = _pick_available(client)
-                if instance is None:
-                    raise ValueError('No available instance')
+
+            if instance is None:
+                raise errors.InstanceExhausted()
+
+            if not _lock_instance(instance[COL_ID], app_id):
+                logging.info('Fail to lock %d; retry', instance[COL_ID])
+                continue
+
+            with db.update() as client:
                 try:
                     self.start_cluster(instance[COL_HOST], instance[COL_PORT])
-                except communicate.RedisStatusError, e:
+                    _distribute_to_app(client, instance[COL_ID], app_id)
+                except comm.RedisStatusError, e:
                     logging.exception(e)
                     _flag_instance(client, instance[COL_ID], STATUS_BROKEN)
                     continue
+                finally:
+                    _unlock_instance(client, instance[COL_ID])
 
-                _distribute_to_app(client, instance[COL_ID], app_id)
             return {
                 'host': instance[COL_HOST],
                 'port': instance[COL_PORT],
@@ -167,18 +203,30 @@ class InstanceManager(object):
             with db.update() as client:
                 app_id = _get_id_from_app_or_none(client, appname)
                 if app_id is None:
-                    raise ValueError(
-                        'Application [ %s ] not registered' % appname)
+                    raise errors.AppUninitError()
                 cluster = _pick_by_app(client, app_id)
                 new_node = _pick_available(client)
-                if new_node is None:
-                    raise ValueError('No available instance')
+
+            if new_node is None:
+                raise errors.InstanceExhausted()
+
+            if not _lock_instance(new_node[COL_ID], app_id):
+                logging.info('Fail to lock %d; retry', new_node[COL_ID])
+                continue
+
+            with db.update() as client:
                 try:
                     self.join_node(cluster[COL_HOST], cluster[COL_PORT],
                                    new_node[COL_HOST], new_node[COL_PORT])
-                except communicate.RedisStatusError, e:
+                    _distribute_to_app(client, new_node[COL_ID], app_id)
+                except comm.RedisStatusError, e:
                     logging.exception(e)
                     _flag_instance(client, new_node[COL_ID], STATUS_BROKEN)
                     continue
+                finally:
+                    _unlock_instance(client, new_node[COL_ID])
 
-                return _distribute_to_app(client, new_node[COL_ID], app_id)
+            return {
+                'host': new_node[COL_HOST],
+                'port': new_node[COL_PORT],
+            }

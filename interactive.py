@@ -1,9 +1,9 @@
 import sys
 import logging
+import redistrib.communicate as comm
 
 import config
 import redisctl.db
-import redisctl.communicate as comm
 
 
 def resetdb():
@@ -13,7 +13,7 @@ def resetdb():
 
 
 def start_cluster(host, port):
-    comm.start_cluster_at(host, int(port))
+    comm.start_cluster(host, int(port))
 
 
 def join_cluster(cluster_host, cluster_port, newin_host, newin_port):
