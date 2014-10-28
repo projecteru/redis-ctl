@@ -6,6 +6,7 @@ import config
 import redisctl.db
 import redisctl.instance_manage
 import redisctl.handlers
+import redisctl.api
 
 
 def main():
@@ -17,7 +18,8 @@ def main():
     redisctl.db.Connection.init(**conf['mysql'])
 
     instmgr = redisctl.instance_manage.InstanceManager(
-        conf['remote']['host'], conf['remote']['port'],
+        lambda: redisctl.api.fetch_redis_instance_pool(
+            conf['remote']['host'], conf['remote']['port']),
         comm.start_cluster, comm.join_cluster)
     app = redisctl.handlers.init_app(instmgr, conf['debug'] == 1)
     app.run(host='0.0.0.0', port=config.listen_port())

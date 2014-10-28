@@ -2,6 +2,7 @@ import socket
 import json
 import logging
 import MySQLdb
+import hiredis
 import redistrib.communicate as comm
 
 import db
@@ -10,8 +11,8 @@ import errors
 
 # Assume result in format
 # [
-#   { host: 10.1.201.10, port: 9000, max_mem: 536870912 },
-#   { host: 10.1.201.10, port: 9001, max_mem: 536870912 },
+#   { host: 10.1.201.10, port: 9000, mem: 536870912 },
+#   { host: 10.1.201.10, port: 9001, mem: 536870912 },
 #   ...
 # ]
 def _fetch_redis_instance_pool(host, port):
@@ -41,9 +42,11 @@ def _create_instance(client, host, port, max_mem):
         VALUES (%s, %s, %s, 0, null)''', (host, port, max_mem))
 
 
-def _flag_instance(client, instance_id, status):
-    client.execute('''UPDATE `cache_instance` SET `status`=%s WHERE `id`=%s''',
-                   (status, instance_id))
+def _flag_instance(instance_id, status):
+    with db.update() as client:
+        client.execute('''UPDATE `cache_instance` SET `status`=%s
+                       WHERE `id`=%s''', (status, instance_id))
+    logging.info('Instance %d flaged as %s', instance_id, status)
 
 
 def _update_status(client, instance_id, max_mem):
@@ -64,7 +67,8 @@ def _pick_by_app(client, app_id):
 
 def _pick_available(client):
     client.execute('''SELECT * FROM `cache_instance`
-        WHERE ISNULL(`assignee_id`) AND ISNULL(`occupier_id`) LIMIT 1''')
+        WHERE ISNULL(`assignee_id`) AND ISNULL(`occupier_id`)
+        AND `status`=0 LIMIT 1''')
     return client.fetchone()
 
 
@@ -74,7 +78,10 @@ def _lock_instance(instance_id, app_id):
             client.execute('''UPDATE `cache_instance` SET `occupier_id`=%s
                 WHERE `id`=%s AND
                 ISNULL(`occupier_id`)''', (app_id, instance_id))
+        logging.info('Application %d locked instance %d',
+                     app_id, instance_id)
     except MySQLdb.IntegrityError:
+        logging.info('Application %d occupying, raise', app_id)
         raise errors.AppMutexError()
 
     try:
@@ -88,14 +95,17 @@ def _lock_instance(instance_id, app_id):
         raise
 
 
-def _unlock_instance(client, instance_id):
-    client.execute('''UPDATE `cache_instance` SET `occupier_id`=NULL
-        WHERE `id`=%s''', (instance_id,))
+def _unlock_instance(instance_id):
+    with db.update() as client:
+        client.execute('''UPDATE `cache_instance` SET `occupier_id`=NULL
+            WHERE `id`=%s''', (instance_id,))
+    logging.info('Instance released: %d', instance_id)
 
 
-def _distribute_to_app(client, instance_id, app_id):
-    client.execute('''UPDATE `cache_instance` SET `assignee_id`=%s
-        WHERE `id`=%s AND ISNULL(`assignee_id`)''', (app_id, instance_id))
+def _distribute_to_app(instance_id, app_id):
+    with db.update() as client:
+        client.execute('''UPDATE `cache_instance` SET `assignee_id`=%s
+            WHERE `id`=%s AND ISNULL(`assignee_id`)''', (app_id, instance_id))
 
 
 def _get_id_from_app_or_none(client, app_name):
@@ -117,8 +127,7 @@ def _get_id_from_app(client, app_name):
 
 class InstanceManager(object):
     def _sync_instance_status(self):
-        remote_instances = _fetch_redis_instance_pool(
-            self.remote_host, self.remote_port)
+        remote_instances = self.fetch_redis_instance_pool()
         saved_instances = InstanceManager._load_saved_instaces()
 
         newly = []
@@ -128,20 +137,19 @@ class InstanceManager(object):
             if si is None:
                 newly.append(ri)
                 continue
-            if si[COL_STAT] != STATUS_ONLINE or si[COL_MEM] != ri['max_mem']:
+            if si[COL_STAT] == STATUS_ONLINE and si[COL_MEM] != ri['mem']:
                 update[si[COL_ID]] = ri
             del saved_instances[(ri['host'], ri['port'])]
         with db.update() as client:
             for i in newly:
-                _create_instance(client, i['host'], i['port'], i['max_mem'])
+                _create_instance(client, i['host'], i['port'], i['mem'])
             for instance_id, i in update.iteritems():
-                _update_status(client, instance_id, i['max_mem'])
+                _update_status(client, instance_id, i['mem'])
             for other_instance in saved_instances.itervalues():
                 if other_instance[COL_APPID] is None:
                     _remove(client, other_instance[COL_ID])
                 else:
-                    _flag_instance(client, other_instance[COL_ID],
-                                   STATUS_MISSING)
+                    _flag_instance(other_instance[COL_ID], STATUS_MISSING)
 
     @staticmethod
     def _load_saved_instaces():
@@ -149,9 +157,8 @@ class InstanceManager(object):
             client.execute('''SELECT * FROM `cache_instance`''')
             return {(i[COL_HOST], i[COL_PORT]): i for i in client.fetchall()}
 
-    def __init__(self, remote_host, remote_port, start_cluster, join_node):
-        self.remote_host = remote_host
-        self.remote_port = remote_port
+    def __init__(self, fetch_redis_instance_pool, start_cluster, join_node):
+        self.fetch_redis_instance_pool = fetch_redis_instance_pool
         self.start_cluster = start_cluster
         self.join_node = join_node
 
@@ -181,16 +188,15 @@ class InstanceManager(object):
                 logging.info('Fail to lock %d; retry', instance[COL_ID])
                 continue
 
-            with db.update() as client:
-                try:
-                    self.start_cluster(instance[COL_HOST], instance[COL_PORT])
-                    _distribute_to_app(client, instance[COL_ID], app_id)
-                except comm.RedisStatusError, e:
-                    logging.exception(e)
-                    _flag_instance(client, instance[COL_ID], STATUS_BROKEN)
-                    continue
-                finally:
-                    _unlock_instance(client, instance[COL_ID])
+            try:
+                self.start_cluster(instance[COL_HOST], instance[COL_PORT])
+                _distribute_to_app(instance[COL_ID], app_id)
+            except (comm.RedisStatusError, hiredis.ProtocolError), e:
+                logging.exception(e)
+                _flag_instance(instance[COL_ID], STATUS_BROKEN)
+                continue
+            finally:
+                _unlock_instance(instance[COL_ID])
 
             return {
                 'host': instance[COL_HOST],
@@ -214,17 +220,16 @@ class InstanceManager(object):
                 logging.info('Fail to lock %d; retry', new_node[COL_ID])
                 continue
 
-            with db.update() as client:
-                try:
-                    self.join_node(cluster[COL_HOST], cluster[COL_PORT],
-                                   new_node[COL_HOST], new_node[COL_PORT])
-                    _distribute_to_app(client, new_node[COL_ID], app_id)
-                except comm.RedisStatusError, e:
-                    logging.exception(e)
-                    _flag_instance(client, new_node[COL_ID], STATUS_BROKEN)
-                    continue
-                finally:
-                    _unlock_instance(client, new_node[COL_ID])
+            try:
+                self.join_node(cluster[COL_HOST], cluster[COL_PORT],
+                               new_node[COL_HOST], new_node[COL_PORT])
+                _distribute_to_app(new_node[COL_ID], app_id)
+            except (comm.RedisStatusError, hiredis.ProtocolError), e:
+                logging.exception(e)
+                _flag_instance(new_node[COL_ID], STATUS_BROKEN)
+                continue
+            finally:
+                _unlock_instance(new_node[COL_ID])
 
             return {
                 'host': new_node[COL_HOST],
