@@ -28,7 +28,10 @@ def init_app(manager, debug):
                     return jsonify({'reason': 'start not called'}, 400)
                 except redisctl.errors.InstanceExhausted:
                     return jsonify({'reason': 'instance exhausted'}, 500)
-                except Exception, e:
+                except redisctl.errors.RemoteServiceFault:
+                    logging.exception(e)
+                    return jsonify({'reason': 'remote service fault'}, 500)
+                except StandardError, e:
                     logging.error('UNEXPECTED ERROR')
                     logging.exception(e)
                     return jsonify({'reason': 'unexpected', 'msg': e.message},

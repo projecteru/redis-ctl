@@ -8,3 +8,7 @@ class AppUninitError(Exception):
 
 class InstanceExhausted(Exception):
     pass
+
+
+class RemoteServiceFault(Exception):
+    pass

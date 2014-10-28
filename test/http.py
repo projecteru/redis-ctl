@@ -12,10 +12,10 @@ class HttpRequest(unittest.TestCase):
 
     def test_http(self):
         m = redisctl.instance_manage.InstanceManager(
-            '127.0.0.1', fake_remote.instance.port,
+            fake_remote.fake_redis_instance_pool,
             lambda _, __: None, lambda _, _0, _1, _2: None)
         fake_remote.instance.set_m([
-            {'host': '127.0.0.1', 'port': 9000, 'max_mem': 536870912},
+            {'host': '127.0.0.1', 'port': 9000, 'mem': 536870912},
         ])
         app = redisctl.handlers.init_app(m, True)
 
@@ -34,8 +34,8 @@ class HttpRequest(unittest.TestCase):
             self.assertEqual({'reason': 'instance exhausted'}, d)
 
             fake_remote.instance.set_m([
-                {'host': '127.0.0.1', 'port': 9000, 'max_mem': 536870912},
-                {'host': '127.0.0.1', 'port': 9001, 'max_mem': 536870912},
+                {'host': '127.0.0.1', 'port': 9000, 'mem': 536870912},
+                {'host': '127.0.0.1', 'port': 9001, 'mem': 536870912},
             ])
             r = client.post('/expand/el-psy-congroo')
             self.assertEqual(200, r.status_code)
