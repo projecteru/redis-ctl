@@ -177,6 +177,7 @@ class InstanceManager(object):
         return self._pick_and_launch(app_id)
 
     def _pick_and_launch(self, app_id):
+        logging.info('Launching cluster for [ %d ]', app_id)
         while True:
             with db.update() as client:
                 instance = _pick_available(client)
@@ -210,6 +211,7 @@ class InstanceManager(object):
                 app_id = _get_id_from_app_or_none(client, appname)
                 if app_id is None:
                     raise errors.AppUninitError()
+                logging.info('Expanding cluster for [ %d ]', app_id)
                 cluster = _pick_by_app(client, app_id)
                 new_node = _pick_available(client)
 

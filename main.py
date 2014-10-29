@@ -9,10 +9,18 @@ import redisctl.handlers
 import redisctl.api
 
 
+def init_logging(conf):
+    args = {'level': getattr(logging, conf['log_level'].upper())}
+    if 'log_file' in conf:
+        args['filename'] = conf['log_file']
+    args['format'] = '%(levelname)s:%(asctime)s:%(message)s'
+    logging.basicConfig(**args)
+
+
 def main():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
-    logging_level = getattr(logging, conf['log_level'].upper())
-    logging.basicConfig(level=logging_level)
+
+    init_logging(conf)
 
     conf_mysql = conf['mysql']
     redisctl.db.Connection.init(**conf['mysql'])
