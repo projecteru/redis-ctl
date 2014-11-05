@@ -7,6 +7,7 @@ import redisctl.db
 import redisctl.instance_manage
 import redisctl.handlers
 import redisctl.api
+import redisctl.monitor
 
 
 def init_logging(conf):
@@ -21,7 +22,6 @@ def main():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
 
     init_logging(conf)
-
     conf_mysql = conf['mysql']
     redisctl.db.Connection.init(**conf['mysql'])
 
@@ -29,7 +29,10 @@ def main():
         lambda: redisctl.api.fetch_redis_instance_pool(
             conf['remote']['host'], conf['remote']['port']),
         comm.start_cluster, comm.join_cluster)
-    app = redisctl.handlers.init_app(instmgr, conf['debug'] == 1)
+    monitor = redisctl.monitor.Monitor()
+    app = redisctl.handlers.init_app(instmgr, monitor, conf['debug'] == 1)
+
+    monitor.start()
     app.run(host='0.0.0.0', port=config.listen_port())
 
 if __name__ == '__main__':

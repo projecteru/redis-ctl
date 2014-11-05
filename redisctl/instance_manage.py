@@ -128,7 +128,7 @@ def _get_id_from_app(client, app_name):
 class InstanceManager(object):
     def _sync_instance_status(self):
         remote_instances = self.fetch_redis_instance_pool()
-        saved_instances = InstanceManager._load_saved_instaces()
+        saved_instances = InstanceManager.load_saved_instaces()
 
         newly = []
         update = dict()
@@ -152,7 +152,7 @@ class InstanceManager(object):
                     _flag_instance(other_instance[COL_ID], STATUS_MISSING)
 
     @staticmethod
-    def _load_saved_instaces():
+    def load_saved_instaces():
         with db.query() as client:
             client.execute('''SELECT * FROM `cache_instance`''')
             return {(i[COL_HOST], i[COL_PORT]): i for i in client.fetchall()}

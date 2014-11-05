@@ -11,9 +11,14 @@ def jsonify(result, status_code=200):
     return r
 
 
-def init_app(manager, debug):
+def init_app(manager, monitor, debug):
     app = flask.Flask('RedisController', static_folder=None)
     app.debug = debug
+
+    @app.route('/', methods=['GET'])
+    def index():
+        return flask.render_template('index.html',
+                                     instances=monitor.cached_instances)
 
     def handle(uri, method):
         def wrapper(f):

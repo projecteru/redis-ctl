@@ -1,0 +1,68 @@
+<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Redis 监视器</title>
+<style>
+.err {color: red}
+.ok {color: green}
+</style>
+</head>
+<body>
+<table style='text-align: center'>
+    <thead>
+        <tr>
+            <th>
+                Host:Port
+            </th>
+            <th>
+                Status
+            </th>
+            <th>
+                Max memory
+            </th>
+            <th style='min-width: 280px'>
+                Memory usage
+            </th>
+            <th style='min-width: 200px'>
+                CPU usage
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for instance in instances.itervalues() %}
+        <tr>
+            <td>
+                {{ instance.host|e }}:{{ instance.port }}
+            </td>
+            {% if instance.stat %}
+            <td class='ok'>
+                {% if instance.free %}
+                    Free
+                {% else %}
+                    In use
+                {% endif %}
+            </td>
+            <td>
+                {{ instance.max_mem|filesizeformat }}
+            </td>
+            <td>
+                Used: {{ instance.memory.used_memory_human }}
+                -
+                RSS: {{ instance.memory.used_memory_rss|filesizeformat }}
+            </td>
+            <td>
+                User {{ instance.cpu.used_cpu_user }}
+                -
+                Sys {{ instance.cpu.used_cpu_sys }}
+            </td>
+            {% else %}
+            <td class='err'>E</td>
+            <td class='err'>-</td>
+            <td class='err'>-</td>
+            <td class='err'>-</td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
