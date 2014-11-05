@@ -128,7 +128,7 @@ def _get_id_from_app(client, app_name):
 class InstanceManager(object):
     def _sync_instance_status(self):
         remote_instances = self.fetch_redis_instance_pool()
-        saved_instances = InstanceManager._load_saved_instaces()
+        saved_instances = InstanceManager.load_saved_instaces()
 
         newly = []
         update = dict()
@@ -152,7 +152,7 @@ class InstanceManager(object):
                     _flag_instance(other_instance[COL_ID], STATUS_MISSING)
 
     @staticmethod
-    def _load_saved_instaces():
+    def load_saved_instaces():
         with db.query() as client:
             client.execute('''SELECT * FROM `cache_instance`''')
             return {(i[COL_HOST], i[COL_PORT]): i for i in client.fetchall()}
@@ -177,6 +177,7 @@ class InstanceManager(object):
         return self._pick_and_launch(app_id)
 
     def _pick_and_launch(self, app_id):
+        logging.info('Launching cluster for [ %d ]', app_id)
         while True:
             with db.update() as client:
                 instance = _pick_available(client)
@@ -210,6 +211,7 @@ class InstanceManager(object):
                 app_id = _get_id_from_app_or_none(client, appname)
                 if app_id is None:
                     raise errors.AppUninitError()
+                logging.info('Expanding cluster for [ %d ]', app_id)
                 cluster = _pick_by_app(client, app_id)
                 new_node = _pick_available(client)
 
