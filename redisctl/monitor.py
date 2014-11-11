@@ -14,7 +14,6 @@ CMD_INFO_CPU = pack_command('info', 'cpu')
 class Monitor(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
-        self.daemon = True
         self.cached_instances = dict()
         self.last_update = datetime.now()
         self.poll_count = 0
