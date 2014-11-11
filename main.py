@@ -5,9 +5,11 @@ import redistrib.communicate as comm
 import config
 import redisctl.db
 import redisctl.instance_manage
-import redisctl.handlers
+import redisctl.recover
 import redisctl.api
 import redisctl.monitor
+import redisctl.handlers
+from gu import WrapperApp
 
 
 def init_logging(conf):
@@ -18,22 +20,28 @@ def init_logging(conf):
     logging.basicConfig(**args)
 
 
-def main():
+def init_app():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
 
     init_logging(conf)
     conf_mysql = conf['mysql']
     redisctl.db.Connection.init(**conf['mysql'])
 
+    redisctl.recover.recover()
+
     instmgr = redisctl.instance_manage.InstanceManager(
         lambda: redisctl.api.fetch_redis_instance_pool(
             conf['remote']['host'], conf['remote']['port']),
         comm.start_cluster, comm.join_cluster)
+
     monitor = redisctl.monitor.Monitor()
     app = redisctl.handlers.init_app(instmgr, monitor, conf['debug'] == 1)
 
-    monitor.start()
-    app.run(host='0.0.0.0', port=config.listen_port())
+    #monitor.start()
+    return WrapperApp(app, {
+        'bind': '%s:%d' % ('127.0.0.1', config.listen_port()),
+        'workers': 2,
+    })
 
 if __name__ == '__main__':
-    main()
+    init_app().run()

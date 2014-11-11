@@ -42,7 +42,7 @@ def _create_instance(client, host, port, max_mem):
         VALUES (%s, %s, %s, 0, null)''', (host, port, max_mem))
 
 
-def _flag_instance(instance_id, status):
+def flag_instance(instance_id, status):
     with db.update() as client:
         client.execute('''UPDATE `cache_instance` SET `status`=%s
                        WHERE `id`=%s''', (status, instance_id))
@@ -91,11 +91,11 @@ def _lock_instance(instance_id, app_id):
             return client.fetchone() is not None
     except:
         with db.update() as client:
-            _unlock_instance(client, instance_id)
+            unlock_instance(client, instance_id)
         raise
 
 
-def _unlock_instance(instance_id):
+def unlock_instance(instance_id):
     with db.update() as client:
         client.execute('''UPDATE `cache_instance` SET `occupier_id`=NULL
             WHERE `id`=%s''', (instance_id,))
@@ -149,7 +149,7 @@ class InstanceManager(object):
                 if other_instance[COL_APPID] is None:
                     _remove(client, other_instance[COL_ID])
                 else:
-                    _flag_instance(other_instance[COL_ID], STATUS_MISSING)
+                    flag_instance(other_instance[COL_ID], STATUS_MISSING)
 
     @staticmethod
     def load_saved_instaces():
@@ -194,10 +194,10 @@ class InstanceManager(object):
                 _distribute_to_app(instance[COL_ID], app_id)
             except (comm.RedisStatusError, hiredis.ProtocolError), e:
                 logging.exception(e)
-                _flag_instance(instance[COL_ID], STATUS_BROKEN)
+                flag_instance(instance[COL_ID], STATUS_BROKEN)
                 continue
             finally:
-                _unlock_instance(instance[COL_ID])
+                unlock_instance(instance[COL_ID])
 
             return {
                 'host': instance[COL_HOST],
@@ -228,10 +228,10 @@ class InstanceManager(object):
                 _distribute_to_app(new_node[COL_ID], app_id)
             except (comm.RedisStatusError, hiredis.ProtocolError), e:
                 logging.exception(e)
-                _flag_instance(new_node[COL_ID], STATUS_BROKEN)
+                flag_instance(new_node[COL_ID], STATUS_BROKEN)
                 continue
             finally:
-                _unlock_instance(new_node[COL_ID])
+                unlock_instance(new_node[COL_ID])
 
             return {
                 'host': new_node[COL_HOST],
