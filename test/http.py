@@ -17,7 +17,7 @@ class HttpRequest(unittest.TestCase):
         fake_remote.instance.set_m([
             {'host': '127.0.0.1', 'port': 9000, 'mem': 536870912},
         ])
-        app = redisctl.handlers.init_app(m, None, True)
+        app = redisctl.handlers.init_app(m, True)
 
         with app.test_client() as client:
             r = client.post('/start/el-psy-congroo')
