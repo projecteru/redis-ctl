@@ -1,3 +1,4 @@
+import sys
 import time
 from datetime import datetime
 import threading
@@ -5,7 +6,10 @@ import logging
 from redistrib.clusternode import Talker, pack_command
 from socket import error as SocketError
 
-import instance_manage as im
+import config
+import file_ipc
+import redisctl.db
+import redisctl.instance_manage as im
 
 CMD_INFO_MEM = pack_command('info', 'memory')
 CMD_INFO_CPU = pack_command('info', 'cpu')
@@ -76,6 +80,22 @@ class Monitor(threading.Thread):
                     instance['stat'] = False
             logging.info('Total %d instances', len(instances))
             self.cached_instances = instances
+            try:
+                file_ipc.write(self.cached_instances.values())
+            except StandardError, e:
+                logging.exception(e)
 
             self.poll_count += 1
             time.sleep(16)
+
+
+def main():
+    conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
+    config.init_logging(conf)
+    redisctl.db.Connection.init(**conf['mysql'])
+
+    monitor = Monitor()
+    monitor.start()
+
+if __name__ == '__main__':
+    main()

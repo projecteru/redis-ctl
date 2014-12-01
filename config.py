@@ -1,3 +1,4 @@
+import logging
 import yaml
 
 
@@ -12,3 +13,11 @@ def listen_port():
         if not isinstance(r, (int, long)):
             raise ValueError('Invalid port: %s' % str(r))
         return r
+
+
+def init_logging(conf):
+    args = {'level': getattr(logging, conf['log_level'].upper())}
+    if 'log_file' in conf:
+        args['filename'] = conf['log_file']
+    args['format'] = '%(levelname)s:%(asctime)s:%(message)s'
+    logging.basicConfig(**args)

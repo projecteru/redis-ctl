@@ -90,8 +90,7 @@ def _lock_instance(instance_id, app_id):
                 WHERE `id`=%s AND `occupier_id`=%s''', (instance_id, app_id))
             return client.fetchone() is not None
     except:
-        with db.update() as client:
-            unlock_instance(client, instance_id)
+        unlock_instance(instance_id)
         raise
 
 

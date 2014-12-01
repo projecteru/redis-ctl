@@ -30,7 +30,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for instance in instances.itervalues() %}
+        {% for instance in instances %}
         <tr>
             <td>
                 {{ instance.host|e }}:{{ instance.port }}

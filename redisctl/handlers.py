@@ -2,6 +2,7 @@ import functools
 import logging
 import flask
 
+import file_ipc
 import redisctl.errors
 
 
@@ -11,14 +12,13 @@ def jsonify(result, status_code=200):
     return r
 
 
-def init_app(manager, monitor, debug):
+def init_app(manager, debug):
     app = flask.Flask('RedisController', static_folder=None)
     app.debug = debug
 
     @app.route('/', methods=['GET'])
     def index():
-        return flask.render_template('index.html',
-                                     instances=monitor.cached_instances)
+        return flask.render_template('index.html', instances=file_ipc.read())
 
     def handle(uri, method):
         def wrapper(f):
@@ -47,10 +47,10 @@ def init_app(manager, monitor, debug):
     @handle('/start/<appname>', 'POST')
     def request_cluster(appname):
         logging.info('Request start cluster for %s', appname)
-        instance_info = manager.app_start(appname)
-        logging.info('Distribute* instance %s:%d to %s', instance_info['host'],
-                     instance_info['port'], appname)
-        return instance_info
+        instance = manager.app_start(appname)
+        logging.info('Distribute* instance %s:%d to %s', instance['host'],
+                     instance['port'], appname)
+        return instance
 
     @handle('/expand/<appname>', 'POST')
     def request_expand(appname):
