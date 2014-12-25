@@ -69,7 +69,8 @@ input {
             <td colspan='5' class='cluster-ceiling'></td>
         </tr>
             {% for node in cluster.nodes %}
-            <tr id='node-c-{{ node.node_id|e }}'>
+            {% set extra_info = node_details[(node.host, node.port)] %}
+            <tr {% if extra_info %}id='node-c-{{ extra_info.node_id|e }}'{% endif %}>
                 <td>
                     {{ node.node_id|e }}
                 </td>
@@ -90,7 +91,13 @@ input {
                 <td class='master'>
                     Master
                 </td>
-                <td class='master'>{{ node.slots|length }}</td>
+                <td class='master'>
+                    {% if extra_info %}
+                    {{ extra_info.slots|length }}
+                    {% else %}
+                    AWAITING FOR INFO POLL
+                    {% endif %}
+                </td>
                 <td class='master'>-</td>
                 {% endif %}
             </tr>
@@ -141,10 +148,14 @@ input {
     <tbody>
         {% for node in nodes %}
         <tr id='node-i-{{ node.host|e }}-{{ node.port }}'>
-            <td>
-                {{ node.host|e }}:{{ node.port }}
-            </td>
             {% set extra_info = node_details[(node.host, node.port)] %}
+            <td>
+                {% if node.cluster_id is none %}
+                {{ node.host|e }}:{{ node.port }}
+                {% else %}
+                <a href='#node-c-{{ extra_info.node_id|e }}'>{{ node.host|e }}:{{ node.port }}</a>
+                {% endif %}
+            </td>
             {% if not extra_info %}
                 <td class='slave' colspan='8'>AWAITING FOR INFO POLL</td>
                 <td>

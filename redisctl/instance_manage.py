@@ -86,14 +86,18 @@ def _lock_instance(instance_id, app_id):
         logging.info('Application %d occupying, raise', app_id)
         raise errors.AppMutexError()
 
+    r = True
     try:
         with db.query() as client:
             client.execute('''SELECT `id` FROM `redis_node`
                 WHERE `id`=%s AND `occupier_id`=%s''', (instance_id, app_id))
-            return client.fetchone() is not None
+            r = client.fetchone() is not None
     except:
         unlock_instance(instance_id)
         raise
+
+    if not r:
+        raise errors.AppMutexError()
 
 
 def unlock_instance(instance_id):
@@ -138,9 +142,7 @@ def pick_and_launch(host, port, cluster_id, start_cluster):
         if (instance[COL_CLUSTER_ID] is not None):
             raise errors.AppMutexError()
 
-        if not _lock_instance(instance[COL_ID], cluster_id):
-            logging.info('Fail to lock %d; retry', instance[COL_ID])
-            continue
+        _lock_instance(instance[COL_ID], cluster_id)
 
         try:
             start_cluster(instance[COL_HOST], instance[COL_PORT])
@@ -222,9 +224,7 @@ class InstanceManager(object):
             if new_node is None:
                 raise errors.InstanceExhausted()
 
-            if not _lock_instance(new_node[COL_ID], app_id):
-                logging.info('Fail to lock %d; retry', new_node[COL_ID])
-                continue
+            _lock_instance(new_node[COL_ID], app_id)
 
             try:
                 self.join_node(cluster[COL_HOST], cluster[COL_PORT],

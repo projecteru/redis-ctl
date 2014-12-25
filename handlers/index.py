@@ -25,9 +25,13 @@ def index(request):
             'port': n[im.COL_PORT],
             'max_mem': n[im.COL_MEM],
             'cluster_id': n[im.COL_CLUSTER_ID],
+            'free': n[im.COL_CLUSTER_ID] is None,
+            'stat': n[im.COL_STAT] >= 0,
         }
         node_list.append(node)
-        if node['cluster_id'] is not None:
+        if not node['free']:
             clusters[node['cluster_id']]['nodes'].append(node)
+    file_ipc.write_poll([{'host': n['host'], 'port': n['port']}
+                         for n in node_list])
     return request.render('index.html', node_details=node_details,
                           nodes=node_list, clusters=clusters)
