@@ -3,12 +3,113 @@
 <head>
 <meta charset='utf-8'>
 <title>Redis 监视器</title>
+<link rel='stylesheet' type='text/css' href='/static/flatstrap.css'>
+<script src='/static/jquery.js'></script>
 <style>
+.master {color: #044}
+.slave {color: #440}
+
+.cluster-ceiling {
+    border-top: 1px solid;
+}
+
+.cluster-footer {
+    height: 16px;
+}
+
+.cluster-filling {
+    width: 4px;
+    height: 4px;
+    background-color: navy;
+}
+
 .err {color: red}
 .ok {color: green}
+
+.selected {
+    background-color: #fc8;
+}
+
+input {
+    min-width: 400px;
+    padding: 0.5em;
+}
 </style>
 </head>
 <body>
+
+<h1>Cluster Information</h1>
+<table style='text-align: center'>
+    <thead>
+        <tr>
+            <th>
+                .
+            </th>
+            <th>
+                Node ID
+            </th>
+            <th>
+                Host:Port
+            </th>
+            <th>
+                Role
+            </th>
+            <th class='master'>
+                Number of slots hold (if master)
+            </th>
+            <th class='slave'>
+                Master ID (if slave)
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cluster in clusters.itervalues() if cluster.nodes %}
+        <tr>
+            <td rowspan='{{ cluster.nodes|length + 1 }}' class='cluster-filling'></td>
+            <td colspan='5' class='cluster-ceiling'></td>
+        </tr>
+            {% for node in cluster.nodes %}
+            {% set extra_info = node_details[(node.host, node.port)] %}
+            <tr {% if extra_info %}id='node-c-{{ extra_info.node_id|e }}'{% endif %}>
+                <td>
+                    {{ node.node_id|e }}
+                </td>
+                <td>
+                    <a href='#node-i-{{ node.host|e }}-{{ node.port }}'>
+                        {{ node.host|e }}:{{ node.port }}
+                    </a>
+                </td>
+                {% if node.slave %}
+                <td class='slave'>
+                    Slave
+                </td>
+                <td class='slave'>-</td>
+                <td class='slave'>
+                    <a href='#node-c-{{ node.master_id|e }}'>{{ node.master_id|e }}</a>
+                </td>
+                {% else %}
+                <td class='master'>
+                    Master
+                </td>
+                <td class='master'>
+                    {% if extra_info %}
+                    {{ extra_info.slots|length }}
+                    {% else %}
+                    AWAITING FOR INFO POLL
+                    {% endif %}
+                </td>
+                <td class='master'>-</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        <tr class='cluster-footer'></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<hr>
+
+<h1>Nodes Information</h1>
 <table style='text-align: center'>
     <thead>
         <tr>
@@ -27,42 +128,265 @@
             <th style='min-width: 200px'>
                 CPU usage
             </th>
+            <th>
+                Node ID
+            </th>
+            <th>
+                Role
+            </th>
+            <th class='master'>
+                Number of slots hold (if master)
+            </th>
+            <th class='slave'>
+                Master ID (if slave)
+            </th>
+            <th>
+                Operations
+            </th>
         </tr>
     </thead>
     <tbody>
-        {% for instance in instances %}
-        <tr>
+        {% for node in nodes %}
+        <tr id='node-i-{{ node.host|e }}-{{ node.port }}'>
+            {% set extra_info = node_details[(node.host, node.port)] %}
             <td>
-                {{ instance.host|e }}:{{ instance.port }}
-            </td>
-            {% if instance.stat %}
-            <td class='ok'>
-                {% if instance.free %}
-                    Free
+                {% if node.cluster_id is none %}
+                {{ node.host|e }}:{{ node.port }}
                 {% else %}
-                    In use
+                <a href='#node-c-{{ extra_info.node_id|e }}'>{{ node.host|e }}:{{ node.port }}</a>
+                {% endif %}
+            </td>
+            {% if not extra_info %}
+                <td class='slave' colspan='8'>AWAITING FOR INFO POLL</td>
+                <td>
+                    <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>DELETE</button>
+                </td>
+                {% continue %}
+            {% endif %}
+
+            {% if extra_info.stat %}
+            <td class='ok'>
+                {% if node.cluster_id is none %}
+                    stand-by
+                {% else %}
+                    serving
                 {% endif %}
             </td>
             <td>
-                {{ instance.max_mem|filesizeformat }}
+                {{ node.max_mem|filesizeformat }}
+                <br>
+                <sup>({{ node.max_mem }})</sup>
             </td>
             <td>
-                Used: {{ instance.memory.used_memory_human }}
+                Used: {{ extra_info.mem.used_memory_human }}
                 -
-                RSS: {{ instance.memory.used_memory_rss|filesizeformat }}
+                RSS: {{ extra_info.mem.used_memory_rss|filesizeformat }}
             </td>
             <td>
-                User {{ instance.cpu.used_cpu_user }}
+                User {{ extra_info.cpu.used_cpu_user }}
                 -
-                Sys {{ instance.cpu.used_cpu_sys }}
+                Sys {{ extra_info.cpu.used_cpu_sys }}
             </td>
+            <th>
+                {{ extra_info.node_id|e }}
+            </th>
+            </td>
+                {% if extra_info.slave %}
+                <td class='slave'>
+                    Slave
+                </td>
+                <td class='slave'>-</td>
+                <td class='slave'>
+                    <a href='#node-c-{{ extra_info.master_id|e }}'>{{ extra_info.master_id|e }}</a>
+                </td>
+                {% else %}
+                <td class='master'>
+                    Master
+                </td>
+                <td class='master'>{{ extra_info.slots|length }}</td>
+                <td class='master'>-</td>
+                {% endif %}
             {% else %}
             <td class='err'>E</td>
             <td class='err'>-</td>
             <td class='err'>-</td>
             <td class='err'>-</td>
+            <td class='err'>-</td>
+            <td class='err'>-</td>
+            <td class='err'>-</td>
+            <td class='err'>-</td>
             {% endif %}
+            <td>
+                {% if node.cluster_id is none %}
+                    {% if extra_info.stat %}
+                    <a class='btn btn-primary launcher' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>Launch cluster on this node</a>
+                    {% endif %}
+                <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>DELETE</button>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
+
+<script>
+function select() {
+    $(document.getElementById(window.location.hash.slice(1))).addClass('selected');
+}
+$(window).on('hashchange', function() {
+    $('.selected').removeClass('selected');
+    select();
+});
+if (window.location.hash) {
+    select();
+}
+</script>
+
+<hr>
+
+<h1>Add Redis Nodes</h1>
+<table>
+    <tr>
+        <td>
+            Host
+        </td>
+        <td>
+            <input id='add-nodes-host'>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Port (range)
+            <br>
+            <sup>e.g. 6000-6020</sup>
+        </td>
+        <td>
+            <input id='add-nodes-port'>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Max Memory (byte)
+            <br>
+            <sup>Could be like 1024 / 16M / 1G</sup>
+        </td>
+        <td>
+            <input id='add-nodes-mem'>
+            =
+            <span id='add-nodes-mem-parsed'>0</span>
+        </td>
+    </tr>
+</table>
+<button id='add-nodes'>Add</button><span id='add-nodes-error'></span>
+
+<script>
+var errorSpan = $('#add-nodes-error');
+var parsedMem = $('#add-nodes-mem-parsed');
+
+$('#add-nodes-mem').blur(function() {
+    errorSpan.text('');
+
+    var mem = $('#add-nodes-mem').val();
+    var base = parseFloat(mem);
+    if (isNaN(base)) {
+        parsedMem.text('-').mem = NaN;
+        return errorSpan.text('Invalid memory format');
+    }
+    var factor = 1;
+    switch (mem[mem.length - 1]) {
+        case 'k':
+        case 'K':
+            factor = 1024;
+            break;
+        case 'm':
+        case 'M':
+            factor = 1024 * 1024;
+            break;
+        case 'g':
+        case 'G':
+            factor = 1024 * 1024 * 1024;
+            break;
+        default:
+    }
+    base *= factor;
+    parsedMem.text(base);
+    if (base % 1 != 0) {
+        parsedMem.mem = NaN;
+        return errorSpan.text('Memory is not an integer');
+    }
+    parsedMem.mem = base;
+});
+
+$('#add-nodes').click(function() {
+    if (isNaN(parsedMem.mem)) {
+        return $('#add-nodes-mem').focus();
+    }
+
+    if ($('#add-nodes-host').val().length == 0) {
+        return $('#add-nodes-host').focus();
+    }
+
+    errorSpan.text('');
+    var portBegin = NaN, portEnd = 0;
+    var portRange = $('#add-nodes-port').val().split('-');
+    if (portRange.length === 1) {
+        portBegin = parseInt(portRange[0]);
+        portEnd = portBegin + 1;
+    } else if (portRange.length === 2) {
+        portBegin = parseInt(portRange[0]);
+        portEnd = parseInt(portRange[1]) + 1;
+    }
+    if (isNaN(portBegin) || isNaN(portEnd)) {
+        $('#add-nodes-port').focus();
+        return errorSpan.text('Invalid port format');
+    }
+
+    -function addNode(host, portBegin, portEnd, memory) {
+        if (portBegin == portEnd) {
+            return errorSpan.text('Ok');
+        }
+        $.post('/nodes/add', {
+            host: host,
+            port: portBegin,
+            mem: memory
+        }, function() {
+            addNode(host, portBegin + 1, portEnd, memory);
+        });
+        errorSpan.text('Adding :' + portBegin + '...');
+    }($('#add-nodes-host').val(), portBegin, portEnd, parsedMem.mem);
+});
+
+$('.launcher').click(function () {
+    var btn = $(this);
+    btn.attr('disabled', 'disabled');
+    $.post('/cluster/add', {
+        descr: '-',
+    }, function(r) {
+        $.ajax({
+            url: '/cluster/launch',
+            type: 'POST',
+            data: {
+                cluster_id: r,
+                host: btn.data('host'),
+                port: btn.data('port')
+            },
+            success: function() {
+                window.location.reload();
+            },
+            error: function(r) {
+                btn.parent().text('FAILED: ' + r.responseText);
+            }
+        });
+    });
+});
+
+$('.deleter').click(function() {
+    var btn = $(this);
+    $.post('/nodes/del', {
+        host: btn.data('host'),
+        port: btn.data('port')
+    }, function() {
+        btn.parent().html('NODE DELETED');
+    });
+});
+</script>

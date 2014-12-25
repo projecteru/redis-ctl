@@ -10,9 +10,7 @@ def recover():
     logging.info('Run recovering on process %d', os.getpid())
     instances = im.InstanceManager.load_saved_instaces()
     for addr, i in instances.iteritems():
-        if i[im.COL_STAT] == im.STATUS_BUSY:
-            _recover_busy_instance(addr[0], addr[1], i)
-        elif i[im.COL_STAT] == im.STATUS_ONLINE:
+        if i[im.COL_STAT] == im.STATUS_ONLINE:
             _recover_instance(addr[0], addr[1], i)
         else:
             logging.info('- Ignore instance %d(%s:%d) on status %d',
@@ -21,16 +19,12 @@ def recover():
     logging.info('Recovering finished on process %d', os.getpid())
 
 
-def _recover_busy_instance(host, port, instance):
-    _recover_instance(host, port, instance)
-    im.unlock_instance(instance[im.COL_ID])
-
-
 def _recover_instance(host, port, instance):
     logging.info('+ Recover instance %d(%s:%d)', instance[im.COL_ID],
                  instance[im.COL_HOST], instance[im.COL_PORT])
     try:
         comm.fix_migrating(host, port)
+        im.unlock_instance(instance[im.COL_ID])
     except (StandardError, SocketError), e:
         logging.exception(e)
         logging.error('Fail to recover instance at %s:%d', host, port)

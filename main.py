@@ -3,10 +3,8 @@ import redistrib.communicate as comm
 
 import config
 import redisctl.db
-import redisctl.instance_manage
 import redisctl.recover
-import redisctl.remote
-import redisctl.handlers
+import handlers
 from gu import WrapperApp
 
 
@@ -17,17 +15,16 @@ def init_app():
 
     redisctl.recover.recover()
 
-    instmgr = redisctl.instance_manage.InstanceManager(
-        lambda: redisctl.remote.fetch_redis_instance_pool(
-            conf['remote']['host'], conf['remote']['port']),
-        comm.start_cluster, comm.join_cluster)
-
-    app = redisctl.handlers.init_app(instmgr, conf['debug'] == 1)
+    app = handlers.base.app
+    debug = conf.get('debug', 0) == 1
+    if debug:
+        app.debug = True
+        return app
 
     return WrapperApp(app, {
-        'bind': '%s:%d' % ('127.0.0.1', config.listen_port()),
+        'bind': '%s:%d' % ('0.0.0.0', config.listen_port()),
         'workers': 2,
     })
 
 if __name__ == '__main__':
-    init_app().run()
+    init_app().run(port=config.listen_port())

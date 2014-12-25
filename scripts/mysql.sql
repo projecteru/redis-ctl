@@ -1,13 +1,13 @@
-drop table if exists `cache_instance`;
-drop table if exists `application`;
+drop table if exists `redis_node`;
+drop table if exists `cluster`;
 
-create table `application` (
+create table `cluster` (
     `id` int unique not null auto_increment,
-    `app_name` varchar(128) unique not null,
+    `description` text not null,
     primary key(`id`)
 );
 
-create table `cache_instance` (
+create table `redis_node` (
     `id` int unique not null auto_increment,
     `host` char(24) not null,
     `port` int not null,
@@ -15,9 +15,9 @@ create table `cache_instance` (
     `status` tinyint not null,
     `assignee_id` int,
     `occupier_id` int unique,
-    foreign key (`assignee_id`) references `application`(`id`),
-    foreign key (`occupier_id`) references `application`(`id`),
+    foreign key (`assignee_id`) references `cluster`(`id`),
+    foreign key (`occupier_id`) references `cluster`(`id`),
     primary key(`id`)
 );
 
-alter table `cache_instance` add unique `address_index`(`host`, `port`);
+alter table `redis_node` add unique `address_index`(`host`, `port`);
