@@ -8,10 +8,11 @@ INSTANCE_FILE = os.path.join(PERMDIR, 'instances.json')
 INTERMEDIA_FILE = os.path.join(PERMDIR, 'instances.tmp.json')
 
 
-def write(instances):
+def write(nodes):
     with open(INTERMEDIA_FILE, 'w') as f:
-        f.write(json.dumps(instances))
+        f.write(json.dumps(nodes))
     os.rename(INTERMEDIA_FILE, INSTANCE_FILE)
+
 
 def read():
     try:

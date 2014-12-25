@@ -4,3 +4,4 @@ Flask
 MySQL-python
 retrying
 redis-trib
+Jinja2

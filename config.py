@@ -16,7 +16,7 @@ def listen_port():
 
 
 def init_logging(conf):
-    args = {'level': getattr(logging, conf['log_level'].upper())}
+    args = {'level': getattr(logging, conf.get('log_level', 'info').upper())}
     if 'log_file' in conf:
         args['filename'] = conf['log_file']
     args['format'] = '%(levelname)s:%(asctime)s:%(message)s'
