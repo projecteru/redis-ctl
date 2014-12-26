@@ -55,6 +55,7 @@ def _info_node(host, port):
         logging.exception(e)
         return {'stat': False}
 
+
 def run():
     while True:
         nodes = file_ipc.read_poll()

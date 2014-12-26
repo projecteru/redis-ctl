@@ -157,14 +157,14 @@ def route_async(uri, method):
             except redisctl.errors.AppUninitError:
                 r = {'reason': 'start not called'}
             except redisctl.errors.InstanceExhausted:
-                return flask.jsonify({'reason': 'instance exhausted'}, 500)
+                return json_result({'reason': 'instance exhausted'}, 500)
             except redisctl.errors.RemoteServiceFault, e:
                 logging.exception(e)
-                return flask.jsonify({'reason': 'remote service fault'}, 500)
+                return json_result({'reason': 'remote service fault'}, 500)
             except StandardError, e:
                 logging.error('UNEXPECTED ERROR')
                 logging.exception(e)
-                return flask.jsonify(
+                return json_result(
                     {'reason': 'unexpected', 'msg': e.message}, 500)
             return json_result(r, 400)
         return g

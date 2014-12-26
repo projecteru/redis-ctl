@@ -1,5 +1,6 @@
 import base
 import redisctl.db
+import redisctl.recover
 import redisctl.instance_manage
 
 
@@ -16,3 +17,9 @@ def del_node(request):
     with redisctl.db.update() as c:
         redisctl.instance_manage.delete_free_instance(
             c, request.form['host'], int(request.form['port']))
+
+
+@base.post_async('/nodes/fix')
+def fix_node(request):
+    redisctl.recover.recover_by_addr(
+        request.form['host'], int(request.form['port']))

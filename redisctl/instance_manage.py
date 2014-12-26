@@ -1,9 +1,7 @@
-import socket
-import json
 import logging
 import MySQLdb
 import hiredis
-import redistrib.communicate as comm
+from redistrib.exceptions import RedisStatusError
 
 import db
 import errors
@@ -21,7 +19,7 @@ STATUS_BROKEN = -2
 
 
 def list_all_nodes(client):
-    client.execute('''SELECT * FROM `redis_node`;''')
+    client.execute('''SELECT * FROM `redis_node`''')
     return client.fetchall()
 
 
@@ -34,8 +32,7 @@ def create_instance(client, host, port, max_mem):
 def delete_free_instance(client, host, port):
     client.execute('''DELETE FROM `redis_node` WHERE
         `host`=%s AND `port`=%s AND
-        ISNULL(`assignee_id`) AND ISNULL(`occupier_id`)''',
-        (host, port))
+        ISNULL(`assignee_id`) AND ISNULL(`occupier_id`)''', (host, port))
 
 
 def flag_instance(instance_id, status):
@@ -55,7 +52,7 @@ def _remove(client, instance_id):
                    (instance_id,))
 
 
-def _pick_by_app(client, app_id):
+def _pick_by_cluster(client, app_id):
     client.execute('''SELECT * FROM `redis_node`
         WHERE `assignee_id`=%s LIMIT 1''', app_id)
     return client.fetchone()
@@ -68,7 +65,7 @@ def _pick_available(client):
     return client.fetchone()
 
 
-def _pick_by(client, host, port):
+def pick_by(client, host, port):
     client.execute('''SELECT * FROM `redis_node`
         WHERE `host`=%s AND `port`=%s LIMIT 1''', (host, port))
     return client.fetchone()
@@ -107,10 +104,18 @@ def unlock_instance(instance_id):
     logging.info('Instance released: %d', instance_id)
 
 
-def _distribute_to(instance_id, app_id):
+def _distribute_to(instance_id, cluster_id):
     with db.update() as client:
-        client.execute('''UPDATE `redis_node` SET `assignee_id`=%s
-            WHERE `id`=%s AND ISNULL(`assignee_id`)''', (app_id, instance_id))
+        client.execute(
+            '''UPDATE `redis_node` SET `assignee_id`=%s
+            WHERE `id`=%s AND ISNULL(`assignee_id`)''',
+            (cluster_id, instance_id))
+
+
+def _free_instance(instance_id, cluster_id):
+    with db.update() as client:
+        client.execute('''UPDATE `redis_node` SET `assignee_id`=NULL
+            WHERE `id`=%s AND `assignee_id`=%s''', (instance_id, cluster_id))
 
 
 def _get_id_from_app_or_none(client, app_name):
@@ -132,31 +137,82 @@ def _get_id_from_app(client, app_name):
 
 def pick_and_launch(host, port, cluster_id, start_cluster):
     logging.info('Launching cluster for [ %d ]', cluster_id)
-    while True:
-        with db.update() as client:
-            instance = _pick_by(client, host, port)
+    with db.update() as client:
+        instance = pick_by(client, host, port)
 
-        if instance is None:
-            raise ValueError('No such node')
+    if instance is None:
+        raise ValueError('No such node')
 
-        if (instance[COL_CLUSTER_ID] is not None):
-            raise errors.AppMutexError()
+    if instance[COL_CLUSTER_ID] is not None:
+        raise errors.AppMutexError()
 
-        _lock_instance(instance[COL_ID], cluster_id)
+    _lock_instance(instance[COL_ID], cluster_id)
 
-        try:
-            start_cluster(instance[COL_HOST], instance[COL_PORT])
-            _distribute_to(instance[COL_ID], cluster_id)
-        except (comm.RedisStatusError, hiredis.ProtocolError), e:
-            logging.exception(e)
-            flag_instance(instance[COL_ID], STATUS_BROKEN)
-        finally:
-            unlock_instance(instance[COL_ID])
+    try:
+        start_cluster(instance[COL_HOST], instance[COL_PORT])
+        _distribute_to(instance[COL_ID], cluster_id)
+    except (RedisStatusError, hiredis.ProtocolError):
+        flag_instance(instance[COL_ID], STATUS_BROKEN)
+        raise
+    finally:
+        unlock_instance(instance[COL_ID])
 
-        return {
-            'host': instance[COL_HOST],
-            'port': instance[COL_PORT],
-        }
+
+def pick_and_expand(host, port, cluster_id, join_node):
+    with db.query() as client:
+        cluster = _pick_by_cluster(client, cluster_id)
+        new_node = pick_by(client, host, port)
+
+    if cluster is None:
+        raise ValueError('no such cluster')
+    if new_node is None:
+        raise ValueError('no such node')
+
+    _lock_instance(new_node[COL_ID], cluster_id)
+
+    try:
+        join_node(cluster[COL_HOST], cluster[COL_PORT],
+                  new_node[COL_HOST], new_node[COL_PORT])
+        _distribute_to(new_node[COL_ID], cluster_id)
+    except (RedisStatusError, hiredis.ProtocolError), e:
+        flag_instance(new_node[COL_ID], STATUS_BROKEN)
+        raise
+    finally:
+        unlock_instance(new_node[COL_ID])
+
+
+def quit(host, port, cluster_id, quit_cluster):
+    logging.info('Node %s:%d quit from cluster [ %d ]', host, port, cluster_id)
+    with db.update() as client:
+        instance = pick_by(client, host, port)
+
+    if instance is None or instance[COL_CLUSTER_ID] != cluster_id:
+        raise ValueError('No such node in cluster')
+
+    _lock_instance(instance[COL_ID], cluster_id)
+
+    try:
+        quit_cluster(instance[COL_HOST], instance[COL_PORT])
+        _free_instance(instance[COL_ID], cluster_id)
+    except (RedisStatusError, hiredis.ProtocolError), e:
+        flag_instance(instance[COL_ID], STATUS_BROKEN)
+        raise
+    finally:
+        unlock_instance(instance[COL_ID])
+
+
+def free_instance(host, port, cluster_id):
+    with db.update() as client:
+        instance = pick_by(client, host, port)
+
+    if instance is None or instance[COL_CLUSTER_ID] != cluster_id:
+        raise ValueError('No such node in cluster')
+
+    _lock_instance(instance[COL_ID], cluster_id)
+    try:
+        _free_instance(instance[COL_ID], cluster_id)
+    finally:
+        unlock_instance(instance[COL_ID])
 
 
 class InstanceManager(object):
@@ -197,47 +253,3 @@ class InstanceManager(object):
         self.join_node = join_node
 
         self._sync_instance_status()
-
-    def app_start(self, appname):
-        self._sync_instance_status()
-        with db.update() as client:
-            app_id = _get_id_from_app(client, appname)
-            instance = _pick_by_app(client, app_id)
-            if instance is not None:
-                return {
-                    'host': instance[COL_HOST],
-                    'port': instance[COL_PORT],
-                }
-        return self._pick_and_launch(app_id)
-
-    def app_expand(self, appname):
-        self._sync_instance_status()
-        while True:
-            with db.update() as client:
-                app_id = _get_id_from_app_or_none(client, appname)
-                if app_id is None:
-                    raise errors.AppUninitError()
-                logging.info('Expanding cluster for [ %d ]', app_id)
-                cluster = _pick_by_app(client, app_id)
-                new_node = _pick_available(client)
-
-            if new_node is None:
-                raise errors.InstanceExhausted()
-
-            _lock_instance(new_node[COL_ID], app_id)
-
-            try:
-                self.join_node(cluster[COL_HOST], cluster[COL_PORT],
-                               new_node[COL_HOST], new_node[COL_PORT])
-                _distribute_to(new_node[COL_ID], app_id)
-            except (comm.RedisStatusError, hiredis.ProtocolError), e:
-                logging.exception(e)
-                flag_instance(new_node[COL_ID], STATUS_BROKEN)
-                continue
-            finally:
-                unlock_instance(new_node[COL_ID])
-
-            return {
-                'host': new_node[COL_HOST],
-                'port': new_node[COL_PORT],
-            }

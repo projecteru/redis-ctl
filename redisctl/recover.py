@@ -1,9 +1,14 @@
 import os
 import logging
+import hiredis
+import redistrib.command as comm
 from socket import error as SocketError
-import redistrib.communicate as comm
+from redistrib.clusternode import Talker, pack_command
 
 import instance_manage as im
+import db
+
+CMD_PING = pack_command('ping')
 
 
 def recover():
@@ -17,6 +22,23 @@ def recover():
                          i[im.COL_ID], i[im.COL_HOST], i[im.COL_PORT],
                          i[im.COL_STAT])
     logging.info('Recovering finished on process %d', os.getpid())
+
+
+def recover_by_addr(host, port):
+    t = None
+    try:
+        t = Talker(host, port)
+        m = t.talk_raw(CMD_PING)
+        if m.lower() != 'pong':
+            raise hiredis.ProtocolError('Expect pong but recv: %s' % m)
+        with db.query() as c:
+            node = im.pick_by(c, host, port)
+            if node is None:
+                raise ValueError('no such node')
+        im.flag_instance(node[im.COL_ID], im.STATUS_ONLINE)
+    finally:
+        if t is not None:
+            t.close()
 
 
 def _recover_instance(host, port, instance):
