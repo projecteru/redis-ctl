@@ -71,23 +71,24 @@ def pick_by(client, host, port):
     return client.fetchone()
 
 
-def _lock_instance(instance_id, app_id):
+def _lock_instance(instance_id, cluster_id):
     try:
         with db.update() as client:
             client.execute('''UPDATE `redis_node` SET `occupier_id`=%s
                 WHERE `id`=%s AND
-                ISNULL(`occupier_id`)''', (app_id, instance_id))
+                ISNULL(`occupier_id`)''', (cluster_id, instance_id))
         logging.info('Application %d locked instance %d',
-                     app_id, instance_id)
+                     cluster_id, instance_id)
     except MySQLdb.IntegrityError:
-        logging.info('Application %d occupying, raise', app_id)
+        logging.info('Application %d occupying, raise', cluster_id)
         raise errors.AppMutexError()
 
     r = True
     try:
         with db.query() as client:
             client.execute('''SELECT `id` FROM `redis_node`
-                WHERE `id`=%s AND `occupier_id`=%s''', (instance_id, app_id))
+                WHERE `id`=%s AND `occupier_id`=%s''',
+                (instance_id, cluster_id))
             r = client.fetchone() is not None
     except:
         unlock_instance(instance_id)

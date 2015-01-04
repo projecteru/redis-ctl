@@ -11,7 +11,7 @@ import redisctl.instance_manage as im
 @base.post_async('/cluster/add')
 def add_cluster(request):
     with redisctl.db.update() as c:
-        return redisctl.cluster.create_cluster(c, request.form['descr'])
+        return str(redisctl.cluster.create_cluster(c, request.form['descr']))
 
 
 @base.post_async('/cluster/launch')

@@ -12,7 +12,7 @@ def list_all(client):
 def create_cluster(client, description):
     client.execute('''INSERT INTO `cluster` (`description`) VALUES (%s)''',
                    (description,))
-    return str(client.lastrowid)
+    return client.lastrowid
 
 
 def remove_empty_cluster(client, cluster_id):

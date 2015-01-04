@@ -1,9 +1,8 @@
 import unittest
-import json
+import redistrib.command as comm
 
-from test_utils import fake_remote
 from test_utils import testdb
-import redisctl.handlers
+import handlers.base
 
 
 class HttpRequest(unittest.TestCase):
@@ -11,36 +10,26 @@ class HttpRequest(unittest.TestCase):
         testdb.reset_db()
 
     def test_http(self):
-        m = redisctl.instance_manage.InstanceManager(
-            fake_remote.fake_redis_instance_pool,
-            lambda _, __: None, lambda _, _0, _1, _2: None)
-        fake_remote.instance.set_m([
-            {'host': '127.0.0.1', 'port': 9000, 'mem': 536870912},
-        ])
-        app = redisctl.handlers.init_app(m, True)
+        app = handlers.base.app
 
         with app.test_client() as client:
-            r = client.post('/start/el-psy-congroo')
-            self.assertEqual(200, r.status_code)
-            d = json.loads(r.data)
-            self.assertEqual({
+            r = client.post('/nodes/add', data={
                 'host': '127.0.0.1',
-                'port': 9000,
-            }, d)
-
-            r = client.post('/expand/el-psy-congroo')
-            self.assertEqual(500, r.status_code)
-            d = json.loads(r.data)
-            self.assertEqual({'reason': 'instance exhausted'}, d)
-
-            fake_remote.instance.set_m([
-                {'host': '127.0.0.1', 'port': 9000, 'mem': 536870912},
-                {'host': '127.0.0.1', 'port': 9001, 'mem': 536870912},
-            ])
-            r = client.post('/expand/el-psy-congroo')
+                'port': '7100',
+                'mem': '1048576',
+            })
+            r = client.post('/cluster/add', data={
+                'descr': 'the-quick-brown-fox',
+            })
             self.assertEqual(200, r.status_code)
-            d = json.loads(r.data)
-            self.assertEqual({
+            cluster_id = r.data
+
+            r = client.post('/cluster/launch', data={
+                'cluster_id': cluster_id,
                 'host': '127.0.0.1',
-                'port': 9001,
-            }, d)
+                'port': 7100,
+            })
+            self.assertEqual(200, r.status_code)
+
+            self.assertRaises(ValueError, comm.quit_cluster, '127.0.0.1', 7100)
+            comm.shutdown_cluster('127.0.0.1', 7100)
