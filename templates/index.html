@@ -547,13 +547,22 @@ $('#ncp-select-cluster').change(function() {
 });
 
 $('#ncp-quit-cluster').click(function() {
-    $(this).attr('disabled', 'disabled').text('Please wait');
-    $.post('/cluster/quit', {
-        host: $(this).data('host'),
-        port: $(this).data('port'),
-        cluster_id: $(this).data('cluster_id')
-    }, function() {
-        window.location.reload();
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('Please wait');
+    $.ajax({
+        url: '/cluster/quit',
+        type: 'POST',
+        data: {
+            host: btn.data('host'),
+            port: btn.data('port'),
+            cluster_id: btn.data('cluster_id')
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(r) {
+            btn.parent().text('FAILED: ' + r.responseText);
+        }
     });
 });
 

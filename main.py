@@ -1,5 +1,5 @@
 import sys
-import redistrib.communicate as comm
+import redistrib.command as comm
 
 import config
 import redisctl.db
