@@ -148,23 +148,27 @@ th {
             <th>
                 Max memory
             </th>
-            <th style='min-width: 280px'>
+            <th style='min-width: 120px'>
                 Memory usage
             </th>
-            <th style='min-width: 200px'>
+            <th style='min-width: 100px'>
                 CPU usage
             </th>
-            <th>
+            <th style='max-width: 120px; width: 120px'>
                 Node ID
             </th>
             <th>
                 Role
             </th>
             <th class='master'>
-                Number of slots hold (if master)
+                Number of slots hold
+                <br>
+                (if master)
             </th>
             <th class='slave'>
-                Master ID (if slave)
+                Master ID
+                <br>
+                (if slave)
             </th>
             <th>
                 Operations
@@ -202,19 +206,22 @@ th {
                 <br>
                 <sup>({{ node.max_mem }})</sup>
             </td>
-            <td>
+            {% set mem_rate = node.detail.mem.used_memory_rss|int * 100 / node.max_mem %}
+            <td {% if mem_rate > 90 %}class='err'{% endif %}>
                 Used: {{ node.detail.mem.used_memory_human }}
-                -
+                <br>
                 RSS: {{ node.detail.mem.used_memory_rss|filesizeformat }}
+                <br>
+                RSS/Max: {{ mem_rate|round(2) }}%
             </td>
             <td>
                 User {{ node.detail.cpu.used_cpu_user }}
-                -
+                <br>
                 Sys {{ node.detail.cpu.used_cpu_sys }}
             </td>
-            <th>
-                {{ node.node_id|e }}
-            </th>
+            <td>
+                {{ node.node_id[:8]|e + '...' }}
+            </td>
             </td>
                 {% if node.detail.slave %}
                 <td class='slave'>
@@ -390,7 +397,7 @@ $('#add-nodes').click(function() {
 
     -function addNode(host, portBegin, portEnd, memory) {
         if (portBegin == portEnd) {
-            window.location.reload();
+            return window.location.reload();
         }
         $.post('/nodes/add', {
             host: host,

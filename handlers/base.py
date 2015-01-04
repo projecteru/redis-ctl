@@ -7,9 +7,12 @@ import flask
 import werkzeug.exceptions
 from cStringIO import StringIO
 from cgi import parse_qs
+from MySQLdb import OperationalError
+from MySQLdb.constants.CR import SERVER_GONE_ERROR
 
 import template
 import redisctl.errors
+import redisctl.db
 
 app = flask.Flask('RedisControl')
 app.secret_key = os.urandom(24)
@@ -161,6 +164,10 @@ def route_async(uri, method):
             except redisctl.errors.RemoteServiceFault, e:
                 logging.exception(e)
                 return json_result({'reason': 'remote service fault'}, 500)
+            except OperationalError as exc:
+                if exc.args[0] == SERVER_GONE_ERROR:
+                    redisctl.db.Connection.reset_conn()
+                raise
             except StandardError, e:
                 logging.error('UNEXPECTED ERROR')
                 logging.exception(e)
