@@ -1,5 +1,5 @@
 import unittest
-import redistrib.communicate as comm
+import redistrib.command as comm
 
 from test_utils import testdb
 import redisctl.db
@@ -26,13 +26,13 @@ class Recover(unittest.TestCase):
         comm.start_cluster('127.0.0.1', 7102)
 
         with redisctl.db.update() as client:
-            client.execute('''INSERT INTO `application` (`app_name`)
+            client.execute('''INSERT INTO `cluster` (`description`)
                 VALUES (%s),(%s)''', ('aki', 'blaze'))
             aki_id = client.lastrowid
 
             max_mem = 1024 ** 3
             client.execute(
-                '''INSERT INTO `cache_instance`
+                '''INSERT INTO `redis_node`
                     (`host`, `port`, `max_mem`, `status`, `assignee_id`)
                     VALUES (%s, %s, %s, 0, %s), (%s, %s, %s, 0, %s)
                          , (%s, %s, %s, 0, null)''',
@@ -42,11 +42,11 @@ class Recover(unittest.TestCase):
         redisctl.recover.recover()
 
         with redisctl.db.query() as client:
-            client.execute('''SELECT `id` FROM `application`
-                WHERE `app_name`=%s''', ('aki',))
+            client.execute('''SELECT `id` FROM `cluster`
+                WHERE `description`=%s''', ('aki',))
             r = client.fetchone()
             self.assertIsNotNone(r)
-            client.execute('''SELECT * FROM `cache_instance`
+            client.execute('''SELECT * FROM `redis_node`
                 WHERE `assignee_id`=%s ORDER BY `port` ASC''', (r[0],))
             i = list(client.fetchall())
             self.assertEqual(2, len(i))
@@ -59,16 +59,16 @@ class Recover(unittest.TestCase):
             self.assertEqual('127.0.0.1', i[1][COL_HOST])
             self.assertEqual(7101, i[1][COL_PORT])
 
-            client.execute('''SELECT `id` FROM `application`
-                WHERE `app_name`=%s''', ('blaze',))
+            client.execute('''SELECT `id` FROM `cluster`
+                WHERE `description`=%s''', ('blaze',))
             r = client.fetchone()
             self.assertIsNotNone(r)
-            client.execute('''SELECT * FROM `cache_instance`
+            client.execute('''SELECT * FROM `redis_node`
                 WHERE `assignee_id`=%s''', (r[0],))
             i = list(client.fetchall())
             self.assertEqual(0, len(i))
 
-            client.execute('''SELECT * FROM `cache_instance`
+            client.execute('''SELECT * FROM `redis_node`
                 WHERE ISNULL(`assignee_id`)''')
             i = list(client.fetchall())
             self.assertEqual(1, len(i))
@@ -83,13 +83,13 @@ class Recover(unittest.TestCase):
 
     def test_instance_missing(self):
         with redisctl.db.update() as client:
-            client.execute('''INSERT INTO `application` (`app_name`)
+            client.execute('''INSERT INTO `cluster` (`description`)
                 VALUES (%s),(%s)''', ('aki', 'blaze'))
             aki_id = client.lastrowid
 
             max_mem = 1024 ** 3
             client.execute(
-                '''INSERT INTO `cache_instance`
+                '''INSERT INTO `redis_node`
                     (`host`, `port`, `max_mem`, `status`, `assignee_id`)
                     VALUES (%s, %s, %s, 0, %s), (%s, %s, %s, 0, %s)
                          , (%s, %s, %s, 0, null)''',
@@ -98,11 +98,11 @@ class Recover(unittest.TestCase):
                  '127.0.0.1', 7102, max_mem))
         redisctl.recover.recover()
         with redisctl.db.query() as client:
-            client.execute('''SELECT `id` FROM `application`
-                WHERE `app_name`=%s''', ('aki',))
+            client.execute('''SELECT `id` FROM `cluster`
+                WHERE `description`=%s''', ('aki',))
             r = client.fetchone()
             self.assertIsNotNone(r)
-            client.execute('''SELECT * FROM `cache_instance`
+            client.execute('''SELECT * FROM `redis_node`
                 WHERE `assignee_id`=%s ORDER BY `port` ASC''', (r[0],))
             i = list(client.fetchall())
             self.assertEqual(2, len(i))
@@ -115,16 +115,16 @@ class Recover(unittest.TestCase):
             self.assertEqual('127.0.0.1', i[1][COL_HOST])
             self.assertEqual(6101, i[1][COL_PORT])
 
-            client.execute('''SELECT `id` FROM `application`
-                WHERE `app_name`=%s''', ('blaze',))
+            client.execute('''SELECT `id` FROM `cluster`
+                WHERE `description`=%s''', ('blaze',))
             r = client.fetchone()
             self.assertIsNotNone(r)
-            client.execute('''SELECT * FROM `cache_instance`
+            client.execute('''SELECT * FROM `redis_node`
                 WHERE `assignee_id`=%s''', (r[0],))
             i = list(client.fetchall())
             self.assertEqual(0, len(i))
 
-            client.execute('''SELECT * FROM `cache_instance`
+            client.execute('''SELECT * FROM `redis_node`
                 WHERE ISNULL(`assignee_id`)''')
             i = list(client.fetchall())
             self.assertEqual(1, len(i))

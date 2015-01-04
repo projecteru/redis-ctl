@@ -72,3 +72,5 @@ stop-test:
 test:start-test
 	python -m unittest discover -s test/ -p "*.py"
 	make stop-test
+	@echo "================="
+	@echo "| Test done \o/ |"
