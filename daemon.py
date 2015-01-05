@@ -128,15 +128,18 @@ def run():
 def main():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
     config.init_logging(conf)
-    global INFLUXDB, INTERVAL
+    global INFLUXDB, INTERVAL, _send_to_influxdb
     INTERVAL = int(conf.get('interval', INTERVAL))
-    INFLUXDB = InfluxDBClient(
-        conf['influxdb']['host'],
-        conf['influxdb']['port'],
-        conf['influxdb']['username'],
-        conf['influxdb']['password'],
-        conf['influxdb']['database'],
-    )
+    if 'influxdb' in conf:
+        INFLUXDB = InfluxDBClient(
+            conf['influxdb']['host'],
+            conf['influxdb']['port'],
+            conf['influxdb']['username'],
+            conf['influxdb']['password'],
+            conf['influxdb']['database'],
+        )
+    else:
+        _send_to_influxdb = lambda _: None
     run()
 
 if __name__ == '__main__':
