@@ -13,7 +13,7 @@ CMD_PING = pack_command('ping')
 
 def recover():
     logging.info('Run recovering on process %d', os.getpid())
-    instances = im.InstanceManager.load_saved_instaces()
+    instances = im.load_saved_instaces()
     for addr, i in instances.iteritems():
         if i[im.COL_STAT] == im.STATUS_ONLINE:
             _recover_instance(addr[0], addr[1], i)
