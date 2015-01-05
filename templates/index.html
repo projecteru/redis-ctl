@@ -105,13 +105,13 @@ th {
                         {{ node.host|e }}:{{ node.port }}
                     </a>
                 </td>
-                {% if node.slave %}
+                {% if node.detail.slave %}
                 <td class='slave'>
                     Slave
                 </td>
                 <td class='slave'>-</td>
                 <td class='slave'>
-                    <a href='#node-c-{{ node.master_id|e }}'>{{ node.master_id|e }}</a>
+                    <a href='#node-c-{{ node.detail.master_id|e }}'>{{ node.detail.master_id|e }}</a>
                 </td>
                 {% else %}
                 <td class='master'>
@@ -121,7 +121,7 @@ th {
                     {% if node.detail %}
                     {{ node.detail.slots|length }}
                     {% else %}
-                    AWAITING FOR INFO POLL
+                    AWAITING FOR INFO POLLING
                     {% endif %}
                 </td>
                 <td class='master'>-</td>
@@ -186,7 +186,7 @@ th {
                 {% endif %}
             </td>
             {% if node.stat and not node.detail %}
-                <td class='slave' colspan='8'>AWAITING FOR INFO POLL</td>
+                <td class='slave' colspan='8'>AWAITING FOR INFO POLLING</td>
                 <td>
                     <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>DELETE</button>
                 </td>
@@ -231,7 +231,7 @@ th {
                 </td>
                 <td class='slave'>-</td>
                 <td class='slave'>
-                    <a href='#node-c-{{ node.detail.master_id|e }}'>{{ node.detail.master_id|e }}</a>
+                    <a href='#node-c-{{ node.detail.master_id|e }}'>{{ node.detail.master_id[:8]|e + '...' }}</a>
                 </td>
                 {% else %}
                 <td class='master'>
@@ -467,11 +467,9 @@ $('#add-nodes').click(function() {
             <span>
                 <select id='ncp-select-cluster'></select>
                 <button class='btn btn-primary' id='ncp-join-cluster'>Join as a MASTER</button>
-                <span style='display: none'>
                 -- OR --
                 <select id='ncp-select-master'></select>
                 <button class='btn btn-primary' id='ncp-replicate'>Replicate as a SLAVE</button>
-                </span>
             <span>
         </div>
     </div>
@@ -543,6 +541,7 @@ function showStandbyPanel(node) {
     }
     $('#ncp-launch-as-cluster').data({host: node.host, port: node.port});
     $('#ncp-join-cluster').data({host: node.host, port: node.port});
+    $('#ncp-replicate').data({host: node.host, port: node.port});
 
     $('#ncp-cluster-id').text(node.cluster_id);
     $('#ncp-slots').text(node.detail.slots ? node.detail.slots.length : '-');
@@ -617,7 +616,7 @@ $('#ncp-join-cluster').click(function() {
         return;
     }
     $('#ncp-stand-by button').attr('disabled', 'disabled');
-    $(this).text('Please wait');
+    btn.text('Please wait');
     $.ajax({
         url: '/cluster/join',
         type: 'POST',
@@ -625,6 +624,32 @@ $('#ncp-join-cluster').click(function() {
             host: btn.data('host'),
             port: btn.data('port'),
             cluster_id: cluster_id
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(r) {
+            btn.parent().text('FAILED: ' + r.responseText);
+        }
+    });
+});
+
+$('#ncp-replicate').click(function() {
+    var opt = $('#ncp-select-master :selected');
+    if (!opt || !opt.data('host')) {
+        return;
+    }
+    $('#ncp-stand-by button').attr('disabled', 'disabled');
+    var btn = $(this);
+    btn.text('Please wait');
+    $.ajax({
+        url: '/cluster/replicate',
+        type: 'POST',
+        data: {
+            master_host: opt.data('host'),
+            master_port: opt.data('port'),
+            slave_host: btn.data('host'),
+            slave_port: btn.data('port')
         },
         success: function() {
             window.location.reload();
