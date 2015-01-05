@@ -14,16 +14,17 @@ CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 
 INFLUXDB = None
 COLUMNS = [
-    'used_memory_rss', \
-    'used_memory_human', \
-    'used_cpu_sys', \
-    'used_cpu_user', \
-    'connected_clients', \
-    'expired_keys', \
-    'evicted_keys', \
-    'keyspace_hits', \
-    'keyspace_misses', \
+    'used_memory_rss',
+    'used_memory_human',
+    'used_cpu_sys',
+    'used_cpu_user',
+    'connected_clients',
+    'expired_keys',
+    'evicted_keys',
+    'keyspace_hits',
+    'keyspace_misses',
 ]
+
 
 def _info_detail(t):
     details = dict()
@@ -55,21 +56,22 @@ def _send_to_influxdb(node):
     json_body = [{
         "points": [
             [
-                node['mem'][COLUMNS[0]], \
-                node['mem'][COLUMNS[1]], \
-                node['cpu'][COLUMNS[2]], \
-                node['cpu'][COLUMNS[3]], \
-                node['conn'][COLUMNS[4]], \
-                node['storage'][COLUMNS[5]], \
-                node['storage'][COLUMNS[6]], \
-                node['storage'][COLUMNS[7]], \
-                node['storage'][COLUMNS[8]], \
+                node['mem'][COLUMNS[0]],
+                node['mem'][COLUMNS[1]],
+                node['cpu'][COLUMNS[2]],
+                node['cpu'][COLUMNS[3]],
+                node['conn'][COLUMNS[4]],
+                node['storage'][COLUMNS[5]],
+                node['storage'][COLUMNS[6]],
+                node['storage'][COLUMNS[7]],
+                node['storage'][COLUMNS[8]],
             ]
         ],
-        'name': '%s:%s' % (node['host'], node['port']), \
-        'columns': COLUMNS, \
+        'name': '%s:%s' % (node['host'], node['port']),
+        'columns': COLUMNS,
     }]
     INFLUXDB.write_points(json_body)
+
 
 def _info_node(host, port):
     t = Talker(host, port)
@@ -127,13 +129,13 @@ def main():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
     config.init_logging(conf)
     global INFLUXDB, INTERVAL
-    INTERVAL = conf.get('interval', INTERVAL)
+    INTERVAL = int(conf.get('interval', INTERVAL))
     INFLUXDB = InfluxDBClient(
-        conf['influxdb']['host'], \
-        conf['influxdb']['port'], \
-        conf['influxdb']['username'], \
-        conf['influxdb']['password'], \
-        conf['influxdb']['database'], \
+        conf['influxdb']['host'],
+        conf['influxdb']['port'],
+        conf['influxdb']['username'],
+        conf['influxdb']['password'],
+        conf['influxdb']['database'],
     )
     run()
 

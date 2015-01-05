@@ -554,7 +554,7 @@ $('#ncp-select-cluster').change(function() {
         return;
     }
     $('#ncp-select-master').html('').append(cluster.nodes.map(function(e) {
-        if (e.slave) {
+        if (e.detail.slave) {
             return '';
         }
         return $('<option>').text([e.host, ':', e.port, ' - ', e.node_id].join('')).data({host: e.host, port: e.port});
