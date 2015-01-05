@@ -11,7 +11,8 @@ Edit the copy, change
 
 * `log_level`: Python logging level, `info`, `debug`, `error`, etc
 * `debug`: whether the server runs under the debug mode
-* `mysql` section: connection arguments
+* `mysql` section: MySQL connection arguments
+* `influxdb` section: InfluxDB connection arguments
 
 Then run
 
