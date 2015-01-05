@@ -1,23 +1,28 @@
-drop table if exists `redis_node`;
-drop table if exists `cluster`;
+DROP TABLE IF EXISTS `cluster`;
 
-create table `cluster` (
-    `id` int unique not null auto_increment,
-    `description` text not null,
-    primary key(`id`)
-);
+CREATE TABLE `cluster` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `description` text NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-create table `redis_node` (
-    `id` int unique not null auto_increment,
-    `host` char(24) not null,
-    `port` int not null,
-    `max_mem` bigint not null,
-    `status` tinyint not null,
-    `assignee_id` int,
-    `occupier_id` int unique,
-    foreign key (`assignee_id`) references `cluster`(`id`),
-    foreign key (`occupier_id`) references `cluster`(`id`),
-    primary key(`id`)
-);
+DROP TABLE IF EXISTS `redis_node`;
 
-alter table `redis_node` add unique `address_index`(`host`, `port`);
+CREATE TABLE `redis_node` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `host` char(24) NOT NULL,
+  `port` int(11) NOT NULL,
+  `max_mem` bigint(20) NOT NULL,
+  `status` tinyint(4) NOT NULL,
+  `assignee_id` int(11) DEFAULT NULL,
+  `occupier_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id` (`id`),
+  UNIQUE KEY `address_index` (`host`,`port`),
+  UNIQUE KEY `occupier_id` (`occupier_id`),
+  KEY `assignee_id` (`assignee_id`),
+  CONSTRAINT `redis_node_ibfk_1` FOREIGN KEY (`assignee_id`) REFERENCES `cluster` (`id`),
+  CONSTRAINT `redis_node_ibfk_2` FOREIGN KEY (`occupier_id`) REFERENCES `cluster` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+

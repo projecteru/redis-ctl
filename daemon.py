@@ -3,13 +3,27 @@ import time
 import logging
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 from socket import error as SocketError
+from influxdb import InfluxDBClient
 
 import config
 import file_ipc
 
+INTERVAL = 10
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 
+INFLUXDB = None
+COLUMNS = [
+    'used_memory_rss', \
+    'used_memory_human', \
+    'used_cpu_sys', \
+    'used_cpu_user', \
+    'connected_clients', \
+    'expired_keys', \
+    'evicted_keys', \
+    'keyspace_hits', \
+    'keyspace_misses', \
+]
 
 def _info_detail(t):
     details = dict()
@@ -36,6 +50,26 @@ def _info_slots(t):
             'slots': node.assigned_slots,
         }
 
+
+def _send_to_influxdb(node):
+    json_body = [{
+        "points": [
+            [
+                node['mem'][COLUMNS[0]], \
+                node['mem'][COLUMNS[1]], \
+                node['cpu'][COLUMNS[2]], \
+                node['cpu'][COLUMNS[3]], \
+                node['conn'][COLUMNS[4]], \
+                node['storage'][COLUMNS[5]], \
+                node['storage'][COLUMNS[6]], \
+                node['storage'][COLUMNS[7]], \
+                node['storage'][COLUMNS[8]], \
+            ]
+        ],
+        'name': '%s:%s' % (node['host'], node['port']), \
+        'columns': COLUMNS, \
+    }]
+    INFLUXDB.write_points(json_body)
 
 def _info_node(host, port):
     t = Talker(host, port)
@@ -74,6 +108,7 @@ def run():
         for node in nodes:
             try:
                 node.update(_info_node(**node))
+                _send_to_influxdb(node)
             except SocketError, e:
                 logging.error('Fail to connect to %s:%d',
                               node['host'], node['port'])
@@ -85,12 +120,21 @@ def run():
         except StandardError, e:
             logging.exception(e)
 
-        time.sleep(16)
+        time.sleep(INTERVAL)
 
 
 def main():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
     config.init_logging(conf)
+    global INFLUXDB, INTERVAL
+    INTERVAL = conf.get('interval', INTERVAL)
+    INFLUXDB = InfluxDBClient(
+        conf['influxdb']['host'], \
+        conf['influxdb']['port'], \
+        conf['influxdb']['username'], \
+        conf['influxdb']['password'], \
+        conf['influxdb']['database'], \
+    )
     run()
 
 if __name__ == '__main__':
