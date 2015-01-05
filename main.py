@@ -5,7 +5,7 @@ import config
 import redisctl.db
 import redisctl.recover
 import handlers
-from gu import WrapperApp
+from app import WrapperApp
 
 
 def run_app(app, debug):
