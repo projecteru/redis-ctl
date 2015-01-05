@@ -3,6 +3,7 @@ import time
 import logging
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 from socket import error as SocketError
+from influxdb import InfluxDBClient
 
 import config
 import file_ipc
