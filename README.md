@@ -31,6 +31,14 @@ Run
 
     python daemon.py local.yaml
 
+Stats include
+
+* memory usage
+* cpu usage
+* keys stats (hits, misses, expired, evicted)
+* connected clients (including the polling connection, possibly including connections from controller)
+* if aof enabled
+
 IPC
 ===
 

@@ -51,3 +51,11 @@ def quit_cluster(request):
 
     with redisctl.db.update() as c:
         redisctl.cluster.remove_empty_cluster(c, cluster_id)
+
+
+@base.post_async('/cluster/replicate')
+def replicate(request):
+    im.pick_and_replicate(
+        request.form['master_host'], int(request.form['master_port']),
+        request.form['slave_host'], int(request.form['slave_port']),
+        redistrib.command.replicate)

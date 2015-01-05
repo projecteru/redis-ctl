@@ -7,25 +7,21 @@ from socket import error as SocketError
 import config
 import file_ipc
 
-CMD_INFO_MEM = pack_command('info', 'memory')
-CMD_INFO_CPU = pack_command('info', 'cpu')
+CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 
 
-def _info_mem(t):
-    mem = dict()
-    cpu = dict()
-    for line in t.talk_raw(CMD_INFO_MEM).split('\n'):
+def _info_detail(t):
+    details = dict()
+    for line in t.talk_raw(CMD_INFO).split('\n'):
         if len(line) == 0 or line.startswith('#'):
             continue
-        k, v = line.split(':')
-        mem[k.strip()] = v.strip()
-    for line in t.talk_raw(CMD_INFO_CPU).split('\n'):
-        if len(line) == 0 or line.startswith('#'):
+        r = line.split(':')
+        if len(r) != 2:
             continue
-        k, v = line.split(':')
-        cpu[k.strip()] = v.strip()
-    return mem, cpu
+        k, v = r
+        details[k.strip()] = v.strip()
+    return details
 
 
 def _info_slots(t):
@@ -45,9 +41,25 @@ def _info_node(host, port):
     t = Talker(host, port)
     try:
         node_info = _info_slots(t)
-        mem, cpu = _info_mem(t)
-        node_info['mem'] = mem
-        node_info['cpu'] = cpu
+        details = _info_detail(t)
+        node_info['mem'] = {
+            'used_memory_rss': int(details['used_memory_rss']),
+            'used_memory_human': details['used_memory_human'],
+        }
+        node_info['cpu'] = {
+            'used_cpu_sys': float(details['used_cpu_sys']),
+            'used_cpu_user': float(details['used_cpu_user']),
+        }
+        node_info['conn'] = {
+            'connected_clients': int(details['connected_clients']),
+        }
+        node_info['storage'] = {
+            'expired_keys': int(details['expired_keys']),
+            'evicted_keys': int(details['evicted_keys']),
+            'keyspace_hits': int(details['keyspace_hits']),
+            'keyspace_misses': int(details['keyspace_misses']),
+            'aof_enabled': details['aof_enabled'] == '1',
+        }
         node_info['stat'] = True
         return node_info
     except StandardError, e:

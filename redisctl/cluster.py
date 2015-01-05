@@ -4,6 +4,11 @@ COL_ID = 0
 COL_DESCRIPTION = 1
 
 
+def get_by_id(client, cid):
+    client.execute('''SELECT * FROM `cluster` WHERE `id`=%s''', (cid,))
+    return client.fetchone()
+
+
 def list_all(client):
     client.execute('''SELECT * FROM `cluster`''')
     return client.fetchall()

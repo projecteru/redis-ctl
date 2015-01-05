@@ -5,6 +5,7 @@ from redistrib.exceptions import RedisStatusError
 
 import db
 import errors
+import redisctl.cluster as clu
 
 COL_ID = 0
 COL_HOST = 1
@@ -182,6 +183,26 @@ def pick_and_expand(host, port, cluster_id, join_node):
         unlock_instance(new_node[COL_ID])
 
 
+def pick_and_replicate(master_host, master_port, slave_host, slave_port,
+                       replicate_node):
+    with db.query() as client:
+        master_node = pick_by(client, master_host, master_port)
+        if master_node is None or master_node[COL_CLUSTER_ID] is None:
+            raise ValueError('node not in cluster')
+        slave_node = pick_by(client, slave_host, slave_port)
+        if slave_node is None:
+            raise ValueError('no such node')
+        cluster = clu.get_by_id(client, master_node[COL_CLUSTER_ID])
+
+    cluster_id = cluster[clu.COL_ID]
+    _lock_instance(slave_node[COL_ID], cluster_id)
+    try:
+        replicate_node(master_host, master_port, slave_host, slave_port)
+        _distribute_to(slave_node[COL_ID], cluster_id)
+    finally:
+        unlock_instance(slave_node[COL_ID])
+
+
 def quit(host, port, cluster_id, quit_cluster):
     logging.info('Node %s:%d quit from cluster [ %d ]', host, port, cluster_id)
     with db.update() as client:
@@ -216,41 +237,7 @@ def free_instance(host, port, cluster_id):
         unlock_instance(instance[COL_ID])
 
 
-class InstanceManager(object):
-    def _sync_instance_status(self):
-        remote_instances = self.fetch_redis_instance_pool()
-        saved_instances = InstanceManager.load_saved_instaces()
-
-        newly = []
-        update = dict()
-        for ri in remote_instances:
-            si = saved_instances.get((ri['host'], ri['port']))
-            if si is None:
-                newly.append(ri)
-                continue
-            if si[COL_STAT] == STATUS_ONLINE and si[COL_MEM] != ri['mem']:
-                update[si[COL_ID]] = ri
-            del saved_instances[(ri['host'], ri['port'])]
-        with db.update() as client:
-            for i in newly:
-                create_instance(client, i['host'], i['port'], i['mem'])
-            for instance_id, i in update.iteritems():
-                _update_status(client, instance_id, i['mem'])
-            for other_instance in saved_instances.itervalues():
-                if other_instance[COL_CLUSTER_ID] is None:
-                    _remove(client, other_instance[COL_ID])
-                else:
-                    flag_instance(other_instance[COL_ID], STATUS_MISSING)
-
-    @staticmethod
-    def load_saved_instaces():
-        with db.query() as client:
-            client.execute('''SELECT * FROM `redis_node`''')
-            return {(i[COL_HOST], i[COL_PORT]): i for i in client.fetchall()}
-
-    def __init__(self, fetch_redis_instance_pool, start_cluster, join_node):
-        self.fetch_redis_instance_pool = fetch_redis_instance_pool
-        self.start_cluster = start_cluster
-        self.join_node = join_node
-
-        self._sync_instance_status()
+def load_saved_instaces():
+    with db.query() as client:
+        client.execute('''SELECT * FROM `redis_node`''')
+        return {(i[COL_HOST], i[COL_PORT]): i for i in client.fetchall()}
