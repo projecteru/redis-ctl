@@ -1,39 +1,32 @@
 import sys
-import logging
-import redistrib.communicate as comm
+import redistrib.command as comm
 
 import config
 import redisctl.db
-import redisctl.instance_manage
-import redisctl.handlers
-import redisctl.api
-import redisctl.monitor
+import redisctl.recover
+import handlers
+from gu import WrapperApp
 
 
-def init_logging(conf):
-    args = {'level': getattr(logging, conf['log_level'].upper())}
-    if 'log_file' in conf:
-        args['filename'] = conf['log_file']
-    args['format'] = '%(levelname)s:%(asctime)s:%(message)s'
-    logging.basicConfig(**args)
+def run_app(app, debug):
+    if debug:
+        app.debug = True
+        return app.run(port=config.listen_port())
+    WrapperApp(app, {
+        'bind': '%s:%d' % ('0.0.0.0', config.listen_port()),
+        'workers': 2,
+    }).run()
 
 
-def main():
+def init_app():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
-
-    init_logging(conf)
-    conf_mysql = conf['mysql']
+    config.init_logging(conf)
     redisctl.db.Connection.init(**conf['mysql'])
 
-    instmgr = redisctl.instance_manage.InstanceManager(
-        lambda: redisctl.api.fetch_redis_instance_pool(
-            conf['remote']['host'], conf['remote']['port']),
-        comm.start_cluster, comm.join_cluster)
-    monitor = redisctl.monitor.Monitor()
-    app = redisctl.handlers.init_app(instmgr, monitor, conf['debug'] == 1)
+    redisctl.recover.recover()
 
-    monitor.start()
-    app.run(host='0.0.0.0', port=config.listen_port())
+    return handlers.base.app, conf.get('debug', 0) == 1
 
 if __name__ == '__main__':
-    main()
+    app, debug = init_app()
+    run_app(app, debug)

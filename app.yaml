@@ -1,12 +1,14 @@
 appname: redis-ctl
 port: 5000
-runtime:
-  - python
+runtime: python
 services:
   - mysql
+build:
+  - "pip install -r requirements.txt"
 cmd:  
   - python main.py
 test:
   - python -m unittest discover -s test/ -p "*.py"
 db:
    mysql: "scripts/mysql.sql"
+static: "static"
