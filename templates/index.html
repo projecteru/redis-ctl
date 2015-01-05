@@ -206,13 +206,15 @@ th {
                 <br>
                 <sup>({{ node.max_mem }})</sup>
             </td>
-            {% set mem_rate = node.detail.mem.used_memory_rss|int * 100 / node.max_mem %}
-            <td {% if mem_rate > 90 %}class='err'{% endif %}>
+            {% set mem_rate = node.detail.mem.used_memory_rss * 100.0 / node.max_mem %}
+            <td >
                 Used: {{ node.detail.mem.used_memory_human }}
                 <br>
                 RSS: {{ node.detail.mem.used_memory_rss|filesizeformat }}
                 <br>
+                <span class='{% if mem_rate > 90 %}err{% else %}ok{% endif %}'>
                 RSS/Max: {{ mem_rate|round(2) }}%
+                </span>
             </td>
             <td>
                 User {{ node.detail.cpu.used_cpu_user }}
@@ -416,13 +418,21 @@ $('#add-nodes').click(function() {
     <div style='float: right'><button id='node-cluster-quit' class='btn btn-danger'>X</button></div>
     <hr style='clear: both'>
     <h1 style='margin-left: 1em'>
-    <span id='ncp-node-host'></span>
-    :
-    <span id='ncp-node-port'></span>
-    -
-    <span id='ncp-node-id'></span>
+        <span id='ncp-node-host'></span>
+        :
+        <span id='ncp-node-port'></span>
+        -
+        <span id='ncp-node-id'></span>
     </h1>
     Status: <span id='ncp-status'></span>
+    <ul>
+        <li>Connected clients: <span id='ncp-stats-conn-clients'></span></li>
+        <li>Expired keys: <span id='ncp-stats-expired-keys'></span></li>
+        <li>Evicted keys: <span id='ncp-stats-evicted-keys'></span></li>
+        <li>Keyspace hits: <span id='ncp-stats-ks-hits'></span></li>
+        <li>Keyspace misses: <span id='ncp-stats-ks-misses'></span></li>
+        <li>AOF enabled: <span id='ncp-stats-aof-enabled'></span></li>
+    </ul>
 
     <hr>
 
@@ -495,6 +505,12 @@ function launchClusterPanel(node) {
 
     $('#ncp-node-host').text(node.host);
     $('#ncp-node-port').text(node.port);
+    $('#ncp-stats-conn-clients').text(node.detail.conn.connected_clients);
+    $('#ncp-stats-expired-keys').text(node.detail.storage.expired_keys);
+    $('#ncp-stats-evicted-keys').text(node.detail.storage.evicted_keys);
+    $('#ncp-stats-ks-hits').text(node.detail.storage.keyspace_hits);
+    $('#ncp-stats-ks-misses').text(node.detail.storage.keyspace_misses);
+    $('#ncp-stats-aof-enabled').text(node.detail.storage.aof_enabled);
     $('#ncp-node-id').text(node.node_id ? node.node_id : '<NO NODE ID>');
     $('#ncp-status').removeClass('ok err').text(node.stat ? 'OK' : 'Error').addClass(node.stat ? 'ok' : 'err');
 
