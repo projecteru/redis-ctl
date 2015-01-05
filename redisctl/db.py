@@ -18,10 +18,15 @@ class Connection(object):
         Connection.port = port
         Connection.database = database
         Connection.username = username
-        Connection.password = password
+        Connection.password = str(password)
+        Connection.reset_conn()
+
+    @staticmethod
+    def reset_conn():
         Connection.conn = MySQLdb.connect(
-            host=host, port=port, user=username, passwd=str(password),
-            db=database)
+            host=Connection.host, port=Connection.port,
+            user=Connection.username, passwd=Connection.password,
+            db=Connection.database)
 
     def __init__(self, quit):
         self.cursor = None
@@ -34,9 +39,7 @@ class Connection(object):
                 return self.cursor
             except MySQLdb.OperationalError as exc:
                 if exc.args[0] == SERVER_GONE_ERROR:
-                    Connection.conn = MySQLdb.connect(
-                        host=self.host, port=self.port, user=self.username,
-                        passwd=self.password, db=self.database)
+                    Connection.reset_conn()
                     continue
                 raise
 

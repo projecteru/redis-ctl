@@ -1,8 +1,5 @@
 log_level: info
 debug: 0
-remote:
-  host: 10.1.201.47
-  port: 5000
 mysql:
   host: 127.0.0.1
   port: 3306
