@@ -13,18 +13,18 @@ CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 
 INFLUXDB = None
-COLUMNS = [
-    'used_memory_rss',
-    'used_memory_human',
-    'used_cpu_sys',
-    'used_cpu_user',
-    'connected_clients',
-    'expired_keys',
-    'evicted_keys',
-    'keyspace_hits',
-    'keyspace_misses',
-]
+COLUMNS = {
+    'used_memory_rss':'used_memory_rss',
+    'connected_clients':'connected_clients',
+    'expired_keys':'expired_keys',
+    'evicted_keys':'evicted_keys',
+    'keyspace_hits':'keyspace_hits',
+    'keyspace_misses':'keyspace_misses',
+    'used_cpu_sys':'used_cpu_sys',
+    'used_cpu_user':'used_cpu_user',
+}
 
+PRECPU = {}
 
 def _info_detail(t):
     details = dict()
@@ -53,22 +53,29 @@ def _info_slots(t):
 
 
 def _send_to_influxdb(node):
+    global PRECPU
+    name = '%s:%s' % (node['host'], node['port'])
+    points = [
+        node['mem'][COLUMNS['used_memory_rss']],
+        node['conn'][COLUMNS['connected_clients']],
+        node['storage'][COLUMNS['expired_keys']],
+        node['storage'][COLUMNS['evicted_keys']],
+        node['storage'][COLUMNS['keyspace_hits']],
+        node['storage'][COLUMNS['keyspace_misses']],
+    ]
+    cpu = PRECPU.get(name)
+    used_cpu_sys = (node['cpu'][COLUMNS['used_cpu_sys']] - cpu['used_cpu_sys']) / float(INTERVAL) if cpu else 0
+    used_cpu_user = (node['cpu'][COLUMNS['used_cpu_user']] - cpu['used_cpu_user']) / float(INTERVAL) if cpu else 0
+    PRECPU[name] = {
+        'used_cpu_sys': node['cpu'][COLUMNS['used_cpu_sys']],
+        'used_cpu_user': node['cpu'][COLUMNS['used_cpu_user']],
+    }
+    points.append(used_cpu_sys)
+    points.append(used_cpu_user)
     json_body = [{
-        "points": [
-            [
-                node['mem'][COLUMNS[0]],
-                node['mem'][COLUMNS[1]],
-                node['cpu'][COLUMNS[2]],
-                node['cpu'][COLUMNS[3]],
-                node['conn'][COLUMNS[4]],
-                node['storage'][COLUMNS[5]],
-                node['storage'][COLUMNS[6]],
-                node['storage'][COLUMNS[7]],
-                node['storage'][COLUMNS[8]],
-            ]
-        ],
-        'name': '%s:%s' % (node['host'], node['port']),
-        'columns': COLUMNS,
+        "points": [points, ],
+        'name': name,
+        'columns': COLUMNS.keys(),
     }]
     INFLUXDB.write_points(json_body)
 
