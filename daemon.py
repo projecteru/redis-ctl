@@ -4,6 +4,7 @@ import logging
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 from socket import error as SocketError
 from influxdb import InfluxDBClient
+from collections import OrderedDict
 
 import config
 import file_ipc
@@ -13,18 +14,19 @@ CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 
 INFLUXDB = None
-COLUMNS = {
-    'used_memory_rss':'used_memory_rss',
-    'connected_clients':'connected_clients',
-    'expired_keys':'expired_keys',
-    'evicted_keys':'evicted_keys',
-    'keyspace_hits':'keyspace_hits',
-    'keyspace_misses':'keyspace_misses',
-    'used_cpu_sys':'used_cpu_sys',
-    'used_cpu_user':'used_cpu_user',
-}
+COLUMNS = OrderedDict([
+    ('used_memory_rss', 'used_memory_rss'),
+    ('connected_clients', 'connected_clients'),
+    ('expired_keys', 'expired_keys'),
+    ('evicted_keys', 'evicted_keys'),
+    ('keyspace_hits', 'keyspace_hits'),
+    ('keyspace_misses', 'keyspace_misses'),
+    ('used_cpu_sys', 'used_cpu_sys'),
+    ('used_cpu_user', 'used_cpu_user'),
+])
 
 PRECPU = {}
+
 
 def _info_detail(t):
     details = dict()
@@ -64,8 +66,12 @@ def _send_to_influxdb(node):
         node['storage'][COLUMNS['keyspace_misses']],
     ]
     cpu = PRECPU.get(name)
-    used_cpu_sys = (node['cpu'][COLUMNS['used_cpu_sys']] - cpu['used_cpu_sys']) / float(INTERVAL) if cpu else 0
-    used_cpu_user = (node['cpu'][COLUMNS['used_cpu_user']] - cpu['used_cpu_user']) / float(INTERVAL) if cpu else 0
+    used_cpu_sys = (float(
+        node['cpu'][COLUMNS['used_cpu_sys']] - cpu['used_cpu_sys'])
+        * 1000.0 / INTERVAL if cpu else 0)
+    used_cpu_user = (float(
+        node['cpu'][COLUMNS['used_cpu_user']] - cpu['used_cpu_user'])
+        * 1000.0 / INTERVAL if cpu else 0)
     PRECPU[name] = {
         'used_cpu_sys': node['cpu'][COLUMNS['used_cpu_sys']],
         'used_cpu_user': node['cpu'][COLUMNS['used_cpu_user']],
