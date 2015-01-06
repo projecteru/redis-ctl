@@ -135,7 +135,12 @@ def route(uri, method):
         @app.route(uri, methods=[method])
         @functools.wraps(f)
         def handle_func(*args, **kwargs):
-            return f(Request(), *args, **kwargs)
+            try:
+                return f(Request(), *args, **kwargs)
+            except OperationalError as exc:
+                if exc.args[0] == SERVER_GONE_ERROR:
+                    redisctl.db.Connection.reset_conn()
+                raise
         return handle_func
     return wrapper
 
@@ -164,10 +169,6 @@ def route_async(uri, method):
             except redisctl.errors.RemoteServiceFault, e:
                 logging.exception(e)
                 return json_result({'reason': 'remote service fault'}, 500)
-            except OperationalError as exc:
-                if exc.args[0] == SERVER_GONE_ERROR:
-                    redisctl.db.Connection.reset_conn()
-                raise
             except StandardError, e:
                 logging.error('UNEXPECTED ERROR')
                 logging.exception(e)
