@@ -6,10 +6,10 @@ mysql:
   port: 3306
   username: root
   password: ""
-  database: redisctl
+  db: redisctl
 influxdb:
   host: 10.1.201.42
   port: 8086
   username: root
   password: root
-  database: redisctl
+  db: redisctl
