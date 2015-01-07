@@ -1,10 +1,12 @@
 import sys
 import time
 import logging
-from redistrib.clusternode import Talker, pack_command, ClusterNode
-from socket import error as SocketError
-from influxdb import InfluxDBClient
 from collections import OrderedDict
+from socket import error as SocketError
+from retrying import retry
+from redistrib.clusternode import Talker, pack_command, ClusterNode
+from influxdb import InfluxDBClient
+from influxdb.client import InfluxDBClientError
 
 import config
 import file_ipc
@@ -83,7 +85,15 @@ def _send_to_influxdb(node):
         'name': name,
         'columns': COLUMNS.keys(),
     }]
-    INFLUXDB.write_points(json_body)
+
+    @retry(stop_max_attempt_number=3, wait_fixed=200)
+    def send(json_body):
+        INFLUXDB.write_points(json_body)
+
+    try:
+        send(json_body)
+    except InfluxDBClientError, e:
+        logging.exception(e)
 
 
 def _info_node(host, port):
