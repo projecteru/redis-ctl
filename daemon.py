@@ -148,7 +148,7 @@ def main():
         conf['influxdb']['port'],
         conf['influxdb']['username'],
         conf['influxdb']['password'],
-        conf['influxdb']['database'],
+        conf['influxdb']['db'],
     )
     run()
 
