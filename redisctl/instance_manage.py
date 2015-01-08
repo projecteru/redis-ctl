@@ -53,16 +53,9 @@ def _remove(client, instance_id):
                    (instance_id,))
 
 
-def _pick_by_cluster(client, app_id):
+def _pick_by_cluster(client, cluster_id):
     client.execute('''SELECT * FROM `redis_node`
-        WHERE `assignee_id`=%s LIMIT 1''', app_id)
-    return client.fetchone()
-
-
-def _pick_available(client):
-    client.execute('''SELECT * FROM `redis_node`
-        WHERE ISNULL(`assignee_id`) AND ISNULL(`occupier_id`)
-        AND `status`=0 LIMIT 1''')
+        WHERE `assignee_id`=%s LIMIT 1''', cluster_id)
     return client.fetchone()
 
 
@@ -72,7 +65,7 @@ def pick_by(client, host, port):
     return client.fetchone()
 
 
-def _lock_instance(instance_id, cluster_id):
+def lock_instance(instance_id, cluster_id):
     try:
         with db.update() as client:
             client.execute('''UPDATE `redis_node` SET `occupier_id`=%s
@@ -106,12 +99,16 @@ def unlock_instance(instance_id):
     logging.info('Instance released: %d', instance_id)
 
 
+def distribute_free_to(client, instance_id, cluster_id):
+    client.execute(
+        '''UPDATE `redis_node` SET `assignee_id`=%s
+        WHERE `id`=%s AND ISNULL(`assignee_id`)''',
+        (cluster_id, instance_id))
+
+
 def _distribute_to(instance_id, cluster_id):
     with db.update() as client:
-        client.execute(
-            '''UPDATE `redis_node` SET `assignee_id`=%s
-            WHERE `id`=%s AND ISNULL(`assignee_id`)''',
-            (cluster_id, instance_id))
+        distribute_free_to(client, instance_id, cluster_id)
 
 
 def _free_instance(instance_id, cluster_id):
@@ -148,7 +145,7 @@ def pick_and_launch(host, port, cluster_id, start_cluster):
     if instance[COL_CLUSTER_ID] is not None:
         raise errors.AppMutexError()
 
-    _lock_instance(instance[COL_ID], cluster_id)
+    lock_instance(instance[COL_ID], cluster_id)
 
     try:
         start_cluster(instance[COL_HOST], instance[COL_PORT])
@@ -170,7 +167,7 @@ def pick_and_expand(host, port, cluster_id, join_node):
     if new_node is None:
         raise ValueError('no such node')
 
-    _lock_instance(new_node[COL_ID], cluster_id)
+    lock_instance(new_node[COL_ID], cluster_id)
 
     try:
         join_node(cluster[COL_HOST], cluster[COL_PORT],
@@ -195,7 +192,7 @@ def pick_and_replicate(master_host, master_port, slave_host, slave_port,
         cluster = clu.get_by_id(client, master_node[COL_CLUSTER_ID])
 
     cluster_id = cluster[clu.COL_ID]
-    _lock_instance(slave_node[COL_ID], cluster_id)
+    lock_instance(slave_node[COL_ID], cluster_id)
     try:
         replicate_node(master_host, master_port, slave_host, slave_port)
         _distribute_to(slave_node[COL_ID], cluster_id)
@@ -211,7 +208,7 @@ def quit(host, port, cluster_id, quit_cluster):
     if instance is None or instance[COL_CLUSTER_ID] != cluster_id:
         raise ValueError('No such node in cluster')
 
-    _lock_instance(instance[COL_ID], cluster_id)
+    lock_instance(instance[COL_ID], cluster_id)
 
     try:
         quit_cluster(instance[COL_HOST], instance[COL_PORT])
@@ -230,7 +227,7 @@ def free_instance(host, port, cluster_id):
     if instance is None or instance[COL_CLUSTER_ID] != cluster_id:
         raise ValueError('No such node in cluster')
 
-    _lock_instance(instance[COL_ID], cluster_id)
+    lock_instance(instance[COL_ID], cluster_id)
     try:
         _free_instance(instance[COL_ID], cluster_id)
     finally:
