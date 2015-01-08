@@ -11,12 +11,12 @@ class Connection(object):
     password = None
 
     @staticmethod
-    def init(host, port, database, username, password):
+    def init(host, port, db, username, password):
         if not isinstance(port, (int, long)):
             raise ValueError('Invalid port: %s' % port)
         Connection.host = host
         Connection.port = port
-        Connection.database = database
+        Connection.database = db
         Connection.username = username
         Connection.password = str(password)
         Connection.reset_conn()

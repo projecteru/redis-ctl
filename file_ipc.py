@@ -39,3 +39,13 @@ def read_poll():
     except IOError, e:
         logging.exception(e)
         return []
+
+
+def write_nodes(nodes):
+    write_poll([{'host': n['host'], 'port': n['port']} for n in nodes])
+
+
+def write_nodes_from_db(client):
+    import redisctl.instance_manage as im
+    write_poll([{'host': n[im.COL_HOST], 'port': n[im.COL_PORT]}
+                for n in im.list_all_nodes(client)])
