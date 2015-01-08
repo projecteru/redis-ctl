@@ -65,7 +65,7 @@ th {
 </head>
 <body>
 
-<h1>Cluster Information</h1>
+<h1>集群信息</h1>
 <table style='text-align: center'>
     <thead>
         <tr>
@@ -73,19 +73,19 @@ th {
                 .
             </th>
             <th>
-                Node ID
+                节点 ID
             </th>
             <th>
-                Host:Port
+                地址
             </th>
             <th>
-                Role
+                角色
             </th>
             <th class='master'>
-                Number of slots hold (if master)
+                拥有的槽位数量 (主)
             </th>
             <th class='slave'>
-                Master ID (if slave)
+                主 ID (从)
             </th>
         </tr>
     </thead>
@@ -107,7 +107,7 @@ th {
                 </td>
                 {% if node.detail.slave %}
                 <td class='slave'>
-                    Slave
+                    从
                 </td>
                 <td class='slave'>-</td>
                 <td class='slave'>
@@ -115,13 +115,13 @@ th {
                 </td>
                 {% else %}
                 <td class='master'>
-                    Master
+                    主
                 </td>
                 <td class='master'>
                     {% if node.detail %}
                     {{ node.detail.slots|length }}
                     {% else %}
-                    AWAITING FOR INFO POLLING
+                    等待轮询
                     {% endif %}
                 </td>
                 <td class='master'>-</td>
@@ -135,43 +135,43 @@ th {
 
 <hr>
 
-<h1>Nodes Information</h1>
+<h1>节点信息</h1>
 <table style='text-align: center'>
     <thead>
         <tr>
             <th>
-                Host:Port
+                地址
             </th>
             <th>
-                Status
+                状态
             </th>
             <th>
-                Max memory
+                最大内存
             </th>
             <th style='min-width: 120px'>
-                Memory usage
+                内存使用状况
             </th>
             <th style='min-width: 100px'>
-                CPU usage
+                CPU 使用状况
             </th>
             <th style='max-width: 120px; width: 120px'>
-                Node ID
+                节点 ID
             </th>
             <th>
-                Role
+                角色
             </th>
             <th class='master'>
-                Number of slots hold
+                拥有槽位数
                 <br>
-                (if master)
+                (主)
             </th>
             <th class='slave'>
-                Master ID
+                主节点 ID
                 <br>
-                (if slave)
+                (从)
             </th>
             <th>
-                Operations
+                控制台
             </th>
         </tr>
     </thead>
@@ -186,9 +186,9 @@ th {
                 {% endif %}
             </td>
             {% if node.stat and not node.detail %}
-                <td class='slave' colspan='8'>AWAITING FOR INFO POLLING</td>
+                <td class='slave' colspan='8'>等待轮询</td>
                 <td>
-                    <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>DELETE</button>
+                    <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
                 </td>
                 {% continue %}
             {% endif %}
@@ -196,9 +196,9 @@ th {
             {% if node.stat %}
             <td class='ok'>
                 {% if node.cluster_id is none %}
-                    stand-by
+                    就绪
                 {% else %}
-                    serving
+                    在役
                 {% endif %}
             </td>
             <td>
@@ -208,18 +208,18 @@ th {
             </td>
             {% set mem_rate = node.detail.mem.used_memory_rss * 100.0 / node.max_mem %}
             <td >
-                Used: {{ node.detail.mem.used_memory_human }}
+                使用: {{ node.detail.mem.used_memory_human }}
                 <br>
                 RSS: {{ node.detail.mem.used_memory_rss|filesizeformat }}
                 <br>
                 <span class='{% if mem_rate > 90 %}err{% else %}ok{% endif %}'>
-                RSS/Max: {{ mem_rate|round(2) }}%
+                RSS/最大: {{ mem_rate|round(2) }}%
                 </span>
             </td>
             <td>
-                User {{ node.detail.cpu.used_cpu_user }}
+                用户态 {{ node.detail.cpu.used_cpu_user }}
                 <br>
-                Sys {{ node.detail.cpu.used_cpu_sys }}
+                内核态 {{ node.detail.cpu.used_cpu_sys }}
             </td>
             <td>
                 {{ node.node_id[:8]|e + '...' }}
@@ -227,7 +227,7 @@ th {
             </td>
                 {% if node.detail.slave %}
                 <td class='slave'>
-                    Slave
+                    从
                 </td>
                 <td class='slave'>-</td>
                 <td class='slave'>
@@ -235,7 +235,7 @@ th {
                 </td>
                 {% else %}
                 <td class='master'>
-                    Master
+                    主
                 </td>
                 <td class='master'>{{ node.detail.slots|length }}</td>
                 <td class='master'>-</td>
@@ -251,15 +251,15 @@ th {
             <td class='err'>-</td>
             {% endif %}
             <td>
-            <a class='btn btn-primary' data-host='{{ node.host|e }}' data-port='{{ node.port }}' onclick='launchClusterPanel({{ node|tojson }})'>Cluster Panel</a>
+            <a class='btn btn-primary' data-host='{{ node.host|e }}' data-port='{{ node.port }}' onclick='launchClusterPanel({{ node|tojson }})'>集群控制面板</a>
             {% if node.cluster_id is none %}
-                <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>DELETE</button>
+                <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
             {% endif %}
 
             {% if not node.stat %}
-                <button class='btn btn-primary fix-marker' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>Retry Connect</button>
+                <button class='btn btn-primary fix-marker' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>重连</button>
             {% else %}
-                <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}' onclick='launchAutoDiscover({{ node|tojson }})'>Auto Discover</button>
+                <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}' onclick='launchAutoDiscover({{ node|tojson }})'>集群自动发现</button>
             {% endif %}
             </td>
         </tr>
@@ -302,11 +302,11 @@ $('.fix-marker').click(function() {
 
 <hr>
 
-<h1>Add Redis Nodes</h1>
+<h1>注册节点</h1>
 <table>
     <tr>
         <td>
-            Host
+            地址
         </td>
         <td>
             <input id='add-nodes-host'>
@@ -314,9 +314,9 @@ $('.fix-marker').click(function() {
     </tr>
     <tr>
         <td>
-            Port (range)
+            端口 (范围)
             <br>
-            <sup>e.g. 6370 / 6000-6020</sup>
+            <sup>如 6370 / 6000-6020</sup>
         </td>
         <td>
             <input id='add-nodes-port'>
@@ -324,9 +324,9 @@ $('.fix-marker').click(function() {
     </tr>
     <tr>
         <td>
-            Max Memory (byte)
+            最大内存 (byte)
             <br>
-            <sup>Could be like 1024 / 16M / 1G</sup>
+            <sup>可写为 1024 / 16M / 1G</sup>
         </td>
         <td>
             <input id='add-nodes-mem'>
@@ -336,7 +336,7 @@ $('.fix-marker').click(function() {
         </td>
     </tr>
 </table>
-<button id='add-nodes'>Add</button><span id='add-node-info'></span>
+<button id='add-nodes'>注册这些节点</button><span id='add-node-info'></span>
 
 <script>
 function bindMemoryTrans(parentNode) {
@@ -352,7 +352,7 @@ function bindMemoryTrans(parentNode) {
         var mem = input.val();
         var base = parseFloat(mem);
         if (isNaN(base)) {
-            return errorSpan.text('Invalid memory format');
+            return errorSpan.text('不正确的内存大小格式');
         }
         var factor = 1;
         switch (mem[mem.length - 1]) {
@@ -373,7 +373,7 @@ function bindMemoryTrans(parentNode) {
         base *= factor;
         parsedMem.text(base);
         if (base % 1 != 0) {
-            return errorSpan.text('Memory is not an integer');
+            return errorSpan.text('内存大小不是一个整数');
         }
         input.data('mem', base);
     });
@@ -403,7 +403,7 @@ $('#add-nodes').click(function() {
     }
     if (isNaN(portBegin) || isNaN(portEnd)) {
         $('#add-nodes-port').focus();
-        return errorSpan.text('Invalid port format');
+        return errorSpan.text('不正确的端口范围格式');
     }
 
     -function addNode(host, portBegin, portEnd, memory) {
@@ -417,13 +417,13 @@ $('#add-nodes').click(function() {
         }, function() {
             addNode(host, portBegin + 1, portEnd, memory);
         });
-        errorSpan.text('Adding :' + portBegin + '...');
+        errorSpan.text('正在注册 :' + portBegin + '...');
     }($('#add-nodes-host').val(), portBegin, portEnd, mem);
 });
 </script>
 
 <div id='node-cluster-panel' style='display: none'>
-    <h1 style='float: left; margin-left: 6px'>Cluster Operations</h1>
+    <h1 style='float: left; margin-left: 6px'>集群控制面板</h1>
     <div style='float: right'><button id='node-cluster-quit' class='btn btn-danger'>X</button></div>
     <hr style='clear: both'>
     <h1 style='margin-left: 1em'>
@@ -433,7 +433,7 @@ $('#add-nodes').click(function() {
         -
         <span id='ncp-node-id'></span>
     </h1>
-    Status: <span id='ncp-status'></span>
+    状态: <span id='ncp-status'></span>
     <ul>
         <li>Connected clients: <span id='ncp-stats-conn-clients'></span></li>
         <li>Expired keys: <span id='ncp-stats-expired-keys'></span></li>
@@ -447,38 +447,38 @@ $('#add-nodes').click(function() {
 
     <div id='ncp-serving'>
         <table>
-            <caption>Serving in cluster</caption>
+            <caption>集群在役中</caption>
             <tr>
-                <th>Cluster ID</th>
+                <th>集群 ID</th>
                 <td id='ncp-cluster-id'></td>
             </tr>
             <tr>
-                <th>Number of slots</th>
+                <th>槽位数</th>
                 <td id='ncp-slots'></td>
             </tr>
         </table>
         <div>
-            <button class='btn toggle-next'>Quit cluster</button>
-            <button class='btn btn-primary' id='ncp-quit-cluster'>CONFIRM</button>
+            <button class='btn toggle-next'>退出集群</button>
+            <button class='btn btn-primary' id='ncp-quit-cluster'>确认</button>
         </div>
     </div>
 
     <div id='ncp-stand-by'>
         <div>
-            <button class='btn toggle-next'>Launch as a cluster</button>
+            <button class='btn toggle-next'>以该节点启动一个集群</button>
             <span>
-                Cluster description: <input id='ncp-cluster-descr'>
-                <button class='btn btn-primary' id='ncp-launch-as-cluster'>Launch</button>
+                集群描述: <input id='ncp-cluster-descr'>
+                <button class='btn btn-primary' id='ncp-launch-as-cluster'>启动</button>
             </span>
         </div>
         <div>
-            <button class='btn toggle-next'>Join a cluster</button>
+            <button class='btn toggle-next'>加入集群</button>
             <span>
                 <select id='ncp-select-cluster'></select>
-                <button class='btn btn-primary' id='ncp-join-cluster'>Join as a MASTER</button>
-                -- OR --
+                <button class='btn btn-primary' id='ncp-join-cluster'>以主节点方式加入</button>
+                -- 或 --
                 <select id='ncp-select-master'></select>
-                <button class='btn btn-primary' id='ncp-replicate'>Replicate as a SLAVE</button>
+                <button class='btn btn-primary' id='ncp-replicate'>以左边选择的主节点的副本身份加入</button>
             <span>
         </div>
     </div>
@@ -518,8 +518,8 @@ function launchClusterPanel(node) {
     $('#ncp-stats-ks-hits').text(node.detail.storage.keyspace_hits);
     $('#ncp-stats-ks-misses').text(node.detail.storage.keyspace_misses);
     $('#ncp-stats-aof-enabled').text(node.detail.storage.aof_enabled);
-    $('#ncp-node-id').text(node.node_id ? node.node_id : '<NO NODE ID>');
-    $('#ncp-status').removeClass('ok err').text(node.stat ? 'OK' : 'Error').addClass(node.stat ? 'ok' : 'err');
+    $('#ncp-node-id').text(node.node_id ? node.node_id : '<无节点 ID>');
+    $('#ncp-status').removeClass('ok err').text(node.stat ? '正常' : '无法连接').addClass(node.stat ? 'ok' : 'err');
 
     if (node.cluster_id) {
         showServingPanel(node);
@@ -540,13 +540,13 @@ function showServingPanel(node) {
 function showStandbyPanel(node) {
     $('#ncp-stand-by').show();
     $('#ncp-serving').hide();
-    $('#ncp-select-cluster').html('').append($('<option>').text('Select cluster'));
+    $('#ncp-select-cluster').html('').append($('<option>').text('选择集群'));
     for (var id in CLUSTERS) {
         var cluster = CLUSTERS[id];
         if (cluster.nodes.length == 0) {
             continue;
         }
-        $('#ncp-select-cluster').append($('<option>').text([cluster.descr, '-', cluster.nodes.length, 'nodes'].join(' ')).val(id));
+        $('#ncp-select-cluster').append($('<option>').text([cluster.descr, '-', cluster.nodes.length, '个节点'].join(' ')).val(id));
     }
     $('#ncp-launch-as-cluster').data({host: node.host, port: node.port});
     $('#ncp-join-cluster').data({host: node.host, port: node.port});
@@ -572,7 +572,7 @@ $('#ncp-select-cluster').change(function() {
 
 $('#ncp-quit-cluster').click(function() {
     var btn = $(this);
-    btn.attr('disabled', 'disabled').text('Please wait');
+    btn.attr('disabled', 'disabled').text('请稍候');
     $.ajax({
         url: '/cluster/quit',
         type: 'POST',
@@ -585,7 +585,7 @@ $('#ncp-quit-cluster').click(function() {
             window.location.reload();
         },
         error: function(r) {
-            btn.parent().text('FAILED: ' + r.responseText);
+            btn.parent().text('失败: ' + r.responseText);
         }
     });
 });
@@ -595,7 +595,7 @@ $('#ncp-launch-as-cluster').click(function() {
         return $('#ncp-cluster-descr').focus();
     }
     var btn = $(this);
-    btn.text('Please wait');
+    btn.text('请稍候');
     $('#ncp-stand-by button').attr('disabled', 'disabled');
     $.post('/cluster/add', {
         descr: $('#ncp-cluster-descr').val()
@@ -612,7 +612,7 @@ $('#ncp-launch-as-cluster').click(function() {
                 window.location.reload();
             },
             error: function(r) {
-                btn.parent().text('FAILED: ' + r.responseText);
+                btn.parent().text('失败: ' + r.responseText);
             }
         });
     });
@@ -625,7 +625,7 @@ $('#ncp-join-cluster').click(function() {
         return;
     }
     $('#ncp-stand-by button').attr('disabled', 'disabled');
-    btn.text('Please wait');
+    btn.text('请稍候');
     $.ajax({
         url: '/cluster/join',
         type: 'POST',
@@ -638,7 +638,7 @@ $('#ncp-join-cluster').click(function() {
             window.location.reload();
         },
         error: function(r) {
-            btn.parent().text('FAILED: ' + r.responseText);
+            btn.parent().text('失败: ' + r.responseText);
         }
     });
 });
@@ -650,7 +650,7 @@ $('#ncp-replicate').click(function() {
     }
     $('#ncp-stand-by button').attr('disabled', 'disabled');
     var btn = $(this);
-    btn.text('Please wait');
+    btn.text('请稍候');
     $.ajax({
         url: '/cluster/replicate',
         type: 'POST',
@@ -664,7 +664,7 @@ $('#ncp-replicate').click(function() {
             window.location.reload();
         },
         error: function(r) {
-            btn.parent().text('FAILED: ' + r.responseText);
+            btn.parent().text('失败: ' + r.responseText);
         }
     });
 });
@@ -673,7 +673,7 @@ $('.toggle-next').click(function() {$(this).next().toggle();});
 </script>
 
 <div id='cluster-auto-discover' style='display: none'>
-    <h1 style='float: left; margin-left: 6px'>Auto Discover</h1>
+    <h1 style='float: left; margin-left: 6px'>自动发现</h1>
     <div style='float: right'><button id='cluster-auto-discover-quit' class='btn btn-danger'>X</button></div>
     <hr style='clear: both'>
     <h1 style='margin-left: 1em'>
@@ -681,22 +681,23 @@ $('.toggle-next').click(function() {$(this).next().toggle();});
         :
         <span id='cad-node-port'></span>
     </h1>
-    <button id='cad-do-discover' class='btn'>Auto discover</button>
+    <p>执行 cluster nodes 命令以自动发现集群中的其他节点</p>
+    <button id='cad-do-discover' class='btn'>自动发现</button>
     <span id='cad-discover-error'></span>
 
     <table>
         <thead>
-            <th>Host:Port</th>
-            <th>Role</th>
-            <th style='text-align: left'>Set Max Memory <button id='cad-set-same-mem'>to the same as the first</button></th>
+            <th>地址</th>
+            <th>角色</th>
+            <th style='text-align: left'>设置最大内存 <button id='cad-set-same-mem'>全部与第一行一致</button></th>
         </thead>
         <tbody id='cad-nodes'>
         </tbody>
     </table>
-    <button id='cad-do-add-nodes' class='btn btn-primary'>Add nodes</button><span id='cad-add-node-info'></span>
+    <button id='cad-do-add-nodes' class='btn btn-primary'>注册这些节点</button><span id='cad-add-node-info'></span>
 
     <div>
-        <button id='cad-auto-join-cluster'>Join cluster</button>
+        <button id='cad-auto-join-cluster'>将以上注册节点放入同一个集群中</button>
     </div>
 </div>
 
@@ -758,14 +759,14 @@ $('#cad-do-add-nodes').click(function() {
         }, function() {
             addNode(rows, index + 1);
         });
-        infoSpan.text(['Adding ', row.data('host'), ':', row.data('port'), '...'].join(''));
+        infoSpan.text(['正在注册 ', row.data('host'), ':', row.data('port'), '...'].join(''));
     }($('#cad-nodes tr'), 0);
 });
 
 $('#cad-do-discover').click(function() {
     $('#cad-nodes').html('');
     var btn = $(this);
-    btn.attr('disabled', 'disabled').text('Please wait');
+    btn.attr('disabled', 'disabled').text('请稍候');
     $.ajax({
         url: '/cluster/autodiscover',
         type: 'GET',
@@ -776,7 +777,7 @@ $('#cad-do-discover').click(function() {
         success: function(r) {
             cadNodesDiv.show();
             if (r.length === 0) {
-                $('#cad-nodes').append('All cluster nodes registered');
+                $('#cad-nodes').append('集群中的节点已全部注册');
                 return cadAutoJoinDiv.show();
             }
             $('#cad-do-add-nodes').show();
@@ -793,7 +794,7 @@ $('#cad-do-discover').click(function() {
             }));
         },
         error: function(r) {
-            $('#cad-discover-error').text('FAILED: ' + r.responseText);
+            $('#cad-discover-error').text('失败: ' + r.responseText);
         }
     });
 });
@@ -813,7 +814,7 @@ $('#cad-auto-join-cluster').click(function() {
             window.location.reload();
         },
         error: function(r) {
-            btn.parent().text('FAILED: ' + r.responseText);
+            btn.parent().text('失败: ' + r.responseText);
         }
     });
 });
