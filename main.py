@@ -4,8 +4,7 @@ import redistrib.command as comm
 import config
 import redisctl.db
 import redisctl.recover
-import handlers
-from app import WrapperApp
+import stats.db
 
 
 def run_app(app, debug):
@@ -23,8 +22,12 @@ def init_app():
     config.init_logging(conf)
     redisctl.db.Connection.init(**conf['mysql'])
 
+    if 'influxdb' in conf:
+        stats.db.init(**conf['influxdb'])
     redisctl.recover.recover()
 
+    import handlers
+    from app import WrapperApp
     return handlers.base.app, conf.get('debug', 0) == 1
 
 if __name__ == '__main__':
