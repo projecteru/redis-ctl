@@ -34,6 +34,5 @@ def index(request):
         node_list.append(node)
         if not node['free']:
             clusters[node['cluster_id']]['nodes'].append(node)
-    file_ipc.write_poll([{'host': n['host'], 'port': n['port']}
-                         for n in node_list])
+    file_ipc.write_nodes(node_list)
     return request.render('index.html', nodes=node_list, clusters=clusters)

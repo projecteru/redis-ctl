@@ -258,6 +258,8 @@ th {
 
             {% if not node.stat %}
                 <button class='btn btn-primary fix-marker' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>Retry Connect</button>
+            {% else %}
+                <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}' onclick='launchAutoDiscover({{ node|tojson }})'>Auto Discover</button>
             {% endif %}
             </td>
         </tr>
@@ -329,52 +331,60 @@ $('.fix-marker').click(function() {
         <td>
             <input id='add-nodes-mem'>
             =
-            <span id='add-nodes-mem-parsed'>0</span>
+            <span class='mem-parsed'>0</span>
+            <span class='mem-error'></span>
         </td>
     </tr>
 </table>
-<button id='add-nodes'>Add</button><span id='add-nodes-error'></span>
+<button id='add-nodes'>Add</button><span id='add-node-info'></span>
 
 <script>
-var errorSpan = $('#add-nodes-error');
-var parsedMem = $('#add-nodes-mem-parsed');
+function bindMemoryTrans(parentNode) {
+    var input = parentNode.find('input').data('mem', NaN);
+    var parsedMem = parentNode.find('.mem-parsed');
+    var errorSpan = parentNode.find('.mem-error');
 
-$('#add-nodes-mem').blur(function() {
-    errorSpan.text('');
+    input.blur(function() {
+        errorSpan.text('');
+        parsedMem.text('-');
+        input.data('mem', NaN);
 
-    var mem = $('#add-nodes-mem').val();
-    var base = parseFloat(mem);
-    if (isNaN(base)) {
-        parsedMem.text('-').mem = NaN;
-        return errorSpan.text('Invalid memory format');
-    }
-    var factor = 1;
-    switch (mem[mem.length - 1]) {
-        case 'k':
-        case 'K':
-            factor = 1024;
-            break;
-        case 'm':
-        case 'M':
-            factor = 1024 * 1024;
-            break;
-        case 'g':
-        case 'G':
-            factor = 1024 * 1024 * 1024;
-            break;
-        default:
-    }
-    base *= factor;
-    parsedMem.text(base);
-    if (base % 1 != 0) {
-        parsedMem.mem = NaN;
-        return errorSpan.text('Memory is not an integer');
-    }
-    parsedMem.mem = base;
-});
+        var mem = input.val();
+        var base = parseFloat(mem);
+        if (isNaN(base)) {
+            return errorSpan.text('Invalid memory format');
+        }
+        var factor = 1;
+        switch (mem[mem.length - 1]) {
+            case 'k':
+            case 'K':
+                factor = 1024;
+                break;
+            case 'm':
+            case 'M':
+                factor = 1024 * 1024;
+                break;
+            case 'g':
+            case 'G':
+                factor = 1024 * 1024 * 1024;
+                break;
+            default:
+        }
+        base *= factor;
+        parsedMem.text(base);
+        if (base % 1 != 0) {
+            return errorSpan.text('Memory is not an integer');
+        }
+        input.data('mem', base);
+    });
+}
+
+bindMemoryTrans($('#add-nodes-mem').parent());
 
 $('#add-nodes').click(function() {
-    if (isNaN(parsedMem.mem)) {
+    var mem = $('#add-nodes-mem').data('mem');
+    var errorSpan = $('#add-node-info');
+    if (isNaN(mem)) {
         return $('#add-nodes-mem').focus();
     }
 
@@ -382,7 +392,6 @@ $('#add-nodes').click(function() {
         return $('#add-nodes-host').focus();
     }
 
-    errorSpan.text('');
     var portBegin = NaN, portEnd = 0;
     var portRange = $('#add-nodes-port').val().split('-');
     if (portRange.length === 1) {
@@ -409,7 +418,7 @@ $('#add-nodes').click(function() {
             addNode(host, portBegin + 1, portEnd, memory);
         });
         errorSpan.text('Adding :' + portBegin + '...');
-    }($('#add-nodes-host').val(), portBegin, portEnd, parsedMem.mem);
+    }($('#add-nodes-host').val(), portBegin, portEnd, mem);
 });
 </script>
 
@@ -661,4 +670,151 @@ $('#ncp-replicate').click(function() {
 });
 
 $('.toggle-next').click(function() {$(this).next().toggle();});
+</script>
+
+<div id='cluster-auto-discover' style='display: none'>
+    <h1 style='float: left; margin-left: 6px'>Auto Discover</h1>
+    <div style='float: right'><button id='cluster-auto-discover-quit' class='btn btn-danger'>X</button></div>
+    <hr style='clear: both'>
+    <h1 style='margin-left: 1em'>
+        <span id='cad-node-host'></span>
+        :
+        <span id='cad-node-port'></span>
+    </h1>
+    <button id='cad-do-discover' class='btn'>Auto discover</button>
+    <span id='cad-discover-error'></span>
+
+    <table>
+        <thead>
+            <th>Host:Port</th>
+            <th>Role</th>
+            <th style='text-align: left'>Set Max Memory <button id='cad-set-same-mem'>to the same as the first</button></th>
+        </thead>
+        <tbody id='cad-nodes'>
+        </tbody>
+    </table>
+    <button id='cad-do-add-nodes' class='btn btn-primary'>Add nodes</button><span id='cad-add-node-info'></span>
+
+    <div>
+        <button id='cad-auto-join-cluster'>Join cluster</button>
+    </div>
+</div>
+
+<script>
+var cadNodesDiv = $('#cad-nodes').parent();
+var cadAutoJoinDiv = $('#cad-auto-join-cluster').parent();
+
+function launchAutoDiscover(node) {
+    var panel = $('#cluster-auto-discover').detach();
+    var ovl = createOverlapPanel();
+    ovl.append(panel.show());
+    $('#cluster-auto-discover-quit').unbind('click').click(function() {
+        panel.detach();
+        $(document.body).append(panel.hide());
+        ovl.quit();
+    });
+    cadNodesDiv.hide();
+    cadAutoJoinDiv.hide();
+    $('#cad-do-add-nodes').hide();
+
+    $('#cad-node-host').text(node.host);
+    $('#cad-node-port').text(node.port);
+
+    $('#cad-do-discover').data({host: node.host, port: node.port});
+    $('#cad-auto-join-cluster').data({host: node.host, port: node.port});
+    $('#cad-discover-error').text('');
+}
+
+$('#cad-set-same-mem').click(function() {
+    var inputs = $('#cad-nodes input');
+    if (inputs.length === 0) {
+        return;
+    }
+    var mem = $(inputs[0]).data('mem');
+    if (isNaN(mem)) {
+        return;
+    }
+    var plain = $(inputs[0]).val();
+    inputs.each(function() {
+        $(this).val(plain).blur();
+    });
+});
+
+$('#cad-do-add-nodes').click(function() {
+    if (isNaN($('#cad-nodes input').map(function() {return $(this).data('mem');}).toArray().reduce(function(x, y) {return x + y;}, 1))) {
+        return;
+    }
+    var infoSpan = $('#cad-add-node-info');
+    -function addNode(rows, index) {
+        if (rows.length === index) {
+            infoSpan.text('nodes added');
+            return cadAutoJoinDiv.show();
+        }
+        var row = $(rows[index]);
+        $.post('/nodes/add', {
+            host: row.data('host'),
+            port: row.data('port'),
+            mem: row.find('input').data('mem'),
+        }, function() {
+            addNode(rows, index + 1);
+        });
+        infoSpan.text(['Adding ', row.data('host'), ':', row.data('port'), '...'].join(''));
+    }($('#cad-nodes tr'), 0);
+});
+
+$('#cad-do-discover').click(function() {
+    $('#cad-nodes').html('');
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('Please wait');
+    $.ajax({
+        url: '/cluster/autodiscover',
+        type: 'GET',
+        data: {
+            host: btn.data('host'),
+            port: btn.data('port')
+        },
+        success: function(r) {
+            cadNodesDiv.show();
+            if (r.length === 0) {
+                $('#cad-nodes').append('All cluster nodes registered');
+                return cadAutoJoinDiv.show();
+            }
+            $('#cad-do-add-nodes').show();
+            $('#cad-nodes').append(r.map(function(e) {
+                var memCell = $('<td>'
+                    ).append($('<input>')).append(' = '
+                    ).append($('<span>').addClass('mem-parsed')
+                    ).append($('<span>').addClass('mem-error'));
+                bindMemoryTrans(memCell);
+                return $('<tr>'
+                    ).append($('<td>').text(e.host + ':' + e.port)
+                    ).append($('<td>').text(e.role)
+                    ).append(memCell).data({host: e.host, port: e.port});
+            }));
+        },
+        error: function(r) {
+            $('#cad-discover-error').text('FAILED: ' + r.responseText);
+        }
+    });
+});
+
+$('#cad-auto-join-cluster').click(function() {
+    var btn = $(this);
+    var host = btn.data('host');
+    var port = btn.data('port');
+    $.ajax({
+        url: '/cluster/autojoin',
+        type: 'POST',
+        data: {
+            host: host,
+            port: port
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(r) {
+            btn.parent().text('FAILED: ' + r.responseText);
+        }
+    });
+});
 </script>
