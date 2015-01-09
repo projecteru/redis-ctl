@@ -1,5 +1,4 @@
 import sys
-import redistrib.command as comm
 
 import config
 import redisctl.db
@@ -11,6 +10,7 @@ def run_app(app, debug):
     if debug:
         app.debug = True
         return app.run(port=config.listen_port())
+    from app import WrapperApp
     WrapperApp(app, {
         'bind': '%s:%d' % ('0.0.0.0', config.listen_port()),
         'workers': 2,
@@ -27,7 +27,6 @@ def init_app():
     redisctl.recover.recover()
 
     import handlers
-    from app import WrapperApp
     return handlers.base.app, conf.get('debug', 0) == 1
 
 if __name__ == '__main__':

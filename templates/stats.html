@@ -28,6 +28,8 @@
     <div><p>存储</p><svg id='keys'></svg></div>
     <script>
       -function() {
+          var POINTS_LENGTH = 1000;
+          var POLL_INTERVAL = 120 * 1000;
           var gMetricsDatum = {
               used_cpu_user: [],
               used_cpu_sys: [],
@@ -111,7 +113,7 @@
 
                               gMetricsDatum[i].push({x: timestamp, y: r[i][j][1]});
                           }
-                          for (k = gMetricsDatum[i].length - 300; 0 < k; --k) {
+                          for (k = gMetricsDatum[i].length - POINTS_LENGTH; 0 < k; --k) {
                               gMetricsDatum[i].shift();
                           }
                       }
@@ -131,13 +133,13 @@
                           {keyName: 'keyspace_hits', keyDisp: 'Keyspace hits', color: '#808'},
                           {keyName: 'keyspace_misses', keyDisp: 'Keyspace misses', color: '#444'}
                       ], function(y) {return y;}, '存储');
-                      setTimeout(function() {updateCharts(1);}, 30000);
+                      setTimeout(function() {updateCharts(1);}, POLL_INTERVAL);
                   },
                   error: function(r) {
                       console.log(r);
                   }
               });
-          }(300);
+          }(POINTS_LENGTH);
       }();
     </script>
 </div>

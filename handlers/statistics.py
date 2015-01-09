@@ -2,7 +2,6 @@ import re
 
 import base
 import stats.db
-import redisctl.db
 
 PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
 
@@ -28,13 +27,13 @@ def init_handlers():
 
         for field in RES_FIELDS:
             q = stats.db.client.query(
-                '''select mean(%s) from "%s:%d" group by time(30s) limit %d'''
+                '''select mean(%s) from "%s:%d" group by time(2m) limit %d'''
                 % (field, host, port, limit))
             result[field] = q[0]['points']
 
         for field in INT_FIELDS:
             q = stats.db.client.query(
-                '''select max(%s) from "%s:%d" group by time(30s) limit %d'''
+                '''select max(%s) from "%s:%d" group by time(2m) limit %d'''
                 % (field, host, port, limit))
             result[field] = q[0]['points']
 
