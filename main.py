@@ -1,5 +1,4 @@
 import sys
-import redistrib.command as comm
 
 import config
 import redisctl.db

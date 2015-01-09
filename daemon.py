@@ -5,7 +5,6 @@ from collections import OrderedDict
 from socket import error as SocketError
 from retrying import retry
 from redistrib.clusternode import Talker, pack_command, ClusterNode
-from influxdb import InfluxDBClient
 from influxdb.client import InfluxDBClientError
 
 import config
@@ -57,7 +56,6 @@ def _info_slots(t):
 
 
 def _send_to_influxdb(node):
-    global PRECPU
     name = '%s:%s' % (node['host'], node['port'])
     points = [
         node['mem'][COLUMNS['used_memory_rss']],
@@ -81,7 +79,7 @@ def _send_to_influxdb(node):
     points.append(used_cpu_sys)
     points.append(used_cpu_user)
     json_body = [{
-        "points": [points, ],
+        "points": [points],
         'name': name,
         'columns': COLUMNS.keys(),
     }]
@@ -121,10 +119,8 @@ def _info_node(host, port):
         }
         node_info['stat'] = True
         return node_info
-    except StandardError, e:
-        logging.error('Fail to retrieve info of %s:%d', host, port)
-        logging.exception(e)
-        return {'stat': False}
+    finally:
+        t.close()
 
 
 def run():
@@ -134,8 +130,8 @@ def run():
             try:
                 node.update(_info_node(**node))
                 _send_to_influxdb(node)
-            except SocketError, e:
-                logging.error('Fail to connect to %s:%d',
+            except (SocketError, StandardError), e:
+                logging.error('Fail to retrieve info of %s:%d',
                               node['host'], node['port'])
                 logging.exception(e)
                 node['stat'] = False

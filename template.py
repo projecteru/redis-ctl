@@ -1,4 +1,3 @@
-import os
 import cgi
 import urllib2
 import functools
@@ -7,8 +6,6 @@ import json
 import calendar
 from datetime import datetime
 from UserDict import UserDict
-
-import config
 
 
 def escape_result(f):
@@ -60,61 +57,8 @@ def f_tojson(obj):
 
 
 @_filter
-def f_render_page(page, level):
-    return render('page/component/' + level + '.html', page=page,
-                  page_uri='/p/' + page.full_uri)
-
-
-@_filter
-def f_render_comment(comment, level='default'):
-    return render('comment/component/' + level + '.html', comment=comment)
-
-
-@_filter
-def f_render_user(user, level='default'):
-    return render('user/component/' + level + '.html', user=user)
-
-
-@_filter
-def f_render_mathcom(node, level='default'):
-    path = 'mathcom/{tp}/{lvl}.html'.format(tp=node['type'], lvl=level)
-    if not os.path.isfile('./templates/' + path):
-        path = 'mathcom/{tp}/default.html'.format(tp=node['type'])
-    return render(path, node=node)
-
-
-@_filter
-def f_markdown(text):
-    import markdown.document
-    if not isinstance(text, unicode):
-        return text
-    return markdown.document.compile_entire(text)
-
-
-@_filter
-def f_markdown_trunc(text, limit):
-    import markdown.document
-    if not isinstance(text, unicode):
-        return text
-    return markdown.document.compile_partial(text, limit)[0]
-
-
-@_filter
-def f_markdown_line(text):
-    from markdown.inline import forge as inline_forge
-    if not isinstance(text, unicode):
-        return text
-    return inline_forge(text)
-
-
-@_filter
 def f_urlencode(text):
     return urllib2.quote(text.encode('utf8')).replace('/', '%2F')
-
-
-@_filter
-def f_encode_anchor(text):
-    return f_urlencode(text).replace('%', '.')
 
 
 @_filter
