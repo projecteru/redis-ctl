@@ -119,10 +119,8 @@ def _info_node(host, port):
         }
         node_info['stat'] = True
         return node_info
-    except StandardError, e:
-        logging.error('Fail to retrieve info of %s:%d', host, port)
-        logging.exception(e)
-        return {'stat': False}
+    finally:
+        t.close()
 
 
 def run():
@@ -132,8 +130,8 @@ def run():
             try:
                 node.update(_info_node(**node))
                 _send_to_influxdb(node)
-            except SocketError, e:
-                logging.error('Fail to connect to %s:%d',
+            except (SocketError, StandardError), e:
+                logging.error('Fail to retrieve info of %s:%d',
                               node['host'], node['port'])
                 logging.exception(e)
                 node['stat'] = False
