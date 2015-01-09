@@ -1,10 +1,7 @@
-<!doctype html>
-<html>
-<head>
-<meta charset='utf-8'>
-<title>Redis 监视器</title>
-<link rel='stylesheet' type='text/css' href='/static/flatstrap.css'>
-<script src='/static/jquery.js'></script>
+{% extends './base.html' %}
+{% block title %}Redis 监视器{% endblock %}
+
+{% block head %}
 <style>
 input {
     min-width: 400px;
@@ -62,9 +59,9 @@ th {
     overflow: scroll;
 }
 </style>
-</head>
-<body>
+{% endblock %}
 
+{% block body %}
 <h1>集群信息</h1>
 <table style='text-align: center'>
     <thead>
@@ -256,10 +253,13 @@ th {
                 <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
             {% endif %}
 
-            {% if not node.stat %}
-                <button class='btn btn-primary fix-marker' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>重连</button>
-            {% else %}
+            {% if node.stat %}
                 <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}' onclick='launchAutoDiscover({{ node|tojson }})'>集群自动发现</button>
+                {% if stats_enabled %}
+                <a href='/stats/view?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史</a>
+                {% endif %}
+            {% else %}
+                <button class='btn btn-primary fix-marker' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>重连</button>
             {% endif %}
             </td>
         </tr>
@@ -819,3 +819,4 @@ $('#cad-auto-join-cluster').click(function() {
     });
 });
 </script>
+{% endblock %}

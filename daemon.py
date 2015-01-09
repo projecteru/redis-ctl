@@ -10,12 +10,12 @@ from influxdb.client import InfluxDBClientError
 
 import config
 import file_ipc
+import stats.db
 
 INTERVAL = 10
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 
-INFLUXDB = None
 COLUMNS = OrderedDict([
     ('used_memory_rss', 'used_memory_rss'),
     ('connected_clients', 'connected_clients'),
@@ -88,7 +88,7 @@ def _send_to_influxdb(node):
 
     @retry(stop_max_attempt_number=3, wait_fixed=200)
     def send(json_body):
-        INFLUXDB.write_points(json_body)
+        stats.db.client.write_points(json_body)
 
     try:
         send(json_body)
@@ -151,16 +151,10 @@ def run():
 def main():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
     config.init_logging(conf)
-    global INFLUXDB, INTERVAL, _send_to_influxdb
+    global INTERVAL, _send_to_influxdb
     INTERVAL = int(conf.get('interval', INTERVAL))
     if 'influxdb' in conf:
-        INFLUXDB = InfluxDBClient(
-            conf['influxdb']['host'],
-            conf['influxdb']['port'],
-            conf['influxdb']['username'],
-            conf['influxdb']['password'],
-            conf['influxdb']['database'],
-        )
+        stats.db.init(**conf['influxdb'])
     else:
         _send_to_influxdb = lambda _: None
     run()

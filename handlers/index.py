@@ -1,5 +1,6 @@
 import base
 import file_ipc
+import stats.db
 import redisctl.db
 import redisctl.instance_manage as im
 import redisctl.cluster as cl
@@ -35,4 +36,5 @@ def index(request):
         if not node['free']:
             clusters[node['cluster_id']]['nodes'].append(node)
     file_ipc.write_nodes(node_list)
-    return request.render('index.html', nodes=node_list, clusters=clusters)
+    return request.render('index.html', nodes=node_list, clusters=clusters,
+                          stats_enabled=stats.db.client is not None)
