@@ -3,6 +3,7 @@ import time
 import logging
 from collections import OrderedDict
 from socket import error as SocketError
+from hiredis import ReplyError
 from retrying import retry
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 from influxdb.client import InfluxDBClientError
@@ -130,7 +131,7 @@ def run():
             try:
                 node.update(_info_node(**node))
                 _send_to_influxdb(node)
-            except (SocketError, StandardError), e:
+            except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               node['host'], node['port'])
                 logging.exception(e)
