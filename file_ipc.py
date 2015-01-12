@@ -46,6 +46,6 @@ def write_nodes(nodes):
 
 
 def write_nodes_from_db(client):
-    import redisctl.instance_manage as im
-    write_poll([{'host': n[im.COL_HOST], 'port': n[im.COL_PORT]}
-                for n in im.list_all_nodes(client)])
+    import models.node as nm
+    write_poll([{'host': n[nm.COL_HOST], 'port': n[nm.COL_PORT]}
+                for n in nm.list_all_nodes(client)])

@@ -1,15 +1,15 @@
 import base
 import file_ipc
 import stats.db
-import redisctl.db
-import redisctl.instance_manage as im
-import redisctl.cluster as cl
+import models.db
+import models.node as nm
+import models.cluster as cl
 
 
 @base.get('/')
 def index(request):
-    with redisctl.db.query() as c:
-        nodes = im.list_all_nodes(c)
+    with models.db.query() as c:
+        nodes = nm.list_all_nodes(c)
         clusters = cl.list_all(c)
     node_details = {(n['host'], n['port']): n for n in file_ipc.read()}
     clusters = {
@@ -21,15 +21,15 @@ def index(request):
     }
     node_list = []
     for n in nodes:
-        detail = node_details.get((n[im.COL_HOST], n[im.COL_PORT]), dict())
+        detail = node_details.get((n[nm.COL_HOST], n[nm.COL_PORT]), dict())
         node = {
             'node_id': detail.get('node_id'),
-            'host': n[im.COL_HOST],
-            'port': n[im.COL_PORT],
-            'max_mem': n[im.COL_MEM],
-            'cluster_id': n[im.COL_CLUSTER_ID],
-            'free': n[im.COL_CLUSTER_ID] is None,
-            'stat': n[im.COL_STAT] >= 0 and detail.get('stat', True),
+            'host': n[nm.COL_HOST],
+            'port': n[nm.COL_PORT],
+            'max_mem': n[nm.COL_MEM],
+            'cluster_id': n[nm.COL_CLUSTER_ID],
+            'free': n[nm.COL_CLUSTER_ID] is None,
+            'stat': n[nm.COL_STAT] >= 0 and detail.get('stat', True),
             'detail': detail,
         }
         node_list.append(node)

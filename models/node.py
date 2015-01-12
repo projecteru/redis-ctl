@@ -5,7 +5,7 @@ from redistrib.exceptions import RedisStatusError
 
 import db
 import errors
-import redisctl.cluster as clu
+import models.cluster as clu
 
 COL_ID = 0
 COL_HOST = 1
