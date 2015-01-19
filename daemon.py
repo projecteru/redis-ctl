@@ -15,6 +15,7 @@ import stats.db
 INTERVAL = 10
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
+CMD_PROXY_PING = pack_command('ping', 'el psy congroo')
 
 COLUMNS = OrderedDict([
     ('used_memory_rss', 'used_memory_rss'),
@@ -95,6 +96,7 @@ def _send_to_influxdb(node):
         logging.exception(e)
 
 
+@retry(stop_max_attempt_number=3, wait_fixed=200)
 def _info_node(host, port):
     t = Talker(host, port)
     try:
@@ -124,9 +126,20 @@ def _info_node(host, port):
         t.close()
 
 
+@retry(stop_max_attempt_number=3, wait_fixed=200)
+def _info_proxy(host, port):
+    t = Talker(host, port)
+    try:
+        return {'stat': 'el psy congroo' == t.talk_raw(CMD_PROXY_PING)}
+    finally:
+        t.close()
+
+
 def run():
     while True:
-        nodes = file_ipc.read_poll()
+        poll = file_ipc.read_poll()
+        nodes = poll['nodes']
+        proxies = poll['proxies']
         for node in nodes:
             try:
                 node.update(_info_node(**node))
@@ -136,9 +149,17 @@ def run():
                               node['host'], node['port'])
                 logging.exception(e)
                 node['stat'] = False
+        for p in proxies:
+            try:
+                p.update(_info_proxy(**p))
+            except (ReplyError, SocketError, StandardError), e:
+                logging.error('Fail to retrieve info of %s:%d',
+                              p['host'], p['port'])
+                logging.exception(e)
+                p['stat'] = False
         logging.info('Total %d nodes', len(nodes))
         try:
-            file_ipc.write(nodes)
+            file_ipc.write(nodes, proxies)
         except StandardError, e:
             logging.exception(e)
 

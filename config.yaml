@@ -1,6 +1,6 @@
 log_level: info
 debug: 0
-interval: 2
+interval: 10
 mysql:
   host: 127.0.0.1
   port: 3306
@@ -8,7 +8,7 @@ mysql:
   password: ""
   db: redisctl
 influxdb:
-  host: 10.1.201.42
+  host: 127.0.0.1
   port: 8086
   username: root
   password: root

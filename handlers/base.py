@@ -11,8 +11,8 @@ from MySQLdb import OperationalError
 from MySQLdb.constants.CR import SERVER_GONE_ERROR
 
 import template
-import redisctl.errors
-import redisctl.db
+import models.errors
+import models.db
 
 app = flask.Flask('RedisControl')
 app.secret_key = os.urandom(24)
@@ -139,7 +139,7 @@ def route(uri, method):
                 return f(Request(), *args, **kwargs)
             except OperationalError as exc:
                 if exc.args[0] == SERVER_GONE_ERROR:
-                    redisctl.db.Connection.reset_conn()
+                    models.db.Connection.reset_conn()
                 raise
         return handle_func
     return wrapper
@@ -154,19 +154,17 @@ def route_async(uri, method):
                 return f(request, *args, **kwargs) or ''
             except KeyError, e:
                 r = dict(reason='missing argument', missing=e.message)
-            except AttributeError, e:
-                r = dict(reason='invalid format or unexpected null value')
             except UnicodeEncodeError, e:
                 r = dict(reason='invalid input encoding')
-            except (TypeError, ValueError), e:
+            except ValueError, e:
                 r = dict(reason=e.message)
-            except redisctl.errors.AppMutexError:
+            except models.errors.AppMutexError:
                 r = {'reason': 'app occupying'}
-            except redisctl.errors.AppUninitError:
+            except models.errors.AppUninitError:
                 r = {'reason': 'start not called'}
-            except redisctl.errors.InstanceExhausted:
+            except models.errors.InstanceExhausted:
                 return json_result({'reason': 'instance exhausted'}, 500)
-            except redisctl.errors.RemoteServiceFault, e:
+            except models.errors.RemoteServiceFault, e:
                 logging.exception(e)
                 return json_result({'reason': 'remote service fault'}, 500)
             except StandardError, e:

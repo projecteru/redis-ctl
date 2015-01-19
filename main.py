@@ -1,8 +1,8 @@
 import sys
 
 import config
-import redisctl.db
-import redisctl.recover
+import models.db
+import models.recover
 import stats.db
 
 
@@ -20,11 +20,11 @@ def run_app(app, debug):
 def init_app():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
     config.init_logging(conf)
-    redisctl.db.Connection.init(**conf['mysql'])
+    models.db.Connection.init(**conf['mysql'])
 
     if 'influxdb' in conf:
         stats.db.init(**conf['influxdb'])
-    redisctl.recover.recover()
+    models.recover.recover()
 
     import handlers
     return handlers.base.app, conf.get('debug', 0) == 1
