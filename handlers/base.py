@@ -154,11 +154,9 @@ def route_async(uri, method):
                 return f(request, *args, **kwargs) or ''
             except KeyError, e:
                 r = dict(reason='missing argument', missing=e.message)
-            except AttributeError, e:
-                r = dict(reason='invalid format or unexpected null value')
             except UnicodeEncodeError, e:
                 r = dict(reason='invalid input encoding')
-            except (TypeError, ValueError), e:
+            except ValueError, e:
                 r = dict(reason=e.message)
             except models.errors.AppMutexError:
                 r = {'reason': 'app occupying'}

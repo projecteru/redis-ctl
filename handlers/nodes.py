@@ -20,7 +20,7 @@ def del_node(request):
             c, request.form['host'], int(request.form['port']))
 
     with models.db.query() as c:
-        file_ipc.write_nodes_from_db(c)
+        file_ipc.write_nodes_proxies_from_db(c)
 
 
 @base.post_async('/nodes/fix')

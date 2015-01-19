@@ -5,6 +5,7 @@ import redistrib.command
 import base
 import models.db
 import models.cluster
+import models.proxy
 import models.node as nm
 
 
@@ -28,6 +29,17 @@ def start_cluster(request):
             models.cluster.remove_empty_cluster(c, cluster_id)
 
         raise ValueError('Node disconnected')
+
+
+@base.post_async('/cluster/set_info')
+def set_cluster_info(request):
+    cluster_id = int(request.form['cluster_id'])
+    descr = request.form.get('descr', '')
+    host = request.form['proxy_host']
+    port = int(request.form['proxy_port'])
+    with models.db.update() as c:
+        models.cluster.set_info(c, cluster_id, descr)
+        models.proxy.attach_to_cluster(c, cluster_id, host, port)
 
 
 @base.post_async('/cluster/join')
@@ -112,11 +124,11 @@ def cluster_auto_join(request):
         raise ValueError('nodes are in different clusters according to db')
 
     with models.db.update() as client:
-        cluster_id = (models.cluster.create_cluster(
-                          client, request.form.get('description', ''))
+        cluster_id = (models.cluster.create_cluster(client, '')
                       if len(cluster_ids) == 0 else cluster_ids.pop())
         try:
             for node_id in free_nodes_ids:
                 nm.distribute_free_to(client, node_id, cluster_id)
+            return str(cluster_id)
         finally:
             models.cluster.remove_empty_cluster(client, cluster_id)
