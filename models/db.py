@@ -26,7 +26,7 @@ class Connection(object):
         Connection.conn = MySQLdb.connect(
             host=Connection.host, port=Connection.port,
             user=Connection.username, passwd=Connection.password,
-            db=Connection.database)
+            db=Connection.database, charset='utf8')
 
     def __init__(self, quit):
         self.cursor = None
