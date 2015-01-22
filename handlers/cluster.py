@@ -35,10 +35,12 @@ def start_cluster(request):
 def set_cluster_info(request):
     cluster_id = int(request.form['cluster_id'])
     descr = request.form.get('descr', '')
-    host = request.form['proxy_host']
-    port = int(request.form['proxy_port'])
     with models.db.update() as c:
         models.cluster.set_info(c, cluster_id, descr)
+        if not request.form.get('proxy_host'):
+            return
+        host = request.form['proxy_host']
+        port = int(request.form['proxy_port'])
         models.proxy.attach_to_cluster(c, cluster_id, host, port)
 
 
