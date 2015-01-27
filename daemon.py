@@ -15,7 +15,7 @@ import stats.db
 INTERVAL = 10
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
-CMD_PROXY_PING = pack_command('ping', 'el psy congroo')
+CMD_PROXY = '+PROXY\r\n'
 
 COLUMNS = OrderedDict([
     ('used_memory_rss', 'used_memory_rss'),
@@ -57,6 +57,11 @@ def _info_slots(t):
         }
 
 
+@retry(stop_max_attempt_number=3, wait_fixed=200)
+def _emit_data(json_body):
+    stats.db.client.write_points(json_body)
+
+
 def _send_to_influxdb(node):
     name = '%s:%s' % (node['host'], node['port'])
     points = [
@@ -81,17 +86,31 @@ def _send_to_influxdb(node):
     points.append(used_cpu_sys)
     points.append(used_cpu_user)
     json_body = [{
-        "points": [points],
         'name': name,
         'columns': COLUMNS.keys(),
+        'points': [points],
     }]
 
-    @retry(stop_max_attempt_number=3, wait_fixed=200)
-    def send(json_body):
-        stats.db.client.write_points(json_body)
+    try:
+        _emit_data(json_body)
+    except InfluxDBClientError, e:
+        logging.exception(e)
+
+
+def _send_proxy_to_influxdb(proxy):
+    name = '%s:%s:p' % (proxy['host'], proxy['port'])
+    points = [
+        proxy['mem']['mem_buffer_alloc'],
+        proxy['conn']['connected_clients'],
+    ]
+    json_body = [{
+        'name': name,
+        'columns': ['mem_buffer_alloc', 'connected_clients'],
+        'points': [points],
+    }]
 
     try:
-        send(json_body)
+        _emit_data(json_body)
     except InfluxDBClientError, e:
         logging.exception(e)
 
@@ -130,7 +149,19 @@ def _info_node(host, port):
 def _info_proxy(host, port):
     t = Talker(host, port)
     try:
-        return {'stat': 'el psy congroo' == t.talk_raw(CMD_PROXY_PING)}
+        lines = t.talk_raw(CMD_PROXY).split('\n')
+        st = dict()
+        for ln in lines:
+            k, v = ln.split(':')
+            st[k] = v
+        conns = sum([int(c) for c in st['clients_count'].split(',')])
+        mem_buffer_alloc = sum([int(m) for m in
+                                st['mem_buffer_alloc'].split(',')])
+        return {
+            'stat': True,
+            'conn': {'connected_clients': conns},
+            'mem': {'mem_buffer_alloc': mem_buffer_alloc},
+        }
     finally:
         t.close()
 
@@ -152,12 +183,13 @@ def run():
         for p in proxies:
             try:
                 p.update(_info_proxy(**p))
+                _send_proxy_to_influxdb(p)
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               p['host'], p['port'])
                 logging.exception(e)
                 p['stat'] = False
-        logging.info('Total %d nodes', len(nodes))
+        logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
         try:
             file_ipc.write(nodes, proxies)
         except StandardError, e:

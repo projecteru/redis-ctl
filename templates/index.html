@@ -98,8 +98,9 @@ th {
                     <br>
                     代理: {{ proxy.host }}:{{ proxy.port }}
                     <span class='{{ 'ok' if proxy.stat else 'err' }}'>
-                        {{ 'OK' if proxy.stat else 'E' }}
+                        {{ 'OK' if proxy.stat else 'ERROR' }}
                     </span>
+                    <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
                 {% endfor %}
             </td>
         </tr>
@@ -316,7 +317,7 @@ function launchClusterSetting(cluster) {
                 <td class='master'>-</td>
                 {% endif %}
             {% else %}
-            <td class='err'>E</td>
+            <td class='err'>ERROR</td>
             <td class='err'>-</td>
             <td class='err'>-</td>
             <td class='err'>-</td>
@@ -404,7 +405,7 @@ $('.fix-marker').click(function() {
         <td>
             最大内存 (byte)
             <br>
-            <sup>可写为 1024 / 16M / 1G</sup>
+            <sup>可写为 1024 / 16m / 1G</sup>
         </td>
         <td>
             <input id='add-nodes-mem'>

@@ -1,22 +1,5 @@
-{% extends './base.html' %}
+{% extends './stats-base.html' %}
 {% block title %}节点状态历史{% endblock %}
-
-{% block head %}
-<link href='/static/lib/css/d3/nv.d3.css' rel='stylesheet' type='text/css'>
-<script src='/static/lib/js/d3/d3.v3.js'></script>
-<script src='/static/lib/js/d3/nv.d3.js'></script>
-<script src='/static/lib/js/d3/tooltip.js'></script>
-<script src='/static/lib/js/d3/utils.js'></script>
-<script src='/static/lib/js/d3/interactiveLayer.js'></script>
-<script src='/static/lib/js/d3/legend.js'></script>
-<script src='/static/lib/js/d3/axis.js'></script>
-<script src='/static/lib/js/d3/scatter.js'></script>
-<script src='/static/lib/js/d3/line.js'></script>
-<script src='/static/lib/js/d3/lineChart.js'></script>
-<style>
-  svg {min-height: 400px; min-width: 640px}
-</style>
-{% endblock %}
 
 {% block body %}
 <a href='/'>← 回到首页</a>
@@ -26,121 +9,52 @@
     <div><p>内存状况</p><svg id='usages_mem'></svg></div>
     <div><p>连接</p><svg id='connections'></svg></div>
     <div><p>存储</p><svg id='keys'></svg></div>
-    <script>
-      -function() {
-          var POINTS_LENGTH = 1000;
-          var POLL_INTERVAL = 120 * 1000;
-          var gMetricsDatum = {
-              used_cpu_user: [],
-              used_cpu_sys: [],
-
-              used_memory_rss: [],
-
-              connected_clients: [],
-
-              evicted_keys: [],
-              expired_keys: [],
-              keyspace_hits: [],
-              keyspace_misses: []
-          };
-          var gDatumTimestamp = {
-              used_cpu_user: {},
-              used_cpu_sys: {},
-
-              used_memory_rss: {},
-
-              connected_clients: {},
-
-              evicted_keys: {},
-              expired_keys: {},
-              keyspace_hits: {},
-              keyspace_misses: {}
-          };
-          -function updateCharts(limit) {
-              function updateGraph(selector, graphKeys, yMapF, yLabel) {
-                  nv.addGraph(function() {
-                    var chart = nv.models.lineChart().options({
-                        margin: {left: 100, bottom: 100},
-                        padding: {left: 20, right: 20},
-                        x: function(d, i) {return i},
-                        showXAxis: true,
-                        showYAxis: true,
-                        transitionDuration: 25
-                    });
-
-                    chart.xAxis.axisLabel("Time").tickFormat(function(x) {
-                        var t = new Date(gMetricsDatum[graphKeys[0].keyName][x].x * 1000);
-                        return t.toTimeString().slice(0, 8);
-                    });
-
-                    chart.yAxis.axisLabel(yLabel).tickFormat(d3.format(',.2f'));
-
-                    var datum = graphKeys.map(function(e) {
-                        return {
-                            values: gMetricsDatum[e.keyName].map(function (e) {return {x: e.x * 1000, y: yMapF(e.y)};}),
-                            key: e.keyDisp,
-                            color: e.color
-                        }
-                    })
-                    d3.select(selector).datum(datum).call(chart);
-                    nv.utils.windowResize(chart.update);
-                    return chart;
-                  });
-              }
-
-              $.ajax({
-                  url: '/stats/fetch',
-                  type: 'GET',
-                  data: {
-                      host: {{ host|tojson }},
-                      port: {{ port|tojson }},
-                      limit: limit
-                  },
-                  success: function(r) {
-                      var i, j, k, timestampGroup, timestamp;
-                      for (i in r) {
-                          r[i].reverse();
-                          timestampGroup = gDatumTimestamp[i];
-                          if (!timestampGroup) {
-                            continue;
-                          }
-                          for (j in r[i]) {
-                              timestamp = r[i][j][0];
-                              if (timestampGroup[timestamp]) {
-                                  continue;
-                              }
-                              timestampGroup[timestamp] = true;
-
-                              gMetricsDatum[i].push({x: timestamp, y: r[i][j][1]});
-                          }
-                          for (k = gMetricsDatum[i].length - POINTS_LENGTH; 0 < k; --k) {
-                              gMetricsDatum[i].shift();
-                          }
-                      }
-                      updateGraph('#usages_cpu', [
-                          {keyName: 'used_cpu_user', keyDisp: '用户态', color: '#0c0'},
-                          {keyName: 'used_cpu_sys', keyDisp: '内核态', color: 'navy'}
-                      ], function(y) {return y;}, 'CPU (ms)');
-                      updateGraph('#usages_mem', [
-                          {keyName: 'used_memory_rss', keyDisp: 'RSS', color: 'navy'}
-                      ], function(y) {return y / 1048576;}, '内存 (MB)');
-                      updateGraph('#connections', [
-                          {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'}
-                      ], function(y) {return y;}, '连接');
-                      updateGraph('#keys', [
-                          {keyName: 'expired_keys', keyDisp: 'Expired keys', color: '#880'},
-                          {keyName: 'evicted_keys', keyDisp: 'Evicted keys', color: '#088'},
-                          {keyName: 'keyspace_hits', keyDisp: 'Keyspace hits', color: '#808'},
-                          {keyName: 'keyspace_misses', keyDisp: 'Keyspace misses', color: '#444'}
-                      ], function(y) {return y;}, '存储');
-                      setTimeout(function() {updateCharts(1);}, POLL_INTERVAL);
-                  },
-                  error: function(r) {
-                      console.log(r);
-                  }
-              });
-          }(POINTS_LENGTH);
-      }();
-    </script>
 </div>
+<script>
+statistics({
+    used_cpu_user: [],
+    used_cpu_sys: [],
+
+    used_memory_rss: [],
+
+    connected_clients: [],
+
+    evicted_keys: [],
+    expired_keys: [],
+    keyspace_hits: [],
+    keyspace_misses: []
+}, '/stats/fetch', {{ host|tojson }}, {{ port|tojson }}, [{
+    selector: '#usages_cpu',
+    fields: [
+        {keyName: 'used_cpu_user', keyDisp: '用户态', color: '#0c0'},
+        {keyName: 'used_cpu_sys', keyDisp: '内核态', color: 'navy'}
+    ],
+    yMapF: function(y) {return y;},
+    title: 'CPU (ms)'
+}, {
+    selector: '#usages_mem',
+    fields: [
+        {keyName: 'used_memory_rss', keyDisp: 'RSS', color: 'navy'}
+    ],
+    yMapF: function(y) {return y / 1048576;},
+    title: '内存 (MB)'
+}, {
+    selector: '#connections',
+    fields: [
+        {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'}
+    ],
+    yMapF: function(y) {return y;},
+    title: '连接'
+}, {
+    selector: '#keys',
+    fields: [
+        {keyName: 'expired_keys', keyDisp: 'Expired keys', color: '#880'},
+        {keyName: 'evicted_keys', keyDisp: 'Evicted keys', color: '#088'},
+        {keyName: 'keyspace_hits', keyDisp: 'Keyspace hits', color: '#808'},
+        {keyName: 'keyspace_misses', keyDisp: 'Keyspace misses', color: '#444'}
+    ],
+    yMapF: function(y) {return y;},
+    title: '存储'
+}]);
+</script>
 {% endblock %}
