@@ -29,7 +29,7 @@ def init_handlers():
             raise ValueError('Invalid hostname')
         port = int(request.args['port'])
         limit = min(int(request.args['limit']), 1000)
-        result = dict()
+        result = {}
 
         for field in PROXY_FIELDS:
             q = stats.db.client.query(
@@ -46,7 +46,7 @@ def init_handlers():
             raise ValueError('Invalid hostname')
         port = int(request.args['port'])
         limit = min(int(request.args['limit']), 1000)
-        result = dict()
+        result = {}
 
         for field in RES_FIELDS:
             q = stats.db.client.query(
