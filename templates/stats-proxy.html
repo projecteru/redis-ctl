@@ -1,0 +1,31 @@
+{% extends './stats-base.html' %}
+{% block title %}代理状态历史{% endblock %}
+
+{% block body %}
+<a href='/'>← 回到首页</a>
+<hr>
+<div>
+    <div><p>内存状况</p><svg id='usages_mem'></svg></div>
+    <div><p>连接</p><svg id='connections'></svg></div>
+</div>
+<script>
+statistics({
+    mem_buffer_alloc: [],
+    connected_clients: [],
+}, '/stats/fetchproxy', {{ host|tojson }}, {{ port|tojson }}, [{
+    selector: '#usages_mem',
+    fields: [
+        {keyName: 'mem_buffer_alloc', keyDisp: '缓冲区', color: 'navy'}
+    ],
+    yMapF: function(y) {return y / 1024;},
+    title: '内存 (KB)'
+}, {
+    selector: '#connections',
+    fields: [
+        {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'}
+    ],
+    yMapF: function(y) {return y;},
+    title: '连接'
+}]);
+</script>
+{% endblock %}

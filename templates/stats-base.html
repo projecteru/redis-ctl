@@ -1,0 +1,101 @@
+{% extends './base.html' %}
+
+{% block head %}
+<link href='/static/lib/css/d3/nv.d3.css' rel='stylesheet' type='text/css'>
+<script src='/static/lib/js/d3/d3.v3.js'></script>
+<script src='/static/lib/js/d3/nv.d3.js'></script>
+<script src='/static/lib/js/d3/tooltip.js'></script>
+<script src='/static/lib/js/d3/utils.js'></script>
+<script src='/static/lib/js/d3/interactiveLayer.js'></script>
+<script src='/static/lib/js/d3/legend.js'></script>
+<script src='/static/lib/js/d3/axis.js'></script>
+<script src='/static/lib/js/d3/scatter.js'></script>
+<script src='/static/lib/js/d3/line.js'></script>
+<script src='/static/lib/js/d3/lineChart.js'></script>
+<style>
+  svg {min-height: 400px; min-width: 640px}
+</style>
+
+<script>
+function statistics(gMetricsDatum, uri, host, port, fields) {
+    var POINTS_LENGTH = 1000;
+    var POLL_INTERVAL = 120 * 1000;
+    var gDatumTimestamp = {};
+    for (var k in gMetricsDatum) {
+        gDatumTimestamp[k] = {};
+    }
+    -function updateCharts(limit) {
+        function updateGraph(selector, graphKeys, yMapF, yLabel) {
+            nv.addGraph(function() {
+              var chart = nv.models.lineChart().options({
+                  margin: {left: 100, bottom: 100},
+                  padding: {left: 20, right: 20},
+                  x: function(d, i) {return i},
+                  showXAxis: true,
+                  showYAxis: true,
+                  transitionDuration: 25
+              });
+
+              chart.xAxis.axisLabel("Time").tickFormat(function(x) {
+                  var t = new Date(gMetricsDatum[graphKeys[0].keyName][x].x * 1000);
+                  return t.toTimeString().slice(0, 8);
+              });
+
+              chart.yAxis.axisLabel(yLabel).tickFormat(d3.format(',.2f'));
+
+              var datum = graphKeys.map(function(e) {
+                  return {
+                      values: gMetricsDatum[e.keyName].map(function (e) {return {x: e.x * 1000, y: yMapF(e.y)};}),
+                      key: e.keyDisp,
+                      color: e.color
+                  }
+              })
+              d3.select(selector).datum(datum).call(chart);
+              nv.utils.windowResize(chart.update);
+              return chart;
+            });
+        }
+
+        $.ajax({
+            url: uri,
+            type: 'GET',
+            data: {
+                host: host,
+                port: port,
+                limit: limit
+            },
+            success: function(r) {
+                var i, j, k, timestampGroup, timestamp;
+                for (i in r) {
+                    r[i].reverse();
+                    timestampGroup = gDatumTimestamp[i];
+                    if (!timestampGroup) {
+                      continue;
+                    }
+                    for (j in r[i]) {
+                        timestamp = r[i][j][0];
+                        if (timestampGroup[timestamp]) {
+                            continue;
+                        }
+                        timestampGroup[timestamp] = true;
+
+                        gMetricsDatum[i].push({x: timestamp, y: r[i][j][1]});
+                    }
+                    for (k = gMetricsDatum[i].length - POINTS_LENGTH; 0 < k; --k) {
+                        gMetricsDatum[i].shift();
+                    }
+                }
+                for (i in fields) {
+                    var f = fields[i];
+                    updateGraph(f.selector, f.fields, f.yMapF, f.title);
+                }
+                setTimeout(function() {updateCharts(1);}, POLL_INTERVAL);
+            },
+            error: function(r) {
+                console.log(r);
+            }
+        });
+    }(POINTS_LENGTH);
+};
+</script>
+{% endblock %}
