@@ -98,7 +98,7 @@ class Request(object):
             return {k: unicode(strip_irregular_space(v[0]), 'utf-8')
                     for k, v in parse_qs(self.post_body).iteritems()}
         except (ValueError, TypeError, AttributeError, LookupError):
-            return dict()
+            return {}
 
     @lazyprop
     def idkey(self):

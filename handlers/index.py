@@ -33,7 +33,7 @@ def index(request):
 
     node_list = []
     for n in nodes:
-        detail = node_details.get((n[nm.COL_HOST], n[nm.COL_PORT]), dict())
+        detail = node_details.get((n[nm.COL_HOST], n[nm.COL_PORT]), {})
         node = {
             'node_id': detail.get('node_id'),
             'host': n[nm.COL_HOST],
