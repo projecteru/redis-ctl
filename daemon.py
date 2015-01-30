@@ -63,8 +63,8 @@ def _emit_data(json_body):
 
 
 def _send_to_influxdb(node):
-    def cpu_delta(now, pre):
-        return float(now - pre) / INTERVAL
+    def cpu_delta(now, pre, t):
+        return float(now - pre) / (time.time() - t)
 
     name = '%s:%s' % (node['host'], node['port'])
     points = [
@@ -77,12 +77,13 @@ def _send_to_influxdb(node):
     ]
     cpu = PRECPU.get(name)
     used_cpu_sys = cpu_delta(node['cpu'][COLUMNS['used_cpu_sys']],
-                             cpu['used_cpu_sys']) if cpu else 0
+                             cpu['used_cpu_sys'], cpu['__time__']) if cpu else 0
     used_cpu_user = cpu_delta(node['cpu'][COLUMNS['used_cpu_user']],
-                              cpu['used_cpu_user']) if cpu else 0
+                              cpu['used_cpu_user'], cpu['__time__']) if cpu else 0
     PRECPU[name] = {
         'used_cpu_sys': node['cpu'][COLUMNS['used_cpu_sys']],
         'used_cpu_user': node['cpu'][COLUMNS['used_cpu_user']],
+        '__time__': time.time(),
     }
     points.append(used_cpu_sys)
     points.append(used_cpu_user)
