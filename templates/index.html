@@ -20,6 +20,7 @@ th {
 
 .cluster-ceiling {
     border-top: 1px solid;
+    text-align: left;
 }
 
 .cluster-footer {
@@ -90,7 +91,18 @@ th {
         {% for cluster in clusters.itervalues() if cluster.nodes %}
         <tr>
             <td rowspan='{{ cluster.nodes|length + 1 }}' class='cluster-filling'></td>
-            <td colspan='5' class='cluster-ceiling'></td>
+            <td colspan='5' class='cluster-ceiling'>
+                描述信息: {{ cluster.descr|e or '<i>没有描述</i>' }}
+                <button class='btn btn-primary' style='display: inline-block; float: right' onclick='launchClusterSetting({{ cluster|tojson }})'>设定</button>
+                {% for proxy in cluster.proxies %}
+                    <br>
+                    代理: {{ proxy.host }}:{{ proxy.port }}
+                    <span class='{{ 'ok' if proxy.stat else 'err' }}'>
+                        {{ 'OK' if proxy.stat else 'ERROR' }}
+                    </span>
+                    <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
+                {% endfor %}
+            </td>
         </tr>
             {% for node in cluster.nodes %}
             <tr {% if node.detail %}id='node-c-{{ node.node_id|e }}'{% endif %}>
@@ -129,6 +141,73 @@ th {
         {% endfor %}
     </tbody>
 </table>
+
+<div id='cluster-setting-panel' style='display: none'>
+    <h1 style='float: left; margin-left: 6px'>集群设定</h1>
+    <div style='float: right'><button id='cluster-setting-quit' class='btn btn-danger'>X</button></div>
+    <hr style='clear: both'>
+    <table>
+        <tr>
+            <td>集群 ID</td>
+            <td colspan='2' id='csp-cluster-id'></td>
+        </tr>
+        <tr>
+            <td colspan='2'>集群描述</td>
+            <td><input id='csp-cluster-descr'></td>
+        </tr>
+        <tr>
+            <td rowspan='2'>集群代理</td>
+            <td>地址</td>
+            <td><input id='csp-cluster-proxy-host'></td>
+        </tr>
+        <tr>
+            <td>端口</td>
+            <td><input id='csp-cluster-proxy-port'></td>
+        </tr>
+    </table>
+    <button id='csp-do-setting' class='btn btn-primary'>确定</button><span id='csp-setting-info'></span>
+</div>
+
+<script>
+$('#csp-do-setting').click(function() {
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('请稍候');
+    $.ajax({
+        url: '/cluster/set_info',
+        type: 'POST',
+        data: {
+            cluster_id: btn.data('cluster_id'),
+            descr: $('#csp-cluster-descr').val(),
+            proxy_host: $('#csp-cluster-proxy-host').val(),
+            proxy_port: $('#csp-cluster-proxy-port').val()
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(e) {
+            $('#csp-setting-info').text('失败: ' + e.responseText);
+        }
+    });
+});
+
+function launchClusterSetting(cluster) {
+    var panel = $('#cluster-setting-panel').detach();
+    var ovl = createOverlapPanel();
+    ovl.append(panel.show());
+    $('#cluster-setting-quit').unbind('click').click(function() {
+        panel.detach();
+        $(document.body).append(panel.hide());
+        ovl.quit();
+    });
+
+    $('#csp-do-setting').data('cluster_id', cluster.id);
+    $('#csp-cluster-descr').val(cluster.descr);
+    if (cluster.proxies.length > 0) {
+        $('#csp-cluster-proxy-host').val(cluster.proxies[0].host);
+        $('#csp-cluster-proxy-port').val(cluster.proxies[0].port);
+    }
+}
+</script>
 
 <hr>
 
@@ -238,7 +317,7 @@ th {
                 <td class='master'>-</td>
                 {% endif %}
             {% else %}
-            <td class='err'>E</td>
+            <td class='err'>ERROR</td>
             <td class='err'>-</td>
             <td class='err'>-</td>
             <td class='err'>-</td>
@@ -248,7 +327,7 @@ th {
             <td class='err'>-</td>
             {% endif %}
             <td>
-            <a class='btn btn-primary' data-host='{{ node.host|e }}' data-port='{{ node.port }}' onclick='launchClusterPanel({{ node|tojson }})'>集群控制面板</a>
+            <a class='btn btn-primary' data-host='{{ node.host|e }}' data-port='{{ node.port }}' onclick='launchClusterPanel({{ node|tojson }})'>节点控制面板</a>
             {% if node.cluster_id is none %}
                 <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
             {% endif %}
@@ -326,7 +405,7 @@ $('.fix-marker').click(function() {
         <td>
             最大内存 (byte)
             <br>
-            <sup>可写为 1024 / 16M / 1G</sup>
+            <sup>可写为 1024 / 16m / 1G</sup>
         </td>
         <td>
             <input id='add-nodes-mem'>
@@ -691,8 +770,7 @@ $('.toggle-next').click(function() {$(this).next().toggle();});
             <th>角色</th>
             <th style='text-align: left'>设置最大内存 <button id='cad-set-same-mem'>全部与第一行一致</button></th>
         </thead>
-        <tbody id='cad-nodes'>
-        </tbody>
+        <tbody id='cad-nodes'></tbody>
     </table>
     <button id='cad-do-add-nodes' class='btn btn-primary'>注册这些节点</button><span id='cad-add-node-info'></span>
 

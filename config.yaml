@@ -9,7 +9,7 @@ db:
    mysql: "scripts/mysql.sql"
 log_level: info
 debug: 0
-interval: 2
+interval: 10
 mysql:
   host: 127.0.0.1
   port: 3306

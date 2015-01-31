@@ -2,10 +2,9 @@ import unittest
 import redistrib.command as comm
 
 from test_utils import testdb
-import redisctl.db
-import redisctl.recover
-from redisctl.instance_manage import COL_HOST, COL_PORT, COL_STAT
-from redisctl.instance_manage import STATUS_BROKEN
+import models.db
+import models.recover
+from models.node import COL_HOST, COL_PORT, COL_STAT, STATUS_BROKEN
 
 
 def balance_move_1_slot(nodes, _):
@@ -25,7 +24,7 @@ class Recover(unittest.TestCase):
                           None, balance_move_1_slot)
         comm.start_cluster('127.0.0.1', 7102)
 
-        with redisctl.db.update() as client:
+        with models.db.update() as client:
             client.execute('''INSERT INTO `cluster` (`description`)
                 VALUES (%s),(%s)''', ('aki', 'blaze'))
             aki_id = client.lastrowid
@@ -39,9 +38,9 @@ class Recover(unittest.TestCase):
                 ('127.0.0.1', 7100, max_mem, aki_id,
                  '127.0.0.1', 7101, max_mem, aki_id,
                  '127.0.0.1', 7102, max_mem))
-        redisctl.recover.recover()
+        models.recover.recover()
 
-        with redisctl.db.query() as client:
+        with models.db.query() as client:
             client.execute('''SELECT `id` FROM `cluster`
                 WHERE `description`=%s''', ('aki',))
             r = client.fetchone()
@@ -82,7 +81,7 @@ class Recover(unittest.TestCase):
         comm.shutdown_cluster('127.0.0.1', 7102)
 
     def test_instance_missing(self):
-        with redisctl.db.update() as client:
+        with models.db.update() as client:
             client.execute('''INSERT INTO `cluster` (`description`)
                 VALUES (%s),(%s)''', ('aki', 'blaze'))
             aki_id = client.lastrowid
@@ -96,8 +95,8 @@ class Recover(unittest.TestCase):
                 ('127.0.0.1', 6100, max_mem, aki_id,
                  '127.0.0.1', 6101, max_mem, aki_id,
                  '127.0.0.1', 7102, max_mem))
-        redisctl.recover.recover()
-        with redisctl.db.query() as client:
+        models.recover.recover()
+        with models.db.query() as client:
             client.execute('''SELECT `id` FROM `cluster`
                 WHERE `description`=%s''', ('aki',))
             r = client.fetchone()

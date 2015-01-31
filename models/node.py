@@ -5,7 +5,7 @@ from redistrib.exceptions import RedisStatusError
 
 import db
 import errors
-import redisctl.cluster as clu
+import models.cluster as clu
 
 COL_ID = 0
 COL_HOST = 1
@@ -55,7 +55,7 @@ def _remove(client, instance_id):
 
 def _pick_by_cluster(client, cluster_id):
     client.execute('''SELECT * FROM `redis_node`
-        WHERE `assignee_id`=%s LIMIT 1''', cluster_id)
+        WHERE `assignee_id`=%s LIMIT 1''', (cluster_id,))
     return client.fetchone()
 
 
@@ -119,7 +119,7 @@ def _free_instance(instance_id, cluster_id):
 
 def _get_id_from_app_or_none(client, app_name):
     client.execute('''SELECT `id` FROM `cluster`
-        WHERE `app_name`=%s LIMIT 1''', app_name)
+        WHERE `app_name`=%s LIMIT 1''', (app_name,))
     r = client.fetchone()
     return None if r is None else r[0]
 
