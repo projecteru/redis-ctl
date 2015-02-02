@@ -180,7 +180,6 @@ def run():
         for node in nodes:
             try:
                 node.update(_info_node(**node))
-                _send_to_influxdb(node)
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               node['host'], node['port'])
@@ -188,12 +187,12 @@ def run():
                 node['stat'] = False
                 _set_sla(node, 0)
             else:
-                _set_sla(node)
+                _set_sla(node, 1.0)
+                _send_to_influxdb(node)
 
         for p in proxies:
             try:
                 p.update(_info_proxy(**p))
-                _send_proxy_to_influxdb(p)
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               p['host'], p['port'])
@@ -201,7 +200,8 @@ def run():
                 p['stat'] = False
                 _set_sla(p, 0)
             else:
-                _set_sla(p)
+                _set_sla(p, 1.0)
+                _send_proxy_to_influxdb(p)
 
         logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
         try:

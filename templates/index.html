@@ -85,6 +85,9 @@ th {
             <th class='slave'>
                 主 ID (从)
             </th>
+            <th>
+                SLA
+            </th>
         </tr>
     </thead>
     <tbody>
@@ -135,6 +138,7 @@ th {
                 </td>
                 <td class='master'>-</td>
                 {% endif %}
+                <td>{{ node.detail.get('sla', 0) * 100 }}%</td>
             </tr>
             {% endfor %}
         <tr class='cluster-footer'></tr>
