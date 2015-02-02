@@ -167,6 +167,10 @@ def _info_proxy(host, port):
     finally:
         t.close()
 
+def _set_sla(s, step=1.0):
+    s['count'] = s.get('count', 0) + 1
+    s['sla'] = (s.get('sla', 0) + step) / s['count']
+
 
 def run():
     while True:
@@ -182,6 +186,10 @@ def run():
                               node['host'], node['port'])
                 logging.exception(e)
                 node['stat'] = False
+                _set_sla(node, 0)
+            else:
+                _set_sla(node)
+
         for p in proxies:
             try:
                 p.update(_info_proxy(**p))
@@ -191,6 +199,10 @@ def run():
                               p['host'], p['port'])
                 logging.exception(e)
                 p['stat'] = False
+                _set_sla(p, 0)
+            else:
+                _set_sla(p)
+
         logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
         try:
             file_ipc.write(nodes, proxies)
