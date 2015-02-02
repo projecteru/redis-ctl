@@ -94,7 +94,7 @@ def _send_to_influxdb(node):
 
     try:
         _emit_data(json_body)
-    except InfluxDBClientError, e:
+    except (ReplyError, SocketError, InfluxDBClientError, StandardError), e:
         logging.exception(e)
 
 
@@ -112,7 +112,7 @@ def _send_proxy_to_influxdb(proxy):
 
     try:
         _emit_data(json_body)
-    except InfluxDBClientError, e:
+    except (ReplyError, SocketError, InfluxDBClientError, StandardError), e:
         logging.exception(e)
 
 
@@ -175,21 +175,21 @@ def run():
         for node in nodes:
             try:
                 node.update(_info_node(**node))
-                _send_to_influxdb(node)
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               node['host'], node['port'])
                 logging.exception(e)
                 node['stat'] = False
+        _send_to_influxdb(node)
         for p in proxies:
             try:
                 p.update(_info_proxy(**p))
-                _send_proxy_to_influxdb(p)
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               p['host'], p['port'])
                 logging.exception(e)
                 p['stat'] = False
+        _send_proxy_to_influxdb(p)
         logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
         try:
             file_ipc.write(nodes, proxies)
