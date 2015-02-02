@@ -63,8 +63,8 @@ def _emit_data(json_body):
 
 
 def _send_to_influxdb(node):
-    def cpu_delta(now, pre):
-        return float(now - pre) / INTERVAL
+    def cpu_delta(now, pre, t):
+        return float(now - pre) / (time.time() - t)
 
     name = '%s:%s' % (node['host'], node['port'])
     points = [
@@ -77,12 +77,13 @@ def _send_to_influxdb(node):
     ]
     cpu = PRECPU.get(name)
     used_cpu_sys = cpu_delta(node['cpu'][COLUMNS['used_cpu_sys']],
-                             cpu['used_cpu_sys']) if cpu else 0
+                             cpu['used_cpu_sys'], cpu['__time__']) if cpu else 0
     used_cpu_user = cpu_delta(node['cpu'][COLUMNS['used_cpu_user']],
-                              cpu['used_cpu_user']) if cpu else 0
+                              cpu['used_cpu_user'], cpu['__time__']) if cpu else 0
     PRECPU[name] = {
         'used_cpu_sys': node['cpu'][COLUMNS['used_cpu_sys']],
         'used_cpu_user': node['cpu'][COLUMNS['used_cpu_user']],
+        '__time__': time.time(),
     }
     points.append(used_cpu_sys)
     points.append(used_cpu_user)
@@ -166,6 +167,16 @@ def _info_proxy(host, port):
     finally:
         t.close()
 
+PRE_SLA = {}
+
+
+def _set_sla(s, step=1.0):
+    pre_sla = PRE_SLA.get((s['host'], s['port']), {'count': 0, 'sla': 0.0})
+    pre_sla['count'] += 1
+    pre_sla['sla'] += step
+    PRE_SLA[(s['host'], s['port'])] = pre_sla
+    s['sla'] = pre_sla['sla'] / pre_sla['count']
+
 
 def run():
     while True:
@@ -180,7 +191,11 @@ def run():
                               node['host'], node['port'])
                 logging.exception(e)
                 node['stat'] = False
-        _send_to_influxdb(node)
+                _set_sla(node, 0)
+            else:
+                _set_sla(node, 1.0)
+                _send_to_influxdb(node)
+
         for p in proxies:
             try:
                 p.update(_info_proxy(**p))
@@ -189,7 +204,11 @@ def run():
                               p['host'], p['port'])
                 logging.exception(e)
                 p['stat'] = False
-        _send_proxy_to_influxdb(p)
+                _set_sla(p, 0)
+            else:
+                _set_sla(p, 1.0)
+                _send_proxy_to_influxdb(p)
+
         logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
         try:
             file_ipc.write(nodes, proxies)
