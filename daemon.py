@@ -95,7 +95,7 @@ def _send_to_influxdb(node):
 
     try:
         _emit_data(json_body)
-    except InfluxDBClientError, e:
+    except (ReplyError, SocketError, InfluxDBClientError, StandardError), e:
         logging.exception(e)
 
 
@@ -113,7 +113,7 @@ def _send_proxy_to_influxdb(proxy):
 
     try:
         _emit_data(json_body)
-    except InfluxDBClientError, e:
+    except (ReplyError, SocketError, InfluxDBClientError, StandardError), e:
         logging.exception(e)
 
 
@@ -167,6 +167,16 @@ def _info_proxy(host, port):
     finally:
         t.close()
 
+PRE_SLA = {}
+
+
+def _set_sla(s, step=1.0):
+    pre_sla = PRE_SLA.get((s['host'], s['port']), {'count': 0, 'sla': 0.0})
+    pre_sla['count'] += 1
+    pre_sla['sla'] += step
+    PRE_SLA[(s['host'], s['port'])] = pre_sla
+    s['sla'] = pre_sla['sla'] / pre_sla['count']
+
 
 def run():
     while True:
@@ -176,21 +186,29 @@ def run():
         for node in nodes:
             try:
                 node.update(_info_node(**node))
-                _send_to_influxdb(node)
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               node['host'], node['port'])
                 logging.exception(e)
                 node['stat'] = False
+                _set_sla(node, 0)
+            else:
+                _set_sla(node, 1.0)
+                _send_to_influxdb(node)
+
         for p in proxies:
             try:
                 p.update(_info_proxy(**p))
-                _send_proxy_to_influxdb(p)
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               p['host'], p['port'])
                 logging.exception(e)
                 p['stat'] = False
+                _set_sla(p, 0)
+            else:
+                _set_sla(p, 1.0)
+                _send_proxy_to_influxdb(p)
+
         logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
         try:
             file_ipc.write(nodes, proxies)
