@@ -62,6 +62,9 @@ def quit_cluster(request):
         logging.exception(e)
         logging.info('Remove instance from cluster on exception')
         nm.free_instance(host, port, cluster_id)
+    except hiredis.ProtocolError, e:
+        if 'not in a cluster' not in e.message:
+            raise
 
     with models.db.update() as c:
         models.cluster.remove_empty_cluster(c, cluster_id)
