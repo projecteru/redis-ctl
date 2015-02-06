@@ -1,4 +1,5 @@
 from socket import error as SocketError
+import hiredis
 import logging
 import redistrib.command
 
