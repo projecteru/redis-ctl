@@ -29,7 +29,7 @@ statistics({
         {keyName: 'used_cpu_user', keyDisp: '用户态', color: '#0c0'},
         {keyName: 'used_cpu_sys', keyDisp: '内核态', color: 'navy'}
     ],
-    yMapF: function(y) {return y;},
+    yMapF: function(y) {return y * 100;},
     title: 'CPU (%)'
 }, {
     selector: '#usages_mem',

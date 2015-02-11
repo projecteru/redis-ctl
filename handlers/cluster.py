@@ -1,4 +1,5 @@
 from socket import error as SocketError
+import hiredis
 import logging
 import redistrib.command
 
@@ -50,6 +51,8 @@ def join_cluster(request):
                        int(request.form['cluster_id']),
                        redistrib.command.join_cluster)
 
+NOT_IN_CLUSTER_MESSAGE = 'not in a cluster'
+
 
 @base.post_async('/cluster/quit')
 def quit_cluster(request):
@@ -61,6 +64,10 @@ def quit_cluster(request):
     except SocketError, e:
         logging.exception(e)
         logging.info('Remove instance from cluster on exception')
+        nm.free_instance(host, port, cluster_id)
+    except hiredis.ProtocolError, e:
+        if NOT_IN_CLUSTER_MESSAGE not in e.message:
+            raise
         nm.free_instance(host, port, cluster_id)
 
     with models.db.update() as c:
