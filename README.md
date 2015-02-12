@@ -13,6 +13,7 @@ Edit the copy, change
 * `debug`: whether the server runs under the debug mode
 * `mysql` section: MySQL connection arguments
 * `influxdb` section: InfluxDB connection arguments
+* `algalon` section: Algalon server arguments
 
 Then run
 

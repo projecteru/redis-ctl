@@ -106,6 +106,12 @@ def distribute_free_to(client, instance_id, cluster_id):
         (cluster_id, instance_id))
 
 
+def contained_in_cluster(client, cluster_id):
+    client.execute('''SELECT * FROM `redis_node` WHERE `assignee_id`=%s''',
+                   (cluster_id,))
+    return client.fetchall()
+
+
 def _distribute_to(instance_id, cluster_id):
     with db.update() as client:
         distribute_free_to(client, instance_id, cluster_id)

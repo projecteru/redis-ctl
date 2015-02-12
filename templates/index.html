@@ -23,16 +23,6 @@ th {
     text-align: left;
 }
 
-.cluster-footer {
-    height: 16px;
-}
-
-.cluster-filling {
-    width: 4px;
-    height: 4px;
-    background-color: navy;
-}
-
 .selected {
     background-color: #fc8;
 }
@@ -64,12 +54,25 @@ th {
 
 {% block body %}
 <h1>集群信息</h1>
-<table style='text-align: center'>
+{% for cluster in clusters.itervalues() if cluster.nodes %}
+<table style='text-align: center; margin-bottom: 16px'>
     <thead>
         <tr>
-            <th>
-                .
+            <th colspan='6' class='cluster-ceiling'>
+                描述信息: {{ cluster.descr|e or '<i>没有描述</i>' }}
+                <button class='btn btn-primary' style='display: inline-block; float: right' onclick='launchClusterSetting({{ cluster|tojson }})'>设定</button>
+                {% for proxy in cluster.proxies %}
+                    <br>
+                    代理: {{ proxy.host }}:{{ proxy.port }}
+                    <span class='{{ 'ok' if proxy.stat else 'err' }}'>
+                        {{ 'OK' if proxy.stat else 'ERROR' }}
+                    </span>
+                    <span>SLA: {{ (proxy.sla * 100)|round(2) }}%</span>
+                    <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
+                {% endfor %}
             </th>
+        </tr>
+        <tr>
             <th>
                 节点 ID
             </th>
@@ -91,61 +94,43 @@ th {
         </tr>
     </thead>
     <tbody>
-        {% for cluster in clusters.itervalues() if cluster.nodes %}
-        <tr>
-            <td rowspan='{{ cluster.nodes|length + 1 }}' class='cluster-filling'></td>
-            <td colspan='5' class='cluster-ceiling'>
-                描述信息: {{ cluster.descr|e or '<i>没有描述</i>' }}
-                <button class='btn btn-primary' style='display: inline-block; float: right' onclick='launchClusterSetting({{ cluster|tojson }})'>设定</button>
-                {% for proxy in cluster.proxies %}
-                    <br>
-                    代理: {{ proxy.host }}:{{ proxy.port }}
-                    <span class='{{ 'ok' if proxy.stat else 'err' }}'>
-                        {{ 'OK' if proxy.stat else 'ERROR' }}
-                    </span>
-                    <span>SLA: {{ (proxy.sla * 100)|round(2) }}%</span>
-                    <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
-                {% endfor %}
+        {% for node in cluster.nodes %}
+        <tr {% if node.detail %}id='node-c-{{ node.node_id|e }}'{% endif %}>
+            <td>
+                {{ node.node_id|e }}
             </td>
-        </tr>
-            {% for node in cluster.nodes %}
-            <tr {% if node.detail %}id='node-c-{{ node.node_id|e }}'{% endif %}>
-                <td>
-                    {{ node.node_id|e }}
-                </td>
-                <td>
-                    <a href='#node-i-{{ node.host|e }}-{{ node.port }}'>
-                        {{ node.host|e }}:{{ node.port }}
-                    </a>
-                </td>
-                {% if node.detail.slave %}
-                <td class='slave'>
-                    从
-                </td>
-                <td class='slave'>-</td>
-                <td class='slave'>
-                    <a href='#node-c-{{ node.detail.master_id|e }}'>{{ node.detail.master_id|e }}</a>
-                </td>
+            <td>
+                <a href='#node-i-{{ node.host|e }}-{{ node.port }}'>
+                    {{ node.host|e }}:{{ node.port }}
+                </a>
+            </td>
+            {% if node.detail.slave %}
+            <td class='slave'>
+                从
+            </td>
+            <td class='slave'>-</td>
+            <td class='slave'>
+                <a href='#node-c-{{ node.detail.master_id|e }}'>{{ node.detail.master_id|e }}</a>
+            </td>
+            {% else %}
+            <td class='master'>
+                主
+            </td>
+            <td class='master'>
+                {% if node.detail %}
+                {{ node.detail.slots|length }}
                 {% else %}
-                <td class='master'>
-                    主
-                </td>
-                <td class='master'>
-                    {% if node.detail %}
-                    {{ node.detail.slots|length }}
-                    {% else %}
-                    等待轮询
-                    {% endif %}
-                </td>
-                <td class='master'>-</td>
+                等待轮询
                 {% endif %}
-                <td>{{ (node.detail.get('sla', 0) * 100)|round(2) }}%</td>
-            </tr>
-            {% endfor %}
-        <tr class='cluster-footer'></tr>
+            </td>
+            <td class='master'>-</td>
+            {% endif %}
+            <td>{{ (node.detail.get('sla', 0) * 100)|round(2) }}%</td>
+        </tr>
         {% endfor %}
     </tbody>
 </table>
+{% endfor %}
 
 <div id='cluster-setting-panel' style='display: none'>
     <h1 style='float: left; margin-left: 6px'>集群设定</h1>
@@ -171,6 +156,11 @@ th {
         </tr>
     </table>
     <button id='csp-do-setting' class='btn btn-primary'>确定</button><span id='csp-setting-info'></span>
+    <hr>
+    <div>
+        当槽位正在迁移时发生意外问题, 可能导致集群无法正常工作, 点击下面按钮以修复
+    </div>
+    <button id='csp-do-recover' class='btn btn-primary'>修复槽位迁移</button><span id='csp-recover-info'></span>
 </div>
 
 <script>
@@ -195,6 +185,24 @@ $('#csp-do-setting').click(function() {
     });
 });
 
+$('#csp-do-recover').click(function() {
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('请稍候');
+    $.ajax({
+        url: '/cluster/recover_migrate',
+        type: 'POST',
+        data: {
+            cluster_id: btn.data('cluster_id')
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(e) {
+            $('#csp-recover-info').text('失败: ' + e.responseText);
+        }
+    });
+});
+
 function launchClusterSetting(cluster) {
     var panel = $('#cluster-setting-panel').detach();
     var ovl = createOverlapPanel();
@@ -206,6 +214,7 @@ function launchClusterSetting(cluster) {
     });
 
     $('#csp-do-setting').data('cluster_id', cluster.id);
+    $('#csp-do-recover').data('cluster_id', cluster.id);
     $('#csp-cluster-descr').val(cluster.descr);
     if (cluster.proxies.length > 0) {
         $('#csp-cluster-proxy-host').val(cluster.proxies[0].host);
@@ -545,6 +554,12 @@ $('#add-nodes').click(function() {
             <button class='btn toggle-next'>退出集群</button>
             <button class='btn btn-primary' id='ncp-quit-cluster'>确认</button>
         </div>
+        <div id='ncp-migrate-slots-out'>
+            迁出槽位
+            数量<input id='ncp-migrate-slots-count'>
+            至<select id='ncp-migrate-dst-select'></select>
+            <button class='btn btn-primary' id='ncp-migrate'>确认</button>
+        </div>
     </div>
 
     <div id='ncp-stand-by'>
@@ -612,6 +627,16 @@ function launchClusterPanel(node) {
     }
 }
 
+function fillMasterNodesTo(cluster, select, exclude) {
+    exclude = exclude || function(e) { return false; };
+    select.html('').append(cluster.nodes.map(function(e) {
+        if (e.detail.slave || exclude(e)) {
+            return '';
+        }
+        return $('<option>').text([e.host, ':', e.port, ' - ', e.node_id].join('')).data({host: e.host, port: e.port});
+    }));
+}
+
 function showServingPanel(node) {
     $('#ncp-stand-by').hide();
     $('#ncp-serving').show();
@@ -619,7 +644,48 @@ function showServingPanel(node) {
     $('#ncp-quit-cluster').data({host: node.host, port: node.port, cluster_id: node.cluster_id});
     $('#ncp-cluster-id').text(node.cluster_id);
     $('#ncp-slots').text(node.detail.slots ? node.detail.slots.length : '-');
+
+    $('#ncp-migrate-slots-out').hide();
+    if (node.detail.slots.length > 0) {
+        $('#ncp-migrate').data({slots: node.detail.slots, host: node.host, port: node.port});
+        $('#ncp-migrate-slots-out').show();
+        $('#ncp-migrate-slots-count').val('').attr('placeholder', '1-' + node.detail.slots.length);
+        fillMasterNodesTo(CLUSTERS[node.cluster_id], $('#ncp-migrate-dst-select'), function(e) {
+            return e.host === node.host && e.port === node.port;
+        });
+    }
 }
+
+$('#ncp-migrate').click(function() {
+    var btn = $(this);
+    var slots = btn.data('slots').slice(0, parseInt($('#ncp-migrate-slots-count').val()));
+    if (slots.length === 0) {
+        return;
+    }
+    var dst = $('#ncp-migrate-dst-select :selected');
+    if (!dst) {
+        return;
+    }
+
+    btn.attr('disabled', 'disabled').text('请稍候');
+    $.ajax({
+        url: '/cluster/migrate_slots',
+        type: 'POST',
+        data: {
+            src_host: btn.data('host'),
+            src_port: btn.data('port'),
+            dst_host: dst.data('host'),
+            dst_port: dst.data('port'),
+            slots: slots.join(',')
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(r) {
+            btn.parent().text('失败: ' + r.responseText);
+        }
+    });
+});
 
 function showStandbyPanel(node) {
     $('#ncp-stand-by').show();
@@ -646,12 +712,7 @@ $('#ncp-select-cluster').change(function() {
     if (!cluster) {
         return;
     }
-    $('#ncp-select-master').html('').append(cluster.nodes.map(function(e) {
-        if (e.detail.slave) {
-            return '';
-        }
-        return $('<option>').text([e.host, ':', e.port, ' - ', e.node_id].join('')).data({host: e.host, port: e.port});
-    }));
+    fillMasterNodesTo(cluster, $('#ncp-select-master'));
 });
 
 $('#ncp-quit-cluster').click(function() {

@@ -45,6 +45,39 @@ def set_cluster_info(request):
         models.proxy.attach_to_cluster(c, cluster_id, host, port)
 
 
+@base.post_async('/cluster/recover_migrate')
+def recover_migrate_status(request):
+    cluster_id = int(request.form['cluster_id'])
+    logging.info('Start - recover cluster migrate #%d', cluster_id)
+    with models.db.query() as c:
+        for i in nm.contained_in_cluster(c, cluster_id):
+            try:
+                nm.lock_instance(i[nm.COL_ID], cluster_id)
+                redistrib.command.fix_migrating(i[nm.COL_HOST], i[nm.COL_PORT])
+            finally:
+                nm.unlock_instance(i[nm.COL_ID])
+    logging.info('Done - recover cluster migrate #%d', cluster_id)
+
+
+@base.post_async('/cluster/migrate_slots')
+def migrate_slots(request):
+    src_host = request.form['src_host']
+    src_port = int(request.form['src_port'])
+    dst_host = request.form['dst_host']
+    dst_port = int(request.form['dst_port'])
+    slots = [int(s) for s in request.form['slots'].split(',')]
+    with models.db.query() as c:
+        i = nm.pick_by(c, src_host, src_port)
+    if i[nm.COL_CLUSTER_ID] is None:
+        raise ValueError('%s:%d not in cluster' % (src_host, src_port))
+    try:
+        nm.lock_instance(i[nm.COL_ID], i[nm.COL_CLUSTER_ID])
+        redistrib.command.migrate_slots(src_host, src_port, dst_host,
+                                        dst_port, slots)
+    finally:
+        nm.unlock_instance(i[nm.COL_ID])
+
+
 @base.post_async('/cluster/join')
 def join_cluster(request):
     nm.pick_and_expand(request.form['host'], int(request.form['port']),
