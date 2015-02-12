@@ -5,7 +5,8 @@ import stats.db
 
 PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
 
-RES_FIELDS = ['used_memory_rss', 'used_cpu_sys', 'used_cpu_user']
+RES_FIELDS = ['used_memory_rss']
+DERV_FIELDS = ['used_cpu_sys', 'used_cpu_user']
 INT_FIELDS = ['evicted_keys', 'expired_keys', 'keyspace_misses',
               'keyspace_hits', 'connected_clients']
 PROXY_FIELDS = ['connected_clients', 'mem_buffer_alloc']
@@ -57,6 +58,12 @@ def init_handlers():
         for field in INT_FIELDS:
             q = stats.db.client.query(
                 '''select max(%s) from "%s:%d" group by time(2m) limit %d'''
+                % (field, host, port, limit))
+            result[field] = q[0]['points']
+
+        for field in DERV_FIELDS:
+            q = stats.db.client.query(
+                'select derivative(%s) from "%s:%d" group by time(2m) limit %d'
                 % (field, host, port, limit))
             result[field] = q[0]['points']
 

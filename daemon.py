@@ -28,8 +28,6 @@ COLUMNS = OrderedDict([
     ('used_cpu_user', 'used_cpu_user'),
 ])
 
-PRECPU = {}
-
 
 def _info_detail(t):
     details = {}
@@ -74,19 +72,9 @@ def _send_to_influxdb(node):
         node['storage'][COLUMNS['evicted_keys']],
         node['storage'][COLUMNS['keyspace_hits']],
         node['storage'][COLUMNS['keyspace_misses']],
+        node['cpu'][COLUMNS['used_cpu_sys']],
+        node['cpu'][COLUMNS['used_cpu_user']],
     ]
-    cpu = PRECPU.get(name)
-    used_cpu_sys = cpu_delta(node['cpu'][COLUMNS['used_cpu_sys']],
-                             cpu['used_cpu_sys'], cpu['__time__']) if cpu else 0
-    used_cpu_user = cpu_delta(node['cpu'][COLUMNS['used_cpu_user']],
-                              cpu['used_cpu_user'], cpu['__time__']) if cpu else 0
-    PRECPU[name] = {
-        'used_cpu_sys': node['cpu'][COLUMNS['used_cpu_sys']],
-        'used_cpu_user': node['cpu'][COLUMNS['used_cpu_user']],
-        '__time__': time.time(),
-    }
-    points.append(used_cpu_sys)
-    points.append(used_cpu_user)
     json_body = [{
         'name': name,
         'columns': COLUMNS.keys(),
