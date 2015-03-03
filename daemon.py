@@ -1,12 +1,14 @@
 import sys
 import time
 import logging
+import traceback
 from collections import OrderedDict
 from socket import error as SocketError
 from hiredis import ReplyError
 from retrying import retry
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 from influxdb.client import InfluxDBClientError
+from algalon_cli import AlgalonClient
 
 import config
 import file_ipc
@@ -27,6 +29,8 @@ COLUMNS = OrderedDict([
     ('used_cpu_sys', 'used_cpu_sys'),
     ('used_cpu_user', 'used_cpu_user'),
 ])
+
+algalon_client = None
 
 
 def _info_detail(t):
@@ -85,6 +89,8 @@ def _send_to_influxdb(node):
         _emit_data(json_body)
     except (ReplyError, SocketError, InfluxDBClientError, StandardError), e:
         logging.exception(e)
+        if algalon_client is not None:
+            algalon_client.send_alarm(e.message, traceback.format_exc())
 
 
 def _send_proxy_to_influxdb(proxy):
@@ -103,6 +109,8 @@ def _send_proxy_to_influxdb(proxy):
         _emit_data(json_body)
     except (ReplyError, SocketError, InfluxDBClientError, StandardError), e:
         logging.exception(e)
+        if algalon_client is not None:
+            algalon_client.send_alarm(e.message, traceback.format_exc())
 
 
 @retry(stop_max_attempt_number=3, wait_fixed=200)
@@ -178,6 +186,11 @@ def run():
                 logging.error('Fail to retrieve info of %s:%d',
                               node['host'], node['port'])
                 logging.exception(e)
+                if algalon_client is not None:
+                    algalon_client.send_alarm(
+                        'Fail to retrieve info of {0}:{1}'.format(
+                            node['host'], node['port']),
+                        traceback.format_exc())
                 node['stat'] = False
                 _set_sla(node, 0)
             else:
@@ -191,6 +204,11 @@ def run():
                 logging.error('Fail to retrieve info of %s:%d',
                               p['host'], p['port'])
                 logging.exception(e)
+                if algalon_client is not None:
+                    algalon_client.send_alarm(
+                        'Fail to retrieve info of {0}:{1}'.format(
+                            p['host'], p['port']),
+                        traceback.format_exc())
                 p['stat'] = False
                 _set_sla(p, 0)
             else:
@@ -202,6 +220,8 @@ def run():
             file_ipc.write(nodes, proxies)
         except StandardError, e:
             logging.exception(e)
+            if algalon_client is not None:
+                algalon_client.send_alarm(e.message, traceback.format_exc())
 
         time.sleep(INTERVAL)
 
@@ -210,11 +230,14 @@ def main():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
     config.init_logging(conf)
     global INTERVAL, _send_to_influxdb
+    global algalon_client
     INTERVAL = int(conf.get('interval', INTERVAL))
     if 'influxdb' in conf:
         stats.db.init(**conf['influxdb'])
     else:
         _send_to_influxdb = lambda _: None
+    if 'algalon' in conf:
+        algalon_client = AlgalonClient(**conf['algalon'])
     run()
 
 if __name__ == '__main__':

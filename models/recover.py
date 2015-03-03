@@ -1,6 +1,5 @@
 import os
 import logging
-import hiredis
 import redistrib.command as comm
 from socket import error as SocketError
 from redistrib.clusternode import Talker, pack_command
@@ -25,12 +24,11 @@ def recover():
 
 
 def recover_by_addr(host, port):
-    t = None
+    t = Talker(host, port)
     try:
-        t = Talker(host, port)
         m = t.talk_raw(CMD_PING)
         if m.lower() != 'pong':
-            raise hiredis.ProtocolError('Expect pong but recv: %s' % m)
+            raise ValueError('Expect pong but recv: %s' % m)
         with db.query() as c:
             node = nm.pick_by(c, host, port)
             if node is None:

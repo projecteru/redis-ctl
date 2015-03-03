@@ -22,3 +22,6 @@ influxdb:
   username: root
   password: root
   db: redisctl
+algalon:
+  csrf_token: ""
+  dsn: ""
