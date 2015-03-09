@@ -12,8 +12,9 @@ def run_app(app, debug):
         return app.run(port=config.listen_port())
     from app import WrapperApp
     WrapperApp(app, {
-        'bind': '%s:%d' % ('0.0.0.0', config.listen_port()),
+        'bind': '0.0.0.0:%d' % config.listen_port(),
         'workers': 2,
+        'timeout': 86400,
     }).run()
 
 
