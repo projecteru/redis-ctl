@@ -1,6 +1,7 @@
 import logging
 import MySQLdb
 import hiredis
+from contextlib import contextmanager
 from redistrib.exceptions import RedisStatusError
 
 import db
@@ -151,16 +152,13 @@ def pick_and_launch(host, port, cluster_id, start_cluster):
     if instance[COL_CLUSTER_ID] is not None:
         raise errors.AppMutexError()
 
-    lock_instance(instance[COL_ID], cluster_id)
-
-    try:
-        start_cluster(instance[COL_HOST], instance[COL_PORT])
-        _distribute_to(instance[COL_ID], cluster_id)
-    except (RedisStatusError, hiredis.ProtocolError):
-        flag_instance(instance[COL_ID], STATUS_BROKEN)
-        raise
-    finally:
-        unlock_instance(instance[COL_ID])
+    with node_locker(instance[COL_ID], cluster_id):
+        try:
+            start_cluster(instance[COL_HOST], instance[COL_PORT])
+            _distribute_to(instance[COL_ID], cluster_id)
+        except (RedisStatusError, hiredis.ProtocolError):
+            flag_instance(instance[COL_ID], STATUS_BROKEN)
+            raise
 
 
 def pick_and_expand(host, port, cluster_id, join_node):
@@ -173,17 +171,14 @@ def pick_and_expand(host, port, cluster_id, join_node):
     if new_node is None:
         raise ValueError('no such node')
 
-    lock_instance(new_node[COL_ID], cluster_id)
-
-    try:
-        join_node(cluster[COL_HOST], cluster[COL_PORT],
-                  new_node[COL_HOST], new_node[COL_PORT])
-        _distribute_to(new_node[COL_ID], cluster_id)
-    except (RedisStatusError, hiredis.ProtocolError), e:
-        flag_instance(new_node[COL_ID], STATUS_BROKEN)
-        raise
-    finally:
-        unlock_instance(new_node[COL_ID])
+    with node_locker(new_node[COL_ID], cluster_id):
+        try:
+            join_node(cluster[COL_HOST], cluster[COL_PORT],
+                      new_node[COL_HOST], new_node[COL_PORT])
+            _distribute_to(new_node[COL_ID], cluster_id)
+        except (RedisStatusError, hiredis.ProtocolError), e:
+            flag_instance(new_node[COL_ID], STATUS_BROKEN)
+            raise
 
 
 def pick_and_replicate(master_host, master_port, slave_host, slave_port,
@@ -198,12 +193,9 @@ def pick_and_replicate(master_host, master_port, slave_host, slave_port,
         cluster = clu.get_by_id(client, master_node[COL_CLUSTER_ID])
 
     cluster_id = cluster[clu.COL_ID]
-    lock_instance(slave_node[COL_ID], cluster_id)
-    try:
+    with node_locker(slave_node[COL_ID], cluster_id):
         replicate_node(master_host, master_port, slave_host, slave_port)
         _distribute_to(slave_node[COL_ID], cluster_id)
-    finally:
-        unlock_instance(slave_node[COL_ID])
 
 
 def quit(host, port, cluster_id, quit_cluster):
@@ -214,16 +206,13 @@ def quit(host, port, cluster_id, quit_cluster):
     if instance is None or instance[COL_CLUSTER_ID] != cluster_id:
         raise ValueError('No such node in cluster')
 
-    lock_instance(instance[COL_ID], cluster_id)
-
-    try:
-        quit_cluster(instance[COL_HOST], instance[COL_PORT])
-        _free_instance(instance[COL_ID], cluster_id)
-    except (RedisStatusError, hiredis.ProtocolError), e:
-        flag_instance(instance[COL_ID], STATUS_BROKEN)
-        raise
-    finally:
-        unlock_instance(instance[COL_ID])
+    with node_locker(instance[COL_ID], cluster_id):
+        try:
+            quit_cluster(instance[COL_HOST], instance[COL_PORT])
+            _free_instance(instance[COL_ID], cluster_id)
+        except (RedisStatusError, hiredis.ProtocolError), e:
+            flag_instance(instance[COL_ID], STATUS_BROKEN)
+            raise
 
 
 def free_instance(host, port, cluster_id):
@@ -233,14 +222,16 @@ def free_instance(host, port, cluster_id):
     if instance is None or instance[COL_CLUSTER_ID] != cluster_id:
         raise ValueError('No such node in cluster')
 
-    lock_instance(instance[COL_ID], cluster_id)
-    try:
+    with node_locker(instance[COL_ID], cluster_id):
         _free_instance(instance[COL_ID], cluster_id)
-    finally:
-        unlock_instance(instance[COL_ID])
 
 
 def load_saved_instaces():
     with db.query() as client:
         client.execute('''SELECT * FROM `redis_node`''')
         return {(i[COL_HOST], i[COL_PORT]): i for i in client.fetchall()}
+
+@contextmanager
+def node_locker(node_id, cluster_id):
+    yield lock_instance(node_id, cluster_id)
+    unlock_instance(node_id)
