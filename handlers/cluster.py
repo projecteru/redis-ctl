@@ -51,11 +51,8 @@ def recover_migrate_status(request):
     logging.info('Start - recover cluster migrate #%d', cluster_id)
     with models.db.query() as c:
         for i in nm.contained_in_cluster(c, cluster_id):
-            try:
-                nm.lock_instance(i[nm.COL_ID], cluster_id)
+            with nm.node_locker(i[nm.COL_ID], cluster_id):
                 redistrib.command.fix_migrating(i[nm.COL_HOST], i[nm.COL_PORT])
-            finally:
-                nm.unlock_instance(i[nm.COL_ID])
     logging.info('Done - recover cluster migrate #%d', cluster_id)
 
 
@@ -70,12 +67,9 @@ def migrate_slots(request):
         i = nm.pick_by(c, src_host, src_port)
     if i[nm.COL_CLUSTER_ID] is None:
         raise ValueError('%s:%d not in cluster' % (src_host, src_port))
-    try:
-        nm.lock_instance(i[nm.COL_ID], i[nm.COL_CLUSTER_ID])
+    with nm.node_locker(i[nm.COL_ID], i[nm.COL_CLUSTER_ID]):
         redistrib.command.migrate_slots(src_host, src_port, dst_host,
                                         dst_port, slots)
-    finally:
-        nm.unlock_instance(i[nm.COL_ID])
 
 
 @base.post_async('/cluster/join')

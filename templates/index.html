@@ -559,6 +559,13 @@ $('#add-nodes').click(function() {
             数量<input id='ncp-migrate-slots-count'>
             至<select id='ncp-migrate-dst-select'></select>
             <button class='btn btn-primary' id='ncp-migrate'>确认</button>
+            <div id='ncp-migrating-counter' style='display: none'>
+                已经迁移
+                <span id='ncp-migrating-count-done'></span>
+                /
+                <span id='ncp-migrating-count-total'></span>
+                个槽位
+            </div>
         </div>
     </div>
 
@@ -668,23 +675,34 @@ $('#ncp-migrate').click(function() {
     }
 
     btn.attr('disabled', 'disabled').text('请稍候');
-    $.ajax({
-        url: '/cluster/migrate_slots',
-        type: 'POST',
-        data: {
-            src_host: btn.data('host'),
-            src_port: btn.data('port'),
-            dst_host: dst.data('host'),
-            dst_port: dst.data('port'),
-            slots: slots.join(',')
-        },
-        success: function() {
-            window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text('失败: ' + r.responseText);
-        }
-    });
+
+    $('#ncp-migrating-counter').show();
+    $('#ncp-migrating-count-total').text(slots.length);
+
+    -function migrateSome(begin, end) {
+        $('#ncp-migrating-count-done').text(begin);
+
+        $.ajax({
+            url: '/cluster/migrate_slots',
+            type: 'POST',
+            data: {
+                src_host: btn.data('host'),
+                src_port: btn.data('port'),
+                dst_host: dst.data('host'),
+                dst_port: dst.data('port'),
+                slots: slots.slice(begin, end).join(',')
+            },
+            success: function() {
+                if (end >= slots.length) {
+                    return window.location.reload();
+                }
+                migrateSome(end, end + 16);
+            },
+            error: function(r) {
+                btn.parent().text('失败: ' + r.responseText);
+            }
+        });
+    }(0, 16);
 });
 
 function showStandbyPanel(node) {
