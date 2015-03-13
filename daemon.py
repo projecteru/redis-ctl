@@ -20,8 +20,10 @@ CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 CMD_PROXY = '+PROXY\r\n'
 
 COLUMNS = OrderedDict([
+    ('used_memory', 'used_memory'),
     ('used_memory_rss', 'used_memory_rss'),
     ('connected_clients', 'connected_clients'),
+    ('total_commands_processed', 'total_commands_processed'),
     ('expired_keys', 'expired_keys'),
     ('evicted_keys', 'evicted_keys'),
     ('keyspace_hits', 'keyspace_hits'),
@@ -70,8 +72,10 @@ def _send_to_influxdb(node):
 
     name = '%s:%s' % (node['host'], node['port'])
     points = [
+        node['mem'][COLUMNS['used_memory']],
         node['mem'][COLUMNS['used_memory_rss']],
         node['conn'][COLUMNS['connected_clients']],
+        node['conn'][COLUMNS['total_commands_processed']],
         node['storage'][COLUMNS['expired_keys']],
         node['storage'][COLUMNS['evicted_keys']],
         node['storage'][COLUMNS['keyspace_hits']],
@@ -120,6 +124,7 @@ def _info_node(host, port):
         node_info = _info_slots(t)
         details = _info_detail(t)
         node_info['mem'] = {
+            'used_memory': int(details['used_memory']),
             'used_memory_rss': int(details['used_memory_rss']),
             'used_memory_human': details['used_memory_human'],
         }
@@ -129,6 +134,8 @@ def _info_node(host, port):
         }
         node_info['conn'] = {
             'connected_clients': int(details['connected_clients']),
+            'total_commands_processed': int(
+                details['total_commands_processed']),
         }
         node_info['storage'] = {
             'expired_keys': int(details['expired_keys']),
