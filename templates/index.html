@@ -23,10 +23,6 @@ th {
     text-align: left;
 }
 
-.selected {
-    background-color: #fc8;
-}
-
 .overlay {
     position: fixed;
     top: 0;
@@ -49,87 +45,110 @@ th {
     background-color: white;
     overflow: scroll;
 }
+
+.cluster-table {
+    text-align: center;
+    width: 100%;
+    margin: auto;
+    margin-bottom: 16px;
+}
+
+.cluster-table tbody {
+    border-left: 1px solid #aaa;
+    border-right: 1px solid #aaa;
+}
+
+.cluster-table th {
+    text-align: center;
+}
+
+.cluster-info {
+    clear: both;
+    margin-left: 1em;
+}
 </style>
 {% endblock %}
 
 {% block body %}
 <h1>集群信息</h1>
 {% for cluster in clusters.itervalues() if cluster.nodes %}
-<table style='text-align: center; margin-bottom: 16px'>
-    <thead>
-        <tr>
-            <th colspan='6' class='cluster-ceiling'>
-                描述信息: {{ cluster.descr|e or '<i>没有描述</i>' }}
-                <button class='btn btn-primary' style='display: inline-block; float: right' onclick='launchClusterSetting({{ cluster|tojson }})'>设定</button>
-                {% for proxy in cluster.proxies %}
-                    <br>
-                    代理: {{ proxy.host }}:{{ proxy.port }}
-                    <span class='{{ 'ok' if proxy.stat else 'err' }}'>
-                        {{ 'OK' if proxy.stat else 'ERROR' }}
-                    </span>
-                    <span>SLA: {{ (proxy.sla * 100)|round(2) }}%</span>
-                    <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
-                {% endfor %}
-            </th>
-        </tr>
-        <tr>
-            <th>
-                节点 ID
-            </th>
-            <th>
-                地址
-            </th>
-            <th>
-                角色
-            </th>
-            <th class='master'>
-                拥有的槽位数量 (主)
-            </th>
-            <th class='slave'>
-                主 ID (从)
-            </th>
-            <th>
-                SLA
-            </th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for node in cluster.nodes %}
-        <tr {% if node.detail %}id='node-c-{{ node.node_id|e }}'{% endif %}>
-            <td>
-                {{ node.node_id|e }}
-            </td>
-            <td>
-                <a href='#node-i-{{ node.host|e }}-{{ node.port }}'>
-                    {{ node.host|e }}:{{ node.port }}
-                </a>
-            </td>
-            {% if node.detail.slave %}
-            <td class='slave'>
-                从
-            </td>
-            <td class='slave'>-</td>
-            <td class='slave'>
-                <a href='#node-c-{{ node.detail.master_id|e }}'>{{ node.detail.master_id|e }}</a>
-            </td>
-            {% else %}
-            <td class='master'>
-                主
-            </td>
-            <td class='master'>
-                {% if node.detail %}
-                {{ node.detail.slots|length }}
-                {% else %}
-                等待轮询
-                {% endif %}
-            </td>
-            <td class='master'>-</td>
-            {% endif %}
-            <td>{{ (node.detail.get('sla', 0) * 100)|round(2) }}%</td>
-        </tr>
+<hr>
+<div class='container'>
+    <h2>集群 #{{ cluster.id }}</h2>
+    <button class='btn btn-primary' style='display: inline-block; float: right' onclick='launchClusterSetting({{ cluster|tojson }})'>设定</button>
+    <div class='cluster-info'>
+        描述信息: {{ cluster.descr|e or '<i>没有描述</i>' }}
+        {% for proxy in cluster.proxies %}
+            <br>
+            代理: {{ proxy.host }}:{{ proxy.port }}
+            <span class='{{ 'ok' if proxy.stat else 'err' }}'>
+                {{ 'OK' if proxy.stat else 'ERROR' }}
+            </span>
+            <span>SLA: {{ (proxy.sla * 100)|round(2) }}%</span>
+            <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
         {% endfor %}
-    </tbody>
-</table>
+    </div>
+    <table style='' class='cluster-table'>
+        <thead>
+            <tr>
+                <th>
+                    节点 ID
+                </th>
+                <th>
+                    地址
+                </th>
+                <th>
+                    角色
+                </th>
+                <th class='master'>
+                    拥有的槽位数量 (主)
+                </th>
+                <th class='slave'>
+                    主 ID (从)
+                </th>
+                <th>
+                    SLA
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for node in cluster.nodes %}
+            <tr {% if node.detail %}id='node-c-{{ node.node_id|e }}'{% endif %}>
+                <td>
+                    {{ node.node_id|e }}
+                </td>
+                <td>
+                    <a href='#node-i-{{ node.host|e }}-{{ node.port }}'>
+                        {{ node.host|e }}:{{ node.port }}
+                    </a>
+                </td>
+                {% if node.detail.slave %}
+                <td class='slave'>
+                    从
+                </td>
+                <td class='slave'>-</td>
+                <td class='slave'>
+                    <a href='#node-c-{{ node.detail.master_id|e }}'>{{ node.detail.master_id|e }}</a>
+                </td>
+                {% else %}
+                <td class='master'>
+                    主
+                </td>
+                <td class='master'>
+                    {% if node.detail %}
+                    {{ node.detail.slots|length }}
+                    {% else %}
+                    等待轮询
+                    {% endif %}
+                </td>
+                <td class='master'>-</td>
+                {% endif %}
+                <td>{{ (node.detail.get('sla', 0) * 100)|round(2) }}%</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endfor %}
 
 <div id='cluster-setting-panel' style='display: none'>
@@ -296,14 +315,14 @@ function launchClusterSetting(cluster) {
                 <br>
                 <sup>({{ node.max_mem }})</sup>
             </td>
-            {% set mem_rate = node.detail.mem.used_memory_rss * 100.0 / node.max_mem %}
+            {% set mem_rate = node.detail.mem.used_memory * 100.0 / node.max_mem %}
             <td >
                 使用: {{ node.detail.mem.used_memory_human }}
                 <br>
                 RSS: {{ node.detail.mem.used_memory_rss|filesizeformat }}
                 <br>
                 <span class='{% if mem_rate > 90 %}err{% else %}ok{% endif %}'>
-                RSS/最大: {{ mem_rate|round(2) }}%
+                使用/最大: {{ mem_rate|round(2) }}%
                 </span>
             </td>
             <td>
@@ -361,17 +380,6 @@ function launchClusterSetting(cluster) {
 </table>
 
 <script>
-function selectHash() {
-    $(document.getElementById(window.location.hash.slice(1))).addClass('selected');
-}
-$(window).on('hashchange', function() {
-    $('.selected').removeClass('selected');
-    selectHash();
-});
-if (window.location.hash) {
-    selectHash();
-}
-
 $('.deleter').click(function() {
     var btn = $(this);
     $.post('/nodes/del', {

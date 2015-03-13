@@ -2,8 +2,6 @@
 {% block title %}节点状态历史{% endblock %}
 
 {% block body %}
-<a href='/'>← 回到首页</a>
-<hr>
 <div>
     <div><p>CPU 状况</p><svg id='usages_cpu'></svg></div>
     <div><p>内存状况</p><svg id='usages_mem'></svg></div>
@@ -15,9 +13,11 @@ statistics({
     used_cpu_user: [],
     used_cpu_sys: [],
 
+    used_memory: [],
     used_memory_rss: [],
 
     connected_clients: [],
+    total_commands_processed: [],
 
     evicted_keys: [],
     expired_keys: [],
@@ -34,6 +34,7 @@ statistics({
 }, {
     selector: '#usages_mem',
     fields: [
+        {keyName: 'used_memory', keyDisp: '内存', color: '#880'},
         {keyName: 'used_memory_rss', keyDisp: 'RSS', color: 'navy'}
     ],
     yMapF: function(y) {return y / 1048576;},
@@ -41,7 +42,8 @@ statistics({
 }, {
     selector: '#connections',
     fields: [
-        {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'}
+        {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'},
+        {keyName: 'total_commands_processed', keyDisp: '运行指令数 (平均每秒)', color: '#f66'}
     ],
     yMapF: function(y) {return y;},
     title: '连接'
