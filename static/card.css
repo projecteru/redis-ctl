@@ -1,0 +1,69 @@
+.card-root {
+    min-height: 120px;
+    padding: 8px;
+    margin-bottom: 20px;
+}
+
+.card {
+    float: left;
+    width: 320px;
+    max-width: 320px;
+    margin-right: 20px;
+    cursor: pointer;
+    background-color: #eee;
+}
+
+.card-active {
+    clear: both;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    border-top: 1px solid #ccc;
+    border-bottom: 1px solid #ccc;
+}
+
+.card-detailonly {
+    display: none;
+}
+
+.card-active .card-detailonly {
+    display: initial;
+}
+
+.card:hover {
+    background-color: initial;
+}
+
+.card-title {
+    font-weight: bold;
+    font-size: 1.5em;
+    line-height: 2em;
+    margin-bottom: 8px;
+}
+
+.card-preview {
+    clear: both;
+}
+
+.card-detail {
+    display: none;
+    clear: both;
+}
+
+.card-deactive {
+    float: right;
+    margin-top: -9px;
+    margin-right: -9px;
+}
+
+.card-active .card {
+    width: 100%;
+    clear: both;
+}
+
+.card-active .card-preview {
+    display: none;
+}
+
+.card-active .card-detail {
+    display: initial;
+}

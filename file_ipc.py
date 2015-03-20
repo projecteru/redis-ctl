@@ -49,10 +49,8 @@ def write_nodes(nodes, proxies):
                proxies)
 
 
-def write_nodes_proxies_from_db(client):
+def write_nodes_proxies_from_db():
     import models.node as nm
     import models.proxy as pr
-    write_poll([{'host': n[nm.COL_HOST], 'port': n[nm.COL_PORT]}
-                for n in nm.list_all_nodes(client)],
-               [{'host': p[pr.COL_HOST], 'port': p[pr.COL_PORT]}
-                for p in pr.list_all(client)])
+    write_poll([{'host': n.host, 'port': n.port} for n in nm.list_all_nodes()],
+               [{'host': p.host, 'port': p.port} for p in pr.list_all()])

@@ -70,6 +70,22 @@ def f_strftime(dt, fmt='%Y-%m-%d %H:%M:%S'):
 
 
 @_filter
+def f_render_node(node, level='card', **kwargs):
+    return render('components/node/%s.html' % level, node=node, **kwargs)
+
+
+@_filter
+def f_render_cluster(cluster, level='card', **kwargs):
+    return render('components/cluster/%s.html' % level, cluster=cluster,
+                  **kwargs)
+
+
+@_filter
+def f_render_proxy(proxy, level='card', **kwargs):
+    return render('components/proxy/%s.html' % level, proxy=proxy, **kwargs)
+
+
+@_filter
 def f_iter(x):
     if isinstance(x, dict):
         return x.iteritems()

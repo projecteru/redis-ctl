@@ -131,6 +131,7 @@ def _info_node(host, port):
         node_info['cpu'] = {
             'used_cpu_sys': float(details['used_cpu_sys']),
             'used_cpu_user': float(details['used_cpu_user']),
+            'uptime_in_seconds': int(details['uptime_in_seconds']),
         }
         node_info['conn'] = {
             'connected_clients': int(details['connected_clients']),
@@ -164,6 +165,8 @@ def _info_proxy(host, port):
                                 st['mem_buffer_alloc'].split(',')])
         return {
             'stat': True,
+            'threads': st['threads'],
+            'version': st['version'],
             'conn': {'connected_clients': conns},
             'mem': {'mem_buffer_alloc': mem_buffer_alloc},
         }
