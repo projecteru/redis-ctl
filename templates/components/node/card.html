@@ -1,0 +1,186 @@
+<div class='card card-root'>
+    {% set cluster = node.assignee %}
+    {% set awaiting_polling = node.stat and not node.detail %}
+    <span class='card-title' id='node-i-{{ node.host|e }}-{{ node.port }}'>节点 {{ node.host|e }}:{{ node.port }}</span>
+    <div class='card-preview'>
+        {% if awaiting_polling %}
+        <p class='slave' style='text-align: center' card-detailto='node-awaiting-polling'>等待轮询</p>
+        {% else %}
+        <table>
+            <tr>
+                <td class='label-cell'>状态</td>
+                <td>
+                    <span card-detailto='node-status'>
+                        {% if node.stat %}
+                            <span class='label label-success'>
+                            {% if not cluster %}
+                                就绪
+                            {% else %}
+                                在役
+                            {% endif %}
+                            </span>
+                        {% else %}
+                            <span class='label label-danger'>ERROR</span>
+                        {% endif %}
+                    </span>
+                </td>
+            </tr>
+            {% if node.stat %}
+            <tr>
+                <td class='label-cell'>内存使用率</td>
+                <td>
+                    {% set mem_rate = node.detail.mem.used_memory * 100.0 / node.max_mem %}
+                    <span card-detailto='node-mem-rate' class='label label-{{ 'success' if mem_rate < 90 else 'danger' }}'>
+                        {{ mem_rate|round(2) }}%
+                    </span>
+                </td>
+            </tr>
+            {% endif %}
+            <tr>
+                <td class='label-cell'>SLA</td>
+                <td>
+                    <span card-detailto='node-sla'>{{ (node.detail.get('sla', 0) * 100)|round(2) }}%</span>
+                </td>
+            </tr>
+        </table>
+        {% endif %}
+    </div>
+    <div class='card-detail'>
+        <hr>
+        {% if awaiting_polling %}
+        <div card-detailfrom='node-awaiting-polling'></div>
+        {% else %}
+
+        <div style='margin-left: 10em;'>
+            <table class='status-table'>
+                <caption>节点</caption>
+                {% if node.stat %}
+                <tr>
+                    <td class='label-cell'>节点 ID</td>
+                    <td style='font-family: monospace'>{{ node.node_id|e }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td class='label-cell'>状态</td>
+                    <td card-detailfrom='node-status'></td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>SLA</td>
+                    <td card-detailfrom='node-sla'></td>
+                </tr>
+                {% if node.stat %}
+                    <tr>
+                        <td class='label-cell'>AOF</td>
+                        <td>{{ '有' if node.detail.storage.aof_enabled else '无' }}</td>
+                    </tr>
+                    {% if cluster %}
+                    <tr>
+                        <td class='label-cell'>所属集群</td>
+                        <td><a href='#cluster-{{ cluster.id }}'>#{{ cluster.id }}</a></td>
+                    </tr>
+                    <tr>
+                        <td class='label-cell'>角色</td>
+                        <td>{{ '从' if node.detail.slave else '主' }}</td>
+                    </tr>
+                        {% if not node.detail.slave %}
+                        <tr>
+                            <td class='label-cell'>槽位数</td>
+                            <td>{{ node.detail.slots|length }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            </table>
+            {% if node.stat %}
+            <table class='status-table'>
+                <caption>CPU</caption>
+                <tr>
+                    <td class='label-cell'>用户态累计</td>
+                    <td>{{ node.detail.cpu.used_cpu_user }}</td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>内核态累计</td>
+                    <td>{{ node.detail.cpu.used_cpu_sys }}</td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>总运行时间</td>
+                    <td>{{ node.detail.cpu.uptime_in_seconds }}</td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>平均 CPU 占用率</td>
+                    <td>{{ ((node.detail.cpu.used_cpu_user + node.detail.cpu.used_cpu_sys) / node.detail.cpu.uptime_in_seconds * 100)|round(2) }}%</td>
+                </tr>
+            </table>
+            <hr>
+            <table class='status-table'>
+                <caption>内存</caption>
+                <tr>
+                    <td class='label-cell'>已使用内存</td>
+                    <td>{{ node.detail.mem.used_memory_human }}</td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>常驻集</td>
+                    <td>{{ node.detail.mem.used_memory_rss|filesizeformat }}</td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>最大</td>
+                    <td>
+                        {{ node.max_mem|filesizeformat }}
+                        ({{ node.max_mem }})
+                    </td>
+                </tr>
+                {% if node.stat %}
+                <tr>
+                    <td class='label-cell'>已使用率</td>
+                    <td card-detailfrom='node-mem-rate'></td>
+                </tr>
+                {% endif %}
+            </table>
+            <table class='status-table'>
+                <caption>存储</caption>
+                <tr>
+                    <td class='label-cell'>Keyspace hits</td>
+                    <td>{{ node.detail.storage.keyspace_hits }}</td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>Keyspace misses</td>
+                    <td>{{ node.detail.storage.keyspace_misses }}</td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>Expired keys</td>
+                    <td>{{ node.detail.storage.expired_keys }}</td>
+                </tr>
+                <tr>
+                    <td class='label-cell'>Evicted keys</td>
+                    <td>{{ node.detail.storage.evicted_keys }}</td>
+                </tr>
+            </table>
+            {% endif %}
+        </div>
+
+        <hr>
+        {% endif %}
+        <div style='clear: both; text-align: center'>
+            <button class='btn btn-primary' data-host='{{ node.host|e }}' data-port='{{ node.port }}'
+                onclick='launchClusterPanel({{ node.node_id|tojson }},
+                                            {{ node.host|tojson }},
+                                            {{ node.port|tojson }},
+                                            {{ (cluster.id or '')|tojson }},
+                                            {{ (node.detail.slots or [])|tojson }})'>节点控制面板</button>
+
+            {% if not cluster %}
+                <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
+            {% endif %}
+
+            {% if node.stat %}
+                <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>集群自动发现</button>
+            {% else %}
+                <button class='btn btn-primary fix-marker' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>重连</button>
+            {% endif %}
+
+            {% if stats_enabled %}
+                <a href='/stats/view?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史</a>
+            {% endif %}
+        </div>
+    </div>
+</div>

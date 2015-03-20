@@ -1,0 +1,6 @@
+{{ proxy.host|e }}:{{ proxy.port }}
+{% if proxy.stat %}
+    <span class='label label-success'>OK</span>
+{% else %}
+    <span class='label label-danger'>E</span>
+{% endif %}

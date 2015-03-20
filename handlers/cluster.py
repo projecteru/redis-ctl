@@ -4,16 +4,15 @@ import logging
 import redistrib.command
 
 import base
-import models.db
 import models.cluster
 import models.proxy
 import models.node as nm
+from models.base import db
 
 
 @base.post_async('/cluster/add')
 def add_cluster(request):
-    with models.db.update() as c:
-        return str(models.cluster.create_cluster(c, request.form['descr']))
+    return str(models.cluster.create_cluster(request.form['descr']).id)
 
 
 @base.post_async('/cluster/launch')
@@ -25,35 +24,30 @@ def start_cluster(request):
             redistrib.command.start_cluster)
     except SocketError, e:
         logging.exception(e)
-
-        with models.db.update() as c:
-            models.cluster.remove_empty_cluster(c, cluster_id)
-
+        models.cluster.remove_empty_cluster(cluster_id)
         raise ValueError('Node disconnected')
 
 
 @base.post_async('/cluster/set_info')
 def set_cluster_info(request):
-    cluster_id = int(request.form['cluster_id'])
-    descr = request.form.get('descr', '')
-    with models.db.update() as c:
-        models.cluster.set_info(c, cluster_id, descr)
-        if not request.form.get('proxy_host'):
-            return
+    c = models.cluster.get_by_id(int(request.form['cluster_id']))
+    c.description = request.form.get('descr', '')
+    if request.form.get('proxy_host'):
         host = request.form['proxy_host']
         port = int(request.form['proxy_port'])
-        models.proxy.attach_to_cluster(c, cluster_id, host, port)
+        p = models.proxy.get_or_create(host, port)
+        p.cluster_id = c.id
+    db.session.add(c)
+    db.session.add(p)
 
 
 @base.post_async('/cluster/recover_migrate')
 def recover_migrate_status(request):
-    cluster_id = int(request.form['cluster_id'])
-    logging.info('Start - recover cluster migrate #%d', cluster_id)
-    with models.db.query() as c:
-        for i in nm.contained_in_cluster(c, cluster_id):
-            with nm.node_locker(i[nm.COL_ID], cluster_id):
-                redistrib.command.fix_migrating(i[nm.COL_HOST], i[nm.COL_PORT])
-    logging.info('Done - recover cluster migrate #%d', cluster_id)
+    c = models.cluster.Cluster.lock_by_id(int(request.form['cluster_id']))
+    logging.info('Start - recover cluster migrate #%d', c.id)
+    for node in c.nodes:
+        redistrib.command.fix_migrating(node.host, node.port)
+    logging.info('Done - recover cluster migrate #%d', c.id)
 
 
 @base.post_async('/cluster/migrate_slots')
@@ -63,13 +57,12 @@ def migrate_slots(request):
     dst_host = request.form['dst_host']
     dst_port = int(request.form['dst_port'])
     slots = [int(s) for s in request.form['slots'].split(',')]
-    with models.db.query() as c:
-        i = nm.pick_by(c, src_host, src_port)
-    if i[nm.COL_CLUSTER_ID] is None:
-        raise ValueError('%s:%d not in cluster' % (src_host, src_port))
-    with nm.node_locker(i[nm.COL_ID], i[nm.COL_CLUSTER_ID]):
-        redistrib.command.migrate_slots(src_host, src_port, dst_host,
-                                        dst_port, slots)
+
+    src = nm.pick_by(src_host, src_port)
+    models.cluster.Cluster.lock_by_id(src.assignee_id)
+
+    redistrib.command.migrate_slots(src.host, src.port, dst_host,
+                                    dst_port, slots)
 
 
 @base.post_async('/cluster/join')
@@ -83,22 +76,25 @@ NOT_IN_CLUSTER_MESSAGE = 'not in a cluster'
 
 @base.post_async('/cluster/quit')
 def quit_cluster(request):
-    host = request.form['host']
-    port = int(request.form['port'])
-    cluster_id = int(request.form['cluster_id'])
+    node = nm.pick_by(request.form['host'], int(request.form['port']))
+    cluster = models.cluster.Cluster.lock_by_id(
+        int(request.form['cluster_id']))
+
     try:
-        nm.quit(host, port, cluster_id, redistrib.command.quit_cluster)
+        nm.quit(node.host, node.port, cluster.id,
+                redistrib.command.quit_cluster)
     except SocketError, e:
         logging.exception(e)
         logging.info('Remove instance from cluster on exception')
-        nm.free_instance(host, port, cluster_id)
+        node.assignee = None
+        db.session.add(node)
     except hiredis.ProtocolError, e:
         if NOT_IN_CLUSTER_MESSAGE not in e.message:
             raise
-        nm.free_instance(host, port, cluster_id)
+        node.assignee = None
+        db.session.add(node)
 
-    with models.db.update() as c:
-        models.cluster.remove_empty_cluster(c, cluster_id)
+    models.cluster.remove_empty_cluster(cluster.id)
 
 
 @base.post_async('/cluster/replicate')
@@ -120,11 +116,9 @@ def cluster_auto_discover(request):
         raise ValueError(e)
 
     unknown_nodes = []
-    with models.db.query() as client:
-        for n in nodes:
-            p = nm.pick_by(client, n.host, n.port)
-            if p is None:
-                unknown_nodes.append(n)
+    for n in nodes:
+        if nm.get_by_host_port(n.host, n.port) is None:
+            unknown_nodes.append(n)
 
     return base.json_result([{
         'host': n.host,
@@ -144,27 +138,26 @@ def cluster_auto_join(request):
         raise ValueError(e)
 
     cluster_ids = set()
-    free_nodes_ids = []
-    with models.db.query() as client:
-        for n in nodes:
-            p = nm.pick_by(client, n.host, n.port)
-            if p is None:
-                raise ValueError('%s:%d not in db' % (n.host, n.port))
+    free_nodes = []
 
-            if p[nm.COL_CLUSTER_ID] is None:
-                free_nodes_ids.append(p[nm.COL_ID])
-            else:
-                cluster_ids.add(p[nm.COL_CLUSTER_ID])
+    for n in nodes:
+        p = nm.get_by_host_port(n.host, n.port)
+        if p is None:
+            raise ValueError('no such node')
+        if p.assignee_id is None:
+            free_nodes.append(p)
+        else:
+            cluster_ids.add(p.assignee_id)
 
     if len(cluster_ids) > 1:
         raise ValueError('nodes are in different clusters according to db')
 
-    with models.db.update() as client:
-        cluster_id = (models.cluster.create_cluster(client, '')
-                      if len(cluster_ids) == 0 else cluster_ids.pop())
-        try:
-            for node_id in free_nodes_ids:
-                nm.distribute_free_to(client, node_id, cluster_id)
-            return str(cluster_id)
-        finally:
-            models.cluster.remove_empty_cluster(client, cluster_id)
+    cluster_id = (models.cluster.create_cluster('').id
+                  if len(cluster_ids) == 0 else cluster_ids.pop())
+    try:
+        for p in free_nodes:
+            p.assignee_id = cluster_id
+            db.session.add(p)
+        return str(cluster_id)
+    finally:
+        models.cluster.remove_empty_cluster(cluster_id)

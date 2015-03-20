@@ -1,0 +1,117 @@
+<div class='card card-root'>
+    {% set proxy = cluster.proxies[0] if cluster.proxies else none %}
+    <span class='card-title' id='cluster-{{ cluster.id }}'>集群 #{{ cluster.id }}</span>
+    <button class='btn btn-info card-detailonly' style='float: right; margin-top: -9px'
+            onclick='launchClusterSetting({{ cluster.id|tojson }},
+                                          {{ cluster.description|tojson }},
+                                          {{ (proxy.host if proxy else '')|tojson }},
+                                          {{ (proxy.port if proxy else '')|tojson }})'>集群设定</button>
+    <table class='card-preview'>
+        <tr>
+            <td class='label-cell'>描述</td>
+            <td><span card-detailto='cluster-descr'>{{ cluster.description|e or '<i>没有描述</i>' }}</span></td>
+        </tr>
+        <tr>
+            <td class='label-cell'>节点数</td>
+            <td>{{ cluster.nodes|length }}</td>
+        </tr>
+        {% if proxy %}
+        <tr>
+            <td class='label-cell'>代理</td>
+            <td>
+                <span card-detailto='cluster-proxy'>
+                    {{ proxy|render_proxy('label') }}
+                </span>
+            </td>
+        </tr>
+        <tr>
+            <td class='label-cell'>SLA</td>
+            <td>
+                <span card-detailto='proxy-sla'>
+                    {{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%
+                </span>
+            </td>
+        </tr>
+        {% endif %}
+    </table>
+    <div class='card-detail'>
+        <div card-detailfrom='cluster-descr'></div>
+        {% if proxy %}
+        <table style='clear: both; margin: auto'>
+            <caption>代理</caption>
+            <tr>
+                <td class='label-cell'>地址</td>
+                <td card-detailfrom='cluster-proxy'></td>
+            </tr>
+            <tr>
+                <td class='label-cell'>SLA</td>
+                <td card-detailfrom='proxy-sla'></td>
+            </tr>
+            <tr>
+                <td class='label-cell'>版本</td>
+                <td>{{ proxy.detail.version|e }}</td>
+            </tr>
+        </table>
+        {% endif %}
+        <table style='width: 90%; margin: auto; text-align: center'>
+            <thead>
+                <tr>
+                    <th>
+                        节点 ID
+                    </th>
+                    <th>
+                        地址
+                    </th>
+                    <th>
+                        角色
+                    </th>
+                    <th class='master'>
+                        拥有的槽位数量 (主)
+                    </th>
+                    <th class='slave'>
+                        主 ID (从)
+                    </th>
+                    <th>
+                        SLA
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for node in cluster.nodes %}
+                <tr {% if node.detail %}id='node-c-{{ node.node_id|e }}'{% endif %}>
+                    <td style='font-family: monospace'>
+                        {{ node.node_id|e }}
+                    </td>
+                    <td>
+                        <a href='#node-i-{{ node.host|e }}-{{ node.port }}'>
+                            {{ node.host|e }}:{{ node.port }}
+                        </a>
+                    </td>
+                    {% if node.detail.slave %}
+                    <td class='slave'>
+                        从
+                    </td>
+                    <td class='slave'>-</td>
+                    <td class='slave'>
+                        <a style='font-family: monospace' href='#node-c-{{ node.detail.master_id|e }}'>{{ node.detail.master_id[:8]|e }}...</a>
+                    </td>
+                    {% else %}
+                    <td class='master'>
+                        主
+                    </td>
+                    <td class='master'>
+                        {% if node.detail %}
+                        {{ node.detail.slots|length }}
+                        {% else %}
+                        等待轮询
+                        {% endif %}
+                    </td>
+                    <td class='master'>-</td>
+                    {% endif %}
+                    <td>{{ (node.detail.get('sla', 0) * 100)|round(2) }}%</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

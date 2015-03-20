@@ -1,12 +1,16 @@
-import models.db
+import models.base
 import testconf
 
 DB_CONF = testconf.TEST_CONF['mysql']
 
+import handlers.base
+
+app = handlers.base.app
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    'mysql://{username}:{password}@{host}:{port}/{db}'.format(**DB_CONF))
+models.base.init_db(app)
+
 
 def reset_db():
-    models.db.Connection.init(**DB_CONF)
-    with models.db.update() as client:
-        client.execute('''DELETE FROM `proxy` WHERE 0=0''')
-        client.execute('''DELETE FROM `redis_node` WHERE 0=0''')
-        client.execute('''DELETE FROM `cluster` WHERE 0=0''')
+    models.base.db.drop_all()
+    models.base.db.create_all()
