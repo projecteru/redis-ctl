@@ -1,16 +1,26 @@
-COL_ID = 0
-COL_HOST = 1
-COL_PORT = 2
-COL_CLUSTER_ID = 3
+from base import db, Base
+from cluster import Cluster
 
 
-def list_all(client):
-    client.execute('''SELECT * FROM `proxy`''')
-    return client.fetchall()
+class Proxy(Base):
+    __tablename__ = 'proxy'
+
+    host = db.Column(db.String(32), nullable=False)
+    port = db.Column(db.Integer, nullable=False)
+    cluster_id = db.Column(db.ForeignKey(Cluster.id), index=True)
+
+    __table_args__ = (db.Index('address', 'host', 'port', unique=True),)
 
 
-def attach_to_cluster(client, cluster_id, host, port):
-    client.execute('''INSERT INTO `proxy` (`host`, `port`, `cluster_id`)'''
-                   ''' VALUES (%s, %s, %s)'''
-                   ''' ON DUPLICATE KEY UPDATE `host`=%s, `port`=%s''',
-                   (host, port, cluster_id, host, port))
+def get_or_create(host, port):
+    p = db.session.query(Proxy).filter(
+        Proxy.host == host, Proxy.port == port).first()
+    if p is None:
+        p = Proxy(host=host, port=port)
+        db.session.add(p)
+        db.session.flush()
+    return p
+
+
+def list_all():
+    return db.session.query(Proxy).all()

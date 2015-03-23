@@ -4,12 +4,48 @@
 <meta charset='utf-8'>
 <title>{% block title %}{% endblock %}</title>
 <link rel='stylesheet' type='text/css' href='/static/flatstrap.css'>
+<link rel='stylesheet' type='text/css' href='/static/lib/css/font-awesome.css'>
 <script src='/static/jquery.js'></script>
+<style>
+.selected {
+    background-color: #fc8;
+}
+</style>
+<script>
+function selectHash() {
+    var e = document.getElementById(window.location.hash.slice(1));
+    if (e) {
+        $(e).addClass('selected');
+        setTimeout(function() {
+            $(window).scrollTop($(window).scrollTop() - 80);
+        }, 1);
+    }
+}
+$(window).on('hashchange', function() {
+    $('.selected').removeClass('selected');
+    selectHash();
+});
+$(document).ready(function() {
+    if (window.location.hash) {
+        selectHash();
+    }
+});
+</script>
 {% block head %}{% endblock %}
 </head>
 <body>
+
+<div class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <a href="/" class="navbar-brand">RedisCtl</a>
+        </div>
+    </div>
+</div>
+<div style='margin-top: 60px' class='container'>
 {% block body %}{% endblock %}
+</div>
 <hr>
 <div style='text-align: right'>
-    &copy; HunanTV Platform developers - ver0.2-2015-02-28
+    &copy; HunanTV Platform developers - ver0.3.0-2015-03-20
 </div>

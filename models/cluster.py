@@ -1,45 +1,43 @@
 import logging
+from base import db, Base, DB_STRING_TYPE
 
 COL_ID = 0
 COL_DESCRIPTION = 1
 
 
-def get_by_id(client, cid):
-    client.execute('''SELECT * FROM `cluster` WHERE `id`=%s''', (cid,))
-    return client.fetchone()
+class Cluster(Base):
+    __tablename__ = 'cluster'
+
+    description = db.Column(DB_STRING_TYPE)
+    nodes = db.relationship('RedisNode', backref='assignee')
+    proxies = db.relationship('Proxy', backref='cluster')
+
+    @staticmethod
+    def lock_by_id(cluster_id):
+        return db.session.query(Cluster).filter(
+            Cluster.id == cluster_id).with_for_update().one()
 
 
-def list_all(client):
-    client.execute('''SELECT * FROM `cluster`''')
-    return client.fetchall()
+def get_by_id(cluster_id):
+    return db.session.query(Cluster).filter(Cluster.id == cluster_id).first()
 
 
-def create_cluster(client, description):
-    client.execute('''INSERT INTO `cluster` (`description`) VALUES (%s)''',
-                   (description,))
-    return client.lastrowid
+def list_all():
+    return db.session.query(Cluster).all()
 
 
-def remove_empty_cluster(client, cluster_id):
-    client.execute(
-        '''SELECT * FROM `redis_node`'''
-        ''' WHERE `assignee_id`=%s OR `occupier_id`=%s LIMIT 1''',
-        (cluster_id, cluster_id))
-    if client.fetchone() is not None:
-        return
-
-    logging.info('Remove cluster %d', cluster_id)
-    try:
-        client.execute(
-            'UPDATE `proxy` SET `cluster_id`=NULL WHERE `cluster_id`=%s',
-            (cluster_id,))
-        client.execute('DELETE FROM `cluster` WHERE `id`=%s', (cluster_id,))
-    except StandardError, e:
-        logging.exception(e)
-        logging.info('Exception ignored')
-        return
+def create_cluster(description):
+    c = Cluster(description=description)
+    db.session.add(c)
+    db.session.flush()
+    return c
 
 
-def set_info(client, cluster_id, descr):
-    client.execute('''UPDATE `cluster` SET `description`=%s WHERE `id`=%s''',
-                   (descr, cluster_id))
+def remove_empty_cluster(cluster_id):
+    c = Cluster.lock_by_id(cluster_id)
+    if len(c.nodes) == 0:
+        logging.info('Remove cluster %d', cluster_id)
+        c.proxies = []
+        db.session.add(c)
+        db.session.flush()
+        db.session.delete(c)

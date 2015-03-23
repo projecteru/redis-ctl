@@ -7,12 +7,11 @@ import flask
 import werkzeug.exceptions
 from cStringIO import StringIO
 from cgi import parse_qs
-from MySQLdb import OperationalError
-from MySQLdb.constants.CR import SERVER_GONE_ERROR
 
 import template
+import file_ipc
 import models.errors
-import models.db
+import models.base
 
 app = flask.Flask('RedisControl')
 app.secret_key = os.urandom(24)
@@ -135,23 +134,22 @@ def route(uri, method):
         @app.route(uri, methods=[method])
         @functools.wraps(f)
         def handle_func(*args, **kwargs):
-            try:
-                return f(Request(), *args, **kwargs)
-            except OperationalError as exc:
-                if exc.args[0] == SERVER_GONE_ERROR:
-                    models.db.Connection.reset_conn()
-                raise
+            return f(Request(), *args, **kwargs)
         return handle_func
     return wrapper
 
 
-def route_async(uri, method):
+def route_async(uri, method, commit_db):
     def wrapper(f):
         @route(uri, method)
         @functools.wraps(f)
         def g(request, *args, **kwargs):
             try:
-                return f(request, *args, **kwargs) or ''
+                r = f(request, *args, **kwargs) or ''
+                if commit_db:
+                    models.base.db.session.commit()
+                    file_ipc.write_nodes_proxies_from_db()
+                return r
             except KeyError, e:
                 r = dict(reason='missing argument', missing=e.message)
             except UnicodeEncodeError, e:
@@ -159,14 +157,7 @@ def route_async(uri, method):
             except ValueError, e:
                 r = dict(reason=e.message)
             except models.errors.AppMutexError:
-                r = {'reason': 'app occupying'}
-            except models.errors.AppUninitError:
-                r = {'reason': 'start not called'}
-            except models.errors.InstanceExhausted:
-                return json_result({'reason': 'instance exhausted'}, 500)
-            except models.errors.RemoteServiceFault, e:
-                logging.exception(e)
-                return json_result({'reason': 'remote service fault'}, 500)
+                r = {'reason': 'cluster or node occupying'}
             except StandardError, e:
                 logging.error('UNEXPECTED ERROR')
                 logging.exception(e)
@@ -177,9 +168,8 @@ def route_async(uri, method):
     return wrapper
 
 get = lambda uri: route(uri, 'GET')
-post = lambda uri: route(uri, 'POST')
-get_async = lambda uri: route_async(uri, 'GET')
-post_async = lambda uri: route_async(uri, 'POST')
+get_async = lambda uri: route_async(uri, 'GET', False)
+post_async = lambda uri: route_async(uri, 'POST', True)
 
 
 def paged(uri, page=1):

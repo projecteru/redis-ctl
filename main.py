@@ -1,8 +1,8 @@
 import sys
 
 import config
-import models.db
 import models.recover
+import models.base
 import stats.db
 
 
@@ -12,22 +12,27 @@ def run_app(app, debug):
         return app.run(port=config.listen_port())
     from app import WrapperApp
     WrapperApp(app, {
-        'bind': '%s:%d' % ('0.0.0.0', config.listen_port()),
+        'bind': '0.0.0.0:%d' % config.listen_port(),
         'workers': 2,
+        'timeout': 86400,
     }).run()
 
 
 def init_app():
     conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
     config.init_logging(conf)
-    models.db.Connection.init(**conf['mysql'])
 
     if 'influxdb' in conf:
         stats.db.init(**conf['influxdb'])
-    models.recover.recover()
 
     import handlers
-    return handlers.base.app, conf.get('debug', 0) == 1
+    app = handlers.base.app
+    app.config['SQLALCHEMY_DATABASE_URI'] = (
+        'mysql://{username}:{password}@{host}:{port}/{db}'.format(
+            **conf['mysql']))
+    models.base.init_db(app)
+    models.recover.recover()
+    return app, conf.get('debug', 0) == 1
 
 if __name__ == '__main__':
     app, debug = init_app()

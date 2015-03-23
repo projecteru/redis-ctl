@@ -3,8 +3,9 @@ import unittest
 import redistrib.command as comm
 
 from test_utils import testdb
+from models.base import db
+from models.proxy import Proxy
 import handlers.base
-import models.db
 
 
 class HttpRequest(unittest.TestCase):
@@ -74,11 +75,11 @@ class HttpRequest(unittest.TestCase):
             })
             self.assertEqual(200, r.status_code)
 
-            with models.db.query() as db:
-                db.execute('SELECT `host`, `port`, `cluster_id` FROM `proxy`')
-                r = list(db.fetchall())
-                self.assertEqual(1, len(r))
-                self.assertEqual(('127.0.0.1', 8889, int(cluster_id)), r[0])
+            r = list(db.session.query(Proxy).all())
+            self.assertEqual(1, len(r))
+            self.assertEqual('127.0.0.1', r[0].host)
+            self.assertEqual(8889, r[0].port)
+            self.assertEqual(int(cluster_id), r[0].cluster_id)
 
             comm.shutdown_cluster('127.0.0.1', 7100)
 

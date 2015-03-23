@@ -5,8 +5,8 @@ import stats.db
 
 PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
 
-RES_FIELDS = ['used_memory_rss']
-DERV_FIELDS = ['used_cpu_sys', 'used_cpu_user']
+RES_FIELDS = ['used_memory', 'used_memory_rss']
+DERV_FIELDS = ['used_cpu_sys', 'used_cpu_user', 'total_commands_processed']
 INT_FIELDS = ['evicted_keys', 'expired_keys', 'keyspace_misses',
               'keyspace_hits', 'connected_clients']
 PROXY_FIELDS = ['connected_clients', 'mem_buffer_alloc']
