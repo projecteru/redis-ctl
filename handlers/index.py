@@ -39,7 +39,6 @@ def index(request):
             'slave': n.detail.get('slave', False),
         } for n in c.nodes],
     } for c in clusters}
-    print clusters_json
     return request.render(
         'index.html', nodes=nodes, clusters=clusters,
         clusters_json=clusters_json, stats_enabled=stats.db.client is not None)

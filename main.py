@@ -27,9 +27,7 @@ def init_app():
 
     import handlers
     app = handlers.base.app
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        'mysql://{username}:{password}@{host}:{port}/{db}'.format(
-            **conf['mysql']))
+    app.config['SQLALCHEMY_DATABASE_URI'] = config.mysql_uri(conf)
     models.base.init_db(app)
     models.recover.recover()
     return app, conf.get('debug', 0) == 1
