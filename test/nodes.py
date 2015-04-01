@@ -1,6 +1,6 @@
 import unittest
 
-from test_utils import testdb
+import testdb
 import models.node as nm
 import models.cluster as clu
 

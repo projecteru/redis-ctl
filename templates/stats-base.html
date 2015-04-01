@@ -37,6 +37,9 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
               });
 
               chart.xAxis.axisLabel("Time").tickFormat(function(x) {
+                  if (!gMetricsDatum[graphKeys[0].keyName][x]) {
+                      return '';
+                  }
                   var t = new Date(gMetricsDatum[graphKeys[0].keyName][x].x * 1000);
                   return t.toTimeString().slice(0, 8);
               });

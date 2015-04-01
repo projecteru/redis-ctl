@@ -2,7 +2,7 @@ import json
 import unittest
 import redistrib.command as comm
 
-from test_utils import testdb
+import testdb
 from models.base import db
 from models.proxy import Proxy
 import handlers.base

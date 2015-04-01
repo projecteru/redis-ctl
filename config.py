@@ -7,6 +7,11 @@ def load(conf_file):
         return yaml.safe_load(c)
 
 
+def mysql_uri(conf):
+    return 'mysql://{username}:{password}@{host}:{port}/{db}'.format(
+        **conf['mysql'])
+
+
 def listen_port():
     with open('app.yaml', 'r') as c:
         r = yaml.safe_load(c)['port']

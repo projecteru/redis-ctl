@@ -51,6 +51,11 @@
                 <td class='label-cell'>版本</td>
                 <td>{{ proxy.detail.version|e }}</td>
             </tr>
+            <tr>
+                <td colspan='2' style='text-align: center'>
+                    <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
+                </td>
+            </tr>
         </table>
         {% endif %}
         <table style='width: 90%; margin: auto; text-align: center'>

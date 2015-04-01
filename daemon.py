@@ -8,6 +8,9 @@ from hiredis import ReplyError
 from retrying import retry
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 from influxdb.client import InfluxDBClientError
+import sqlalchemy as db
+from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 from algalon_cli import AlgalonClient
 
 import config
@@ -30,14 +33,79 @@ COLUMNS = OrderedDict([
     ('keyspace_misses', 'keyspace_misses'),
     ('used_cpu_sys', 'used_cpu_sys'),
     ('used_cpu_user', 'used_cpu_user'),
+    ('response_time', 'response_time'),
 ])
 
 algalon_client = None
+session = None
+
+
+class Base(declarative_base()):
+    __abstract__ = True
+
+    id = db.Column('id', db.Integer, primary_key=True, autoincrement=True)
+    addr = db.Column('addr', db.String(32), unique=True, nullable=False)
+    poll_count = db.Column('poll_count', db.Integer, nullable=False)
+    avail_count = db.Column('avail_count', db.Integer, nullable=False)
+    rsp_1ms = db.Column('rsp_1ms', db.Integer, nullable=False)
+    rsp_5ms = db.Column('rsp_5ms', db.Integer, nullable=False)
+
+    @classmethod
+    def get_by(cls, host, port):
+        addr = '%s:%d' % (host, port)
+        n = session.query(cls).filter(cls.addr == addr).first()
+        if n is None:
+            n = cls(addr=addr, poll_count=0, avail_count=0, rsp_1ms=0,
+                    rsp_5ms=0)
+            session.add(n)
+            session.flush()
+        n.details = {'host': host, 'port': port}
+        return n
+
+    def update(self, details):
+        self.details.update(details)
+
+    def set_available(self, response_time):
+        if response_time <= 0.001:
+            self.rsp_1ms += 1
+        elif response_time <= 0.005:
+            self.rsp_5ms += 1
+        self.avail_count += 1
+        self.poll_count += 1
+        self.details['stat'] = True
+        self.details['sla'] = self.sla()
+
+    def set_unavailable(self):
+        self.poll_count += 1
+        self.details['stat'] = False
+        self.details['sla'] = self.sla()
+
+    def __getitem__(self, key):
+        return self.details[key]
+
+    def get(self, key, default=None):
+        return self.details.get(key, default)
+
+    def sla(self):
+        if self.poll_count == 0:
+            return 0
+        return float(self.avail_count) / self.poll_count
+
+
+class RedisNode(Base):
+    __tablename__ = 'redis_node_status'
+
+
+class Proxy(Base):
+    __tablename__ = 'proxy_status'
 
 
 def _info_detail(t):
     details = {}
-    for line in t.talk_raw(CMD_INFO).split('\n'):
+    now = time.time()
+    info = t.talk_raw(CMD_INFO)
+    details['response_time'] = time.time() - now
+    for line in info.split('\n'):
         if len(line) == 0 or line.startswith('#'):
             continue
         r = line.split(':')
@@ -49,16 +117,25 @@ def _info_detail(t):
 
 
 def _info_slots(t):
-    for line in t.talk_raw(CMD_CLUSTER_NODES).split('\n'):
-        if len(line) == 0 or 'fail' in line or 'myself' not in line:
-            continue
-        node = ClusterNode(*line.split(' '))
+    try:
+        for line in t.talk_raw(CMD_CLUSTER_NODES).split('\n'):
+            if len(line) == 0 or 'fail' in line or 'myself' not in line:
+                continue
+            node = ClusterNode(*line.split(' '))
+            return {
+                'node_id': node.node_id,
+                'slave': node.role_in_cluster != 'master',
+                'master_id': node.master_id if node.master_id != '-' else None,
+                'slots': node.assigned_slots,
+            }
+    except (ValueError, LookupError, ReplyError):
         return {
-            'node_id': node.node_id,
-            'slave': node.role_in_cluster != 'master',
-            'master_id': node.master_id if node.master_id != '-' else None,
-            'slots': node.assigned_slots,
+            'node_id': None,
+            'slave': False,
+            'master_id': None,
+            'slots': [],
         }
+
 
 
 @retry(stop_max_attempt_number=3, wait_fixed=200)
@@ -82,6 +159,7 @@ def _send_to_influxdb(node):
         node['storage'][COLUMNS['keyspace_misses']],
         node['cpu'][COLUMNS['used_cpu_sys']],
         node['cpu'][COLUMNS['used_cpu_user']],
+        node['response_time'],
     ]
     json_body = [{
         'name': name,
@@ -102,10 +180,15 @@ def _send_proxy_to_influxdb(proxy):
     points = [
         proxy['mem']['mem_buffer_alloc'],
         proxy['conn']['connected_clients'],
+        proxy['conn']['completed_commands'],
+        proxy['conn']['total_process_elapse'],
+        proxy['response_time'],
     ]
     json_body = [{
         'name': name,
-        'columns': ['mem_buffer_alloc', 'connected_clients'],
+        'columns': ['mem_buffer_alloc', 'connected_clients',
+                    'completed_commands', 'total_process_elapse',
+                    'response_time'],
         'points': [points],
     }]
 
@@ -145,6 +228,8 @@ def _info_node(host, port):
             'keyspace_misses': int(details['keyspace_misses']),
             'aof_enabled': details['aof_enabled'] == '1',
         }
+        node_info['response_time'] = details['response_time']
+        node_info['version'] = details['redis_version']
         node_info['stat'] = True
         return node_info
     finally:
@@ -155,7 +240,10 @@ def _info_node(host, port):
 def _info_proxy(host, port):
     t = Talker(host, port)
     try:
-        lines = t.talk_raw(CMD_PROXY).split('\n')
+        now = time.time()
+        i = t.talk_raw(CMD_PROXY)
+        elapse = time.time() - now
+        lines = i.split('\n')
         st = {}
         for ln in lines:
             k, v = ln.split(':')
@@ -165,74 +253,92 @@ def _info_proxy(host, port):
                                 st['mem_buffer_alloc'].split(',')])
         return {
             'stat': True,
+            'response_time': elapse,
             'threads': st['threads'],
             'version': st['version'],
-            'conn': {'connected_clients': conns},
+            'conn': {
+                'connected_clients': conns,
+                'completed_commands': int(st['completed_commands']),
+                'total_process_elapse': float(st['total_process_elapse']),
+            },
             'mem': {'mem_buffer_alloc': mem_buffer_alloc},
         }
     finally:
         t.close()
 
 PRE_SLA = {}
+CACHING_NODES = {}
 
 
-def _set_sla(s, step=1.0):
-    pre_sla = PRE_SLA.get((s['host'], s['port']), {'count': 0, 'sla': 0.0})
-    pre_sla['count'] += 1
-    pre_sla['sla'] += step
-    PRE_SLA[(s['host'], s['port'])] = pre_sla
-    s['sla'] = pre_sla['sla'] / pre_sla['count']
+def _load_from(cls, nodes):
+    r = []
+    for n in nodes:
+        if (n['host'], n['port']) in CACHING_NODES:
+            r.append(CACHING_NODES[(n['host'], n['port'])])
+            continue
+        loaded_node = cls.get_by(n['host'], n['port'])
+        r.append(loaded_node)
+    return r
+
+
+@retry(stop_max_attempt_number=3, wait_fixed=200)
+def _flush_to_db():
+    session.commit()
 
 
 def run():
     while True:
         poll = file_ipc.read_poll()
-        nodes = poll['nodes']
-        proxies = poll['proxies']
+        nodes = _load_from(RedisNode, poll['nodes'])
         for node in nodes:
             try:
-                node.update(_info_node(**node))
+                i = _info_node(node.details['host'], node.details['port'])
+                node.update(i)
+                node.set_available(i['response_time'])
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               node['host'], node['port'])
                 logging.exception(e)
+                node.set_unavailable()
                 if algalon_client is not None:
                     algalon_client.send_alarm(
                         'Fail to retrieve info of {0}:{1}'.format(
                             node['host'], node['port']),
                         traceback.format_exc())
-                node['stat'] = False
-                _set_sla(node, 0)
             else:
-                _set_sla(node, 1.0)
                 _send_to_influxdb(node)
+            session.add(node)
 
+        proxies = _load_from(Proxy, poll['proxies'])
         for p in proxies:
             try:
-                p.update(_info_proxy(**p))
+                i = _info_proxy(p.details['host'], p.details['port'])
+                p.update(i)
+                p.set_available(i['response_time'])
             except (ReplyError, SocketError, StandardError), e:
                 logging.error('Fail to retrieve info of %s:%d',
                               p['host'], p['port'])
                 logging.exception(e)
+                p.set_unavailable()
                 if algalon_client is not None:
                     algalon_client.send_alarm(
                         'Fail to retrieve info of {0}:{1}'.format(
                             p['host'], p['port']),
                         traceback.format_exc())
-                p['stat'] = False
-                _set_sla(p, 0)
             else:
-                _set_sla(p, 1.0)
                 _send_proxy_to_influxdb(p)
+            session.add(p)
 
         logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
         try:
-            file_ipc.write(nodes, proxies)
+            file_ipc.write([n.details for n in nodes],
+                           [p.details for p in proxies])
         except StandardError, e:
             logging.exception(e)
             if algalon_client is not None:
                 algalon_client.send_alarm(e.message, traceback.format_exc())
 
+        _flush_to_db()
         time.sleep(INTERVAL)
 
 
@@ -241,6 +347,13 @@ def main():
     config.init_logging(conf)
     global INTERVAL, _send_to_influxdb
     global algalon_client
+    global session
+
+    engine = db.create_engine(config.mysql_uri(conf))
+    Base.metadata.bind = engine
+    Base.metadata.create_all()
+    session = scoped_session(sessionmaker(bind=engine))()
+
     INTERVAL = int(conf.get('interval', INTERVAL))
     if 'influxdb' in conf:
         stats.db.init(**conf['influxdb'])
