@@ -6,6 +6,7 @@
     <div><p>CPU 状况</p><svg id='usages_cpu'></svg></div>
     <div><p>内存状况</p><svg id='usages_mem'></svg></div>
     <div><p>连接</p><svg id='connections'></svg></div>
+    <div><p>响应时间</p><svg id='response_time'></svg></div>
     <div><p>存储</p><svg id='keys'></svg></div>
 </div>
 <script>
@@ -18,6 +19,8 @@ statistics({
 
     connected_clients: [],
     total_commands_processed: [],
+
+    response_time: [],
 
     evicted_keys: [],
     expired_keys: [],
@@ -43,10 +46,17 @@ statistics({
     selector: '#connections',
     fields: [
         {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'},
-        {keyName: 'total_commands_processed', keyDisp: '运行指令数 (平均每秒)', color: '#f66'}
+        {keyName: 'total_commands_processed', keyDisp: '平均每秒指令数', color: '#f66'}
     ],
     yMapF: function(y) {return y;},
     title: '连接'
+}, {
+    selector: '#response_time',
+    fields: [
+        {keyName: 'response_time', keyDisp: '平均', color: 'black'},
+    ],
+    yMapF: function(y) {return y * 1000;},
+    title: '响应时间 (ms)'
 }, {
     selector: '#keys',
     fields: [

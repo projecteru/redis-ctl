@@ -2,6 +2,7 @@ import os
 import logging
 import redistrib.command as comm
 from socket import error as SocketError
+from hiredis import ReplyError
 from redistrib.clusternode import Talker, pack_command
 
 import node as nm
@@ -35,3 +36,5 @@ def _recover_instance(node):
     except (StandardError, SocketError), e:
         logging.exception(e)
         logging.error('Fail to recover %s:%d', node.host, node.port)
+    except ReplyError:
+        logging.info('%s:%d is not cluster enabled', node.host, node.port)

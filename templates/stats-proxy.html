@@ -7,11 +7,14 @@
 <div>
     <div><p>内存状况</p><svg id='usages_mem'></svg></div>
     <div><p>连接</p><svg id='connections'></svg></div>
+    <div><p>响应时间</p><svg id='response_time'></svg></div>
 </div>
 <script>
 statistics({
     mem_buffer_alloc: [],
     connected_clients: [],
+    completed_commands: [],
+    response_time: []
 }, '/stats/fetchproxy', {{ host|tojson }}, {{ port|tojson }}, [{
     selector: '#usages_mem',
     fields: [
@@ -22,10 +25,18 @@ statistics({
 }, {
     selector: '#connections',
     fields: [
-        {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'}
+        {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'},
+        {keyName: 'completed_commands', keyDisp: '平均每秒指令数', color: '#e65'}
     ],
     yMapF: function(y) {return y;},
     title: '连接'
+}, {
+    selector: '#response_time',
+    fields: [
+        {keyName: 'response_time', keyDisp: '平均', color: 'black'},
+    ],
+    yMapF: function(y) {return y * 1000;},
+    title: '响应时间 (ms)'
 }]);
 </script>
 {% endblock %}

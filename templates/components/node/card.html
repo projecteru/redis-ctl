@@ -56,6 +56,10 @@
                 <caption>节点</caption>
                 {% if node.stat %}
                 <tr>
+                    <td class='label-cell'>Redis 版本</td>
+                    <td>{{ node.detail.version }}</td>
+                </tr>
+                <tr>
                     <td class='label-cell'>节点 ID</td>
                     <td style='font-family: monospace'>{{ node.node_id|e }}</td>
                 </tr>
