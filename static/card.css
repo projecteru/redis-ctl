@@ -21,6 +21,14 @@
     border-bottom: 1px solid #ccc;
 }
 
+.card-previewonly {
+    display: initial;
+}
+
+.card-active .card-previewonly {
+    display: none;
+}
+
 .card-detailonly {
     display: none;
 }

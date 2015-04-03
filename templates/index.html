@@ -3,10 +3,26 @@
 
 {% block head %}
 <link rel='stylesheet' type='text/css' href='/static/card.css'>
+<link rel='stylesheet' type='text/css' href='/static/components.css'>
 <script src='/static/card.js'></script>
+<script src='/static/components.js'></script>
 <script>
 $(document).ready(function() {
     $('.card').attachCardExpand();
+    $('.check-group').enableLabelCheck({
+        onClick: function(self, checked) {
+            var root = self.parent();
+            while (!root.hasClass('card-root')) {
+                root = root.parent();
+            }
+            root.find('.alert-status').toggleClass('alert-enabled');
+            $.post('/set_alert_status/' + self.data('ntype'), {
+                host: self.data('host'),
+                port: self.data('port'),
+                suppress: checked ? '1' : '0'
+            });
+        }
+    });
 });
 </script>
 <style>
@@ -15,7 +31,7 @@ hr {
     margin-top: 1em;
 }
 
-input {
+input:not([type]), input[type='text'] {
     min-width: 400px;
     padding: 0.5em;
 }
@@ -85,6 +101,10 @@ th {
 .cluster-info {
     clear: both;
     margin-left: 1em;
+}
+
+.alert-enabled {
+    display: none;
 }
 </style>
 {% endblock %}
