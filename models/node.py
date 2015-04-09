@@ -16,6 +16,7 @@ class RedisNode(Base):
     port = db.Column(db.Integer, nullable=False)
     max_mem = db.Column(db.Integer, nullable=False)
     assignee_id = db.Column(db.ForeignKey(Cluster.id), index=True)
+    suppress_alert = db.Column(db.Integer, nullable=False, default=1)
 
     __table_args__ = (db.Index('address', 'host', 'port', unique=True),)
 
@@ -25,8 +26,7 @@ class RedisNode(Base):
 
 def get_by_host_port(host, port):
     return db.session.query(RedisNode).filter(
-        RedisNode.host == host,
-        RedisNode.port == port).first()
+        RedisNode.host == host, RedisNode.port == port).first()
 
 
 def list_all_nodes():

@@ -2,6 +2,7 @@
     {% set cluster = node.assignee %}
     {% set awaiting_polling = node.stat and not node.detail %}
     <span class='card-title' id='node-i-{{ node.host|e }}-{{ node.port }}'>节点 {{ node.host|e }}:{{ node.port }}</span>
+    <span style='float: right' class='card-previewonly alert-status {{ '' if node.suppress_alert else 'alert-enabled' }}'><span class='label label-danger'>报警关闭</span></span>
     <div class='card-preview'>
         {% if awaiting_polling %}
         <p class='slave' style='text-align: center' card-detailto='node-awaiting-polling'>等待轮询</p>
@@ -165,26 +166,31 @@
         <hr>
         {% endif %}
         <div style='clear: both; text-align: center'>
+            {% if node.node_id %}
             <button class='btn btn-primary' data-host='{{ node.host|e }}' data-port='{{ node.port }}'
                 onclick='launchClusterPanel({{ node.node_id|tojson }},
                                             {{ node.host|tojson }},
                                             {{ node.port|tojson }},
                                             {{ (cluster.id or '')|tojson }},
                                             {{ (node.detail.slots or [])|tojson }})'>节点控制面板</button>
+                {% if node.stat %}
+                    <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>集群自动发现</button>
+                {% else %}
+                    <button class='btn btn-primary fix-marker' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>重连</button>
+                {% endif %}
+            {% endif %}
 
             {% if not cluster %}
                 <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
             {% endif %}
 
-            {% if node.stat %}
-                <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>集群自动发现</button>
-            {% else %}
-                <button class='btn btn-primary fix-marker' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>重连</button>
-            {% endif %}
-
             {% if stats_enabled %}
                 <a href='/stats/view?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史</a>
             {% endif %}
+
+            <span class='check-group {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
+                <span class='check-group-label'>关闭报警</span>
+            </span>
         </div>
     </div>
 </div>

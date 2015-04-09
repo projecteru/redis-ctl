@@ -20,15 +20,14 @@ def index(request):
         for p in c.proxies:
             p.detail = proxy_details.get((p.host, p.port), {})
             p.stat = p.detail.get('stat', True)
-            proxies.append({'host': p.host, 'port': p.port})
+        proxies.extend(c.proxies)
 
     for n in nodes:
         detail = node_details.get((n.host, n.port), {})
         n.node_id = detail.get('node_id')
         n.detail = detail
         n.stat = detail.get('stat', True)
-    file_ipc.write_nodes([{'host': n.host, 'port': n.port} for n in nodes],
-                         proxies)
+    file_ipc.write_nodes(nodes, proxies)
 
     clusters_json = {c.id: {
         'descr': c.description,

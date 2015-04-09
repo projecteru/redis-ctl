@@ -266,7 +266,6 @@ def _info_proxy(host, port):
     finally:
         t.close()
 
-PRE_SLA = {}
 CACHING_NODES = {}
 
 
@@ -274,9 +273,13 @@ def _load_from(cls, nodes):
     r = []
     for n in nodes:
         if (n['host'], n['port']) in CACHING_NODES:
-            r.append(CACHING_NODES[(n['host'], n['port'])])
+            cache_node = CACHING_NODES[(n['host'], n['port'])]
+            r.append(cache_node)
+            cache_node.suppress_alert = n.get('suppress_alert')
             continue
         loaded_node = cls.get_by(n['host'], n['port'])
+        CACHING_NODES[(n['host'], n['port'])] = loaded_node
+        loaded_node.suppress_alert = n.get('suppress_alert')
         r.append(loaded_node)
     return r
 
@@ -284,6 +287,11 @@ def _load_from(cls, nodes):
 @retry(stop_max_attempt_number=3, wait_fixed=200)
 def _flush_to_db():
     session.commit()
+
+
+def _send_alarm(message, trace):
+    if algalon_client is not None:
+        algalon_client.send_alarm(message, trace)
 
 
 def run():
@@ -300,10 +308,9 @@ def run():
                               node['host'], node['port'])
                 logging.exception(e)
                 node.set_unavailable()
-                if algalon_client is not None:
-                    algalon_client.send_alarm(
-                        'Fail to retrieve info of {0}:{1}'.format(
-                            node['host'], node['port']),
+                if node.suppress_alert != 1:
+                    _send_alarm(
+                        'Redis Failed %s:%d' % (node['host'], node['port']),
                         traceback.format_exc())
             else:
                 _send_to_influxdb(node)
@@ -320,10 +327,9 @@ def run():
                               p['host'], p['port'])
                 logging.exception(e)
                 p.set_unavailable()
-                if algalon_client is not None:
-                    algalon_client.send_alarm(
-                        'Fail to retrieve info of {0}:{1}'.format(
-                            p['host'], p['port']),
+                if p.suppress_alert != 1:
+                    _send_alarm(
+                        'Cerberus Failed %s:%d' % (p['host'], p['port']),
                         traceback.format_exc())
             else:
                 _send_proxy_to_influxdb(p)
