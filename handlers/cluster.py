@@ -37,8 +37,8 @@ def set_cluster_info(request):
         port = int(request.form['proxy_port'])
         p = models.proxy.get_or_create(host, port)
         p.cluster_id = c.id
+        db.session.add(p)
     db.session.add(c)
-    db.session.add(p)
 
 
 @base.post_async('/cluster/recover_migrate')

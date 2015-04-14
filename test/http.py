@@ -6,6 +6,7 @@ import testdb
 import file_ipc
 from models.base import db
 from models.proxy import Proxy
+from models.cluster import Cluster
 import handlers.base
 
 
@@ -82,6 +83,20 @@ class HttpRequest(unittest.TestCase):
             self.assertEqual(8889, r[0].port)
             self.assertEqual(1, r[0].suppress_alert)
             self.assertEqual(int(cluster_id), r[0].cluster_id)
+
+            r = list(db.session.query(Cluster).all())
+            self.assertEqual(1, len(r))
+            self.assertEqual('.', r[0].description)
+
+            r = client.post('/cluster/set_info', data={
+                'cluster_id': cluster_id,
+                'descr': 'xyzw',
+            })
+            self.assertEqual(200, r.status_code)
+
+            r = list(db.session.query(Cluster).all())
+            self.assertEqual(1, len(r))
+            self.assertEqual('xyzw', r[0].description)
 
             comm.shutdown_cluster('127.0.0.1', 7100)
 
