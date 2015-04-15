@@ -7,6 +7,8 @@ import stats.db
 
 
 def run_app(app, debug):
+    import file_ipc
+    file_ipc.write_nodes_proxies_from_db()
     if debug:
         app.debug = True
         return app.run(port=config.listen_port())
