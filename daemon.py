@@ -185,7 +185,7 @@ class RedisNode(Base):
             t.close()
 
     def _send_alarm(self):
-        _send_alarm('Cerberus Failed %s:%d' % (
+        _send_alarm('Redis Failed %s:%d' % (
             self.details['host'], self.details['port']), '')
 
 
@@ -242,7 +242,7 @@ class Proxy(Base):
             t.close()
 
     def _send_alarm(self):
-        _send_alarm('Redis Failed %s:%d' % (
+        _send_alarm('Cerberus Failed %s:%d' % (
             self.details['host'], self.details['port']), '')
 
 
