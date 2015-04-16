@@ -1,6 +1,13 @@
+import gevent
+import gevent.monkey
+
+gevent.monkey.patch_all()
+
 import sys
 import time
 import logging
+import threading
+import random
 from collections import OrderedDict
 from socket import error as SocketError
 from hiredis import ReplyError
@@ -310,28 +317,48 @@ def _send_alarm(message, trace):
     algalon_client.send_alarm(message, trace)
 
 
-def run():
-    while True:
-        poll = file_ipc.read_poll()
-        nodes = _load_from(RedisNode, poll['nodes'])
-        for node in nodes:
+class Poller(threading.Thread):
+    def __init__(self, nodes):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.nodes = nodes
+        logging.debug('Poller %x distributed %d nodes',
+                      id(self), len(self.nodes))
+
+    def run(self):
+        for node in self.nodes:
+            logging.debug('Poller %x collect for %s:%d',
+                          id(self), node['host'], node['port'])
             node.collect_stats()
             session.add(node)
 
+
+def run():
+    NODES_EACH_THREAD = 20
+    while True:
+        poll = file_ipc.read_poll()
+        nodes = _load_from(RedisNode, poll['nodes'])
         proxies = _load_from(Proxy, poll['proxies'])
-        for p in proxies:
-            p.collect_stats()
-            session.add(p)
+
+        all_nodes = nodes + proxies
+        random.shuffle(all_nodes)
+        pollers = [Poller(all_nodes[i: i + NODES_EACH_THREAD])
+                   for i in xrange(0, len(all_nodes), NODES_EACH_THREAD)]
+        for p in pollers:
+            p.start()
+
+        time.sleep(INTERVAL)
+
+        for p in pollers:
+            p.join()
 
         logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
+        _flush_to_db()
         try:
             file_ipc.write([n.details for n in nodes],
                            [p.details for p in proxies])
         except StandardError, e:
             logging.exception(e)
-
-        _flush_to_db()
-        time.sleep(INTERVAL)
 
 
 def main():
