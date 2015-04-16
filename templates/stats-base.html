@@ -54,7 +54,8 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
                       for (var i = 1; i < gMetricsDatum[e.keyName].length; ++i) {
                           values.push({
                               x: gMetricsDatum[e.keyName][i].x,
-                              y: Math.max(0, (gMetricsDatum[e.keyName][i].y - gMetricsDatum[e.keyName][i - 1].y) / POLL_SECS)
+                              y: Math.max(0, (gMetricsDatum[e.keyName][i].y - gMetricsDatum[e.keyName][i - 1].y) /
+                                             (gMetricsDatum[e.keyName][i].x - gMetricsDatum[e.keyName][i - 1].x))
                           });
                       }
                   } else {
