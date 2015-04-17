@@ -29,6 +29,7 @@
             <td>
                 <span card-detailto='proxy-sla'>
                     {{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%
+                    <span style='float: right' class='card-previewonly alert-status {{ '' if proxy.suppress_alert else 'alert-enabled' }}'><span class='label label-danger'>报警关闭</span></span>
                 </span>
             </td>
         </tr>
@@ -54,6 +55,9 @@
             <tr>
                 <td colspan='2' style='text-align: center'>
                     <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
+                    <span class='check-group {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
+                        <span class='check-group-label'>关闭报警</span>
+                    </span>
                 </td>
             </tr>
         </table>

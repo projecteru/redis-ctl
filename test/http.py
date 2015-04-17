@@ -3,8 +3,10 @@ import unittest
 import redistrib.command as comm
 
 import testdb
+import file_ipc
 from models.base import db
 from models.proxy import Proxy
+from models.cluster import Cluster
 import handlers.base
 
 
@@ -79,7 +81,22 @@ class HttpRequest(unittest.TestCase):
             self.assertEqual(1, len(r))
             self.assertEqual('127.0.0.1', r[0].host)
             self.assertEqual(8889, r[0].port)
+            self.assertEqual(1, r[0].suppress_alert)
             self.assertEqual(int(cluster_id), r[0].cluster_id)
+
+            r = list(db.session.query(Cluster).all())
+            self.assertEqual(1, len(r))
+            self.assertEqual('.', r[0].description)
+
+            r = client.post('/cluster/set_info', data={
+                'cluster_id': cluster_id,
+                'descr': 'xyzw',
+            })
+            self.assertEqual(200, r.status_code)
+
+            r = list(db.session.query(Cluster).all())
+            self.assertEqual(1, len(r))
+            self.assertEqual('xyzw', r[0].description)
 
             comm.shutdown_cluster('127.0.0.1', 7100)
 
@@ -143,3 +160,114 @@ class HttpRequest(unittest.TestCase):
                 'port': 7100,
             })
             comm.shutdown_cluster('127.0.0.1', 7101)
+
+    def test_suppress_alert(self):
+        app = handlers.base.app
+
+        with app.test_client() as client:
+            r = client.post('/nodes/add', data={
+                'host': '127.0.0.1',
+                'port': '7100',
+                'mem': '1048576',
+            })
+            self.assertEqual(200, r.status_code)
+
+            r = client.post('/nodes/add', data={
+                'host': '127.0.0.1',
+                'port': '7101',
+                'mem': '1048576',
+            })
+            self.assertEqual(200, r.status_code)
+
+            r = client.post('/set_alert_status/redis', data={
+                'host': '127.0.0.1',
+                'port': '7100',
+                'suppress': '0',
+            })
+            self.assertEqual(200, r.status_code)
+
+            r = client.post('/cluster/autojoin', data={
+                'host': '127.0.0.1',
+                'port': '7100',
+            })
+            self.assertEqual(200, r.status_code)
+            cluster_id = r.data
+
+            r = client.post('/cluster/set_info', data={
+                'cluster_id': cluster_id,
+                'descr': '.',
+                'proxy_host': '127.0.0.1',
+                'proxy_port': '8889',
+            })
+            self.assertEqual(200, r.status_code)
+
+            file_ipc.write_nodes_proxies_from_db()
+            with open(file_ipc.POLL_FILE, 'r') as fin:
+                polls = json.loads(fin.read())
+
+            self.assertEqual(2, len(polls['nodes']))
+            poll_nodes = sorted(polls['nodes'],
+                                key=lambda n: '%s:%d' % (n['host'], n['port']))
+
+            n = poll_nodes[0]
+            self.assertEqual('127.0.0.1', n['host'])
+            self.assertEqual(7100, n['port'])
+            self.assertEqual(0, n['suppress_alert'])
+
+            n = poll_nodes[1]
+            self.assertEqual('127.0.0.1', n['host'])
+            self.assertEqual(7101, n['port'])
+            self.assertEqual(1, n['suppress_alert'])
+
+            self.assertEqual(1, len(polls['proxies']))
+            poll_proxies = sorted(
+                polls['proxies'],
+                key=lambda n: '%s:%d' % (n['host'], n['port']))
+
+            n = poll_proxies[0]
+            self.assertEqual('127.0.0.1', n['host'])
+            self.assertEqual(8889, n['port'])
+            self.assertEqual(1, n['suppress_alert'])
+
+            r = client.post('/set_alert_status/redis', data={
+                'host': '127.0.0.1',
+                'port': '7101',
+                'suppress': '0',
+            })
+            self.assertEqual(200, r.status_code)
+
+            r = client.post('/set_alert_status/redis', data={
+                'host': '127.0.0.1',
+                'port': '7102',
+                'suppress': '0',
+            })
+            self.assertEqual(400, r.status_code)
+            self.assertEqual({'reason': 'no such node'}, json.loads(r.data))
+
+            file_ipc.write_nodes_proxies_from_db()
+            with open(file_ipc.POLL_FILE, 'r') as fin:
+                polls = json.loads(fin.read())
+
+            self.assertEqual(2, len(polls['nodes']))
+            poll_nodes = sorted(polls['nodes'],
+                                key=lambda n: '%s:%d' % (n['host'], n['port']))
+
+            n = poll_nodes[0]
+            self.assertEqual('127.0.0.1', n['host'])
+            self.assertEqual(7100, n['port'])
+            self.assertEqual(0, n['suppress_alert'])
+
+            n = poll_nodes[1]
+            self.assertEqual('127.0.0.1', n['host'])
+            self.assertEqual(7101, n['port'])
+            self.assertEqual(0, n['suppress_alert'])
+
+            self.assertEqual(1, len(polls['proxies']))
+            poll_proxies = sorted(
+                polls['proxies'],
+                key=lambda n: '%s:%d' % (n['host'], n['port']))
+
+            n = poll_proxies[0]
+            self.assertEqual('127.0.0.1', n['host'])
+            self.assertEqual(8889, n['port'])
+            self.assertEqual(1, n['suppress_alert'])

@@ -19,7 +19,8 @@
 <script>
 function statistics(gMetricsDatum, uri, host, port, fields) {
     var POINTS_LENGTH = 1000;
-    var POLL_INTERVAL = 120 * 1000;
+    var POLL_SECS = 120;
+    var POLL_INTERVAL = POLL_SECS * 1000;
     var gDatumTimestamp = {};
     for (var k in gMetricsDatum) {
         gDatumTimestamp[k] = {};
@@ -47,8 +48,21 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
               chart.yAxis.axisLabel(yLabel).tickFormat(d3.format(',.2f'));
 
               var datum = graphKeys.map(function(e) {
+                  var values;
+                  if (e.deriv) {
+                      values = [{x: gMetricsDatum[e.keyName][0].x, y: 0}];
+                      for (var i = 1; i < gMetricsDatum[e.keyName].length; ++i) {
+                          values.push({
+                              x: gMetricsDatum[e.keyName][i].x,
+                              y: Math.max(0, (gMetricsDatum[e.keyName][i].y - gMetricsDatum[e.keyName][i - 1].y) /
+                                             (gMetricsDatum[e.keyName][i].x - gMetricsDatum[e.keyName][i - 1].x))
+                          });
+                      }
+                  } else {
+                      values = gMetricsDatum[e.keyName];
+                  }
                   return {
-                      values: gMetricsDatum[e.keyName].map(function (e) {return {x: e.x * 1000, y: yMapF(e.y)};}),
+                      values: values.map(function (e) {return {x: e.x * 1000, y: yMapF(e.y)};}),
                       key: e.keyDisp,
                       color: e.color
                   }

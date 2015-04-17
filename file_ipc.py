@@ -30,7 +30,7 @@ def write_poll(nodes, proxies):
     with open(POLL_INTERMEDIA_FILE, 'w') as f:
         f.write(json.dumps({
             'nodes': nodes,
-            'proxies': [p for p in proxies if p['host'] is not None],
+            'proxies': proxies,
         }))
     os.rename(POLL_INTERMEDIA_FILE, POLL_FILE)
 
@@ -45,12 +45,20 @@ def read_poll():
 
 
 def write_nodes(nodes, proxies):
-    write_poll([{'host': n['host'], 'port': n['port']} for n in nodes],
-               proxies)
+    write_poll(
+        [{
+            'host': n.host,
+            'port': n.port,
+            'suppress_alert': n.suppress_alert,
+        } for n in nodes],
+        [{
+            'host': p.host,
+            'port': p.port,
+            'suppress_alert': p.suppress_alert,
+        } for p in proxies])
 
 
 def write_nodes_proxies_from_db():
     import models.node as nm
     import models.proxy as pr
-    write_poll([{'host': n.host, 'port': n.port} for n in nm.list_all_nodes()],
-               [{'host': p.host, 'port': p.port} for p in pr.list_all()])
+    write_nodes(nm.list_all_nodes(), pr.list_all())
