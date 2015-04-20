@@ -1,45 +1,45 @@
 Redis Instance Contolling and Distribution Service
 
-Server
+Dependency
 ===
 
-Create tables in MySQL via `scripts/mysql.sql`.
+Python-dev header files and libs
+
+    # debain / ubuntu
+    apt-get install python-dev
+
+    # centos
+    yum install python-devel
 
 Install dependencies via
 
     pip install -r requirements.txt
 
-Make a copy of `config.yaml` (suggest naming the copy as `local.yaml` which is added to gitignore).
-
-Edit the copy, change
-
-* `port`: server listen port
-* `log_level`: Python logging level, `info`, `debug`, `error`, etc
-* `debug`: whether the server runs under the debug mode
-* `mysql` section: MySQL connection arguments
-* `influxdb` section (optional): InfluxDB connection arguments
-* `algalon` section (optional): Algalon server arguments
-
-Then run
-
-    python main.py local.yaml
-
-Polling Daemon
+Configure and Run the Server
 ===
 
-Process to polling redis nodes status. (via `info` command)
+Run with all configurations default
+
+    python main.py
+
+Use env vars, like
+
+    MYSQL_USERNAME=redisctl MYSQL_PASSWORD=p@55w0rd python main.py
+
+Check `config.py` for configurable items.
+
+To use a configure file, copy `override_config.py.example` to `override_config.py`, change anything you want. This file would be imported and override any default config or env vars in `config.py` if available.
+
+Run the Polling Daemon
+===
+
+Process to polling redis nodes and proxy status.
 
 Run
 
-    python daemon.py local.yaml
+    python daemon.py
 
-Stats include
-
-* memory usage
-* cpu usage
-* keys stats (hits, misses, expired, evicted)
-* connected clients (including the polling connection, possibly including connections from controller)
-* if aof enabled
+Also you could use similar ways to configure daemon, just like setup up the main server.
 
 IPC
 ===

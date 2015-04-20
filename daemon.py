@@ -362,22 +362,21 @@ def run():
 
 
 def main():
-    conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
-    config.init_logging(conf)
+    config.init_logging()
     global INTERVAL
     global algalon_client
     global session
 
-    engine = db.create_engine(config.mysql_uri(conf))
+    engine = db.create_engine(config.SQLALCHEMY_DATABASE_URI)
     Base.metadata.bind = engine
     Base.metadata.create_all()
     session = scoped_session(sessionmaker(bind=engine))()
 
-    INTERVAL = int(conf.get('interval', INTERVAL))
-    if 'influxdb' in conf:
-        stats.db.init(**conf['influxdb'])
-    if 'algalon' in conf:
-        algalon_client = AlgalonClient(**conf['algalon'])
+    INTERVAL = config.POLL_INTERVAL
+    if config.INFLUXDB and config.INFLUXDB['host']:
+        stats.db.init(**config.INFLUXDB)
+    if config.ALGALON and config.ALGALON['dns']:
+        algalon_client = AlgalonClient(**config.ALGALON)
     run()
 
 if __name__ == '__main__':

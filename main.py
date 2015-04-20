@@ -11,28 +11,27 @@ def run_app(app, debug):
     file_ipc.write_nodes_proxies_from_db()
     if debug:
         app.debug = True
-        return app.run(port=config.listen_port())
+        return app.run(port=config.SERVER_PORT)
     from app import WrapperApp
     WrapperApp(app, {
-        'bind': '0.0.0.0:%d' % config.listen_port(),
+        'bind': '0.0.0.0:%d' % config.SERVER_PORT,
         'workers': 2,
         'timeout': 86400,
     }).run()
 
 
 def init_app():
-    conf = config.load('config.yaml' if len(sys.argv) == 1 else sys.argv[1])
-    config.init_logging(conf)
+    config.init_logging()
 
-    if 'influxdb' in conf:
-        stats.db.init(**conf['influxdb'])
+    if config.INFLUXDB and config.INFLUXDB['host']:
+        stats.db.init(**config.INFLUXDB)
 
     import handlers
     app = handlers.base.app
-    app.config['SQLALCHEMY_DATABASE_URI'] = config.mysql_uri(conf)
+    app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
     models.base.init_db(app)
     models.recover.recover()
-    return app, conf.get('debug', 0) == 1
+    return app, config.DEBUG == 1
 
 if __name__ == '__main__':
     app, debug = init_app()

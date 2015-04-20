@@ -1,4 +1,5 @@
 local.*
+override_config.py
 dump.rdb
 
 # Byte-compiled / optimized / DLL files

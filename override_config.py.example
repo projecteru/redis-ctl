@@ -1,0 +1,18 @@
+import os
+import logging
+
+SERVER_PORT = 5000
+
+MYSQL_HOST = '127.0.0.1'
+MYSQL_PORT = 3306
+MYSQL_USERNAME = 'root'
+MYSQL_PASSWORD = '123456'
+MYSQL_DATABASE = 'redisctl'
+
+INFLUXDB = None
+ALGALON = None
+
+LOG_LEVEL = logging.DEBUG
+
+DEBUG = 1
+POLL_INTERVAL = 10
