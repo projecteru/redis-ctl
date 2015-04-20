@@ -8,7 +8,7 @@ PyYAML==3.11
 Werkzeug==0.9.6
 gunicorn==19.1.1
 hiredis==0.1.5
-influxdb==0.1.13
+influxdb==2.0.1
 itsdangerous==0.24
 redis-trib
 requests==2.4.3

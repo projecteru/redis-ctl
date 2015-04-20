@@ -22,6 +22,13 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
     var POLL_SECS = 120;
     var POLL_INTERVAL = POLL_SECS * 1000;
     var gDatumTimestamp = {};
+    var TIME_OFFSET = (new Date()).getTimezoneOffset();
+
+    function timeStrFromUTC(t) {
+        t.setMinutes(t.getMinutes() - TIME_OFFSET);
+        return t.toTimeString().slice(0, 8);
+    }
+
     for (var k in gMetricsDatum) {
         gDatumTimestamp[k] = {};
     }
@@ -42,7 +49,7 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
                       return '';
                   }
                   var t = new Date(gMetricsDatum[graphKeys[0].keyName][x].x * 1000);
-                  return t.toTimeString().slice(0, 8);
+                  return timeStrFromUTC(t);
               });
 
               chart.yAxis.axisLabel(yLabel).tickFormat(d3.format(',.2f'));
@@ -84,10 +91,9 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
             success: function(r) {
                 var i, j, k, timestampGroup, timestamp;
                 for (i in r) {
-                    r[i].reverse();
                     timestampGroup = gDatumTimestamp[i];
                     if (!timestampGroup) {
-                      continue;
+                        continue;
                     }
                     for (j in r[i]) {
                         timestamp = r[i][j][0];
