@@ -2,9 +2,9 @@ import os
 import types
 import logging
 import functools
-import urllib
 import flask
 import werkzeug.exceptions
+from werkzeug.utils import cached_property
 from cStringIO import StringIO
 from cgi import parse_qs
 
@@ -16,18 +16,6 @@ import models.base
 app = flask.Flask('RedisControl')
 app.secret_key = os.urandom(24)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
-
-OPENID_LOGIN_ARGS = {
-    'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
-    'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
-    'openid.mode': 'checkid_setup',
-    'openid.ns': 'http://specs.openid.net/auth/2.0',
-    'openid.ns.sreg': 'http://openid.net/extensions/sreg/1.1',
-    'openid.realm': 'http://okr.intra.hunantv.com/',
-    'openid.return_to': 'http://okr.intra.hunantv.com/user/login_from_openid/',
-    'openid.sreg.optional': 'username,uid,team',
-    'openid.sreg.required': 'uid,realname',
-}
 
 
 # http://stackoverflow.com/a/11163649
@@ -61,18 +49,6 @@ def json_result(obj, status_code=200):
     return r
 
 
-def lazyprop(f):
-    attr_name = '_l_' + f.__name__
-
-    @property
-    def g(self):
-        if not hasattr(self, attr_name):
-            setattr(self, attr_name, f(self))
-        return getattr(self, attr_name)
-
-    return g
-
-
 def strip_irregular_space(s):
     return s.replace('\t', '').replace('\r', '')
 
@@ -83,15 +59,15 @@ class Request(object):
         self.args = flask.request.args
         self.session = flask.session
 
-    @lazyprop
+    @cached_property
     def post_body(self):
         return self.request.environ['body_copy']
 
-    @lazyprop
+    @cached_property
     def post_body_text(self):
         return unicode(strip_irregular_space(self.post_body), 'utf-8')
 
-    @lazyprop
+    @cached_property
     def form(self):
         try:
             return {k: unicode(strip_irregular_space(v[0]), 'utf-8')
@@ -99,13 +75,8 @@ class Request(object):
         except (ValueError, TypeError, AttributeError, LookupError):
             return {}
 
-    @lazyprop
-    def idkey(self):
-        return flask.request.cookies.get('idkey', None)
-
     def render(self, templ, **kwargs):
-        return flask.Response(
-            template.render(templ, user_login_uri=self.login_url, **kwargs))
+        return flask.Response(template.render(templ, **kwargs))
 
     def set_session(self, key, value):
         self.session[key] = value
@@ -116,14 +87,6 @@ class Request(object):
     def del_session(self, key):
         if key in self.session:
             del self.session[key]
-
-    @lazyprop
-    def login_url(self):
-        OPENID_LOGIN_ARGS['openid.return_to'] = (self.request.host_url +
-                                                 'user/login_from_openid/')
-        OPENID_LOGIN_ARGS['openid.realm'] = self.request.host_url
-        return ('http://openids.intra.hunantv.com/server/endpoint/?' +
-                urllib.urlencode(OPENID_LOGIN_ARGS))
 
     def forbid(self):
         raise werkzeug.exceptions.Forbidden()

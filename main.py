@@ -1,5 +1,3 @@
-import sys
-
 import config
 import models.recover
 import models.base

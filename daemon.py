@@ -3,7 +3,6 @@ import gevent.monkey
 
 gevent.monkey.patch_all()
 
-import sys
 import time
 import logging
 import threading
@@ -44,9 +43,10 @@ COLUMNS = OrderedDict([
 
 algalon_client = None
 session = None
+Base = declarative_base()
 
 
-class Base(declarative_base()):
+class NodeBase(Base):
     __abstract__ = True
 
     id = db.Column('id', db.Integer, primary_key=True, autoincrement=True)
@@ -55,6 +55,11 @@ class Base(declarative_base()):
     avail_count = db.Column('avail_count', db.Integer, nullable=False)
     rsp_1ms = db.Column('rsp_1ms', db.Integer, nullable=False)
     rsp_5ms = db.Column('rsp_5ms', db.Integer, nullable=False)
+
+    def __init__(self, *args, **kwargs):
+        Base.__init__(self, *args, **kwargs)
+        self.suppress_alert = 1
+        self.details = {}
 
     @classmethod
     def get_by(cls, host, port):
@@ -120,7 +125,7 @@ class Base(declarative_base()):
         raise NotImplementedError()
 
 
-class RedisNode(Base):
+class RedisNode(NodeBase):
     __tablename__ = 'redis_node_status'
 
     def send_to_influxdb(self):
@@ -189,7 +194,7 @@ class RedisNode(Base):
             self.details['host'], self.details['port']), '')
 
 
-class Proxy(Base):
+class Proxy(NodeBase):
     __tablename__ = 'proxy_status'
 
     def send_to_influxdb(self):

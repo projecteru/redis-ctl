@@ -21,7 +21,7 @@ class RedisNode(Base):
     __table_args__ = (db.Index('address', 'host', 'port', unique=True),)
 
     def free(self):
-        return self.assignee is None
+        return self.assignee_id is None
 
 
 def get_by_host_port(host, port):
