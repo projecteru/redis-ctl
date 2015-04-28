@@ -1,7 +1,9 @@
 import re
+from datetime import datetime, timedelta
 
 import base
 import stats.db
+from stats.query import get_stats_by_node
 
 PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
 
@@ -30,20 +32,17 @@ def init_handlers():
         if not PAT_HOST.match(host):
             raise ValueError('Invalid hostname')
         port = int(request.args['port'])
-        limit = min(int(request.args['limit']), 1000)
+        limit = min(int(request.args['limit']), 720)
+        span = timedelta(minutes=limit * 2)
+        now = datetime.utcnow()
+        node = '%s:%d:p' % (host, port)
         result = {}
 
         for field in PROXY_FIELDS:
-            q = stats.db.client.query(
-                '''select max(%s) from "%s:%d:p" group by time(2m) limit %d'''
-                % (field, host, port, limit))
-            result[field] = q[0]['points']
+            result[field] = get_stats_by_node(node, field, 'max', span, now)
 
         for field in PROXY_RES_FIELDS:
-            q = stats.db.client.query(
-                '''select mean(%s) from "%s:%d:p" group by time(2m) limit %d'''
-                % (field, host, port, limit))
-            result[field] = q[0]['points']
+            result[field] = get_stats_by_node(node, field, 'mean', span, now)
 
         return base.json_result(result)
 
@@ -53,20 +52,17 @@ def init_handlers():
         if not PAT_HOST.match(host):
             raise ValueError('Invalid hostname')
         port = int(request.args['port'])
-        limit = min(int(request.args['limit']), 1000)
+        limit = min(int(request.args['limit']), 720)
+        span = timedelta(minutes=limit * 2)
+        now = datetime.utcnow()
+        node = '%s:%d' % (host, port)
         result = {}
 
         for field in RES_FIELDS:
-            q = stats.db.client.query(
-                '''select mean(%s) from "%s:%d" group by time(2m) limit %d'''
-                % (field, host, port, limit))
-            result[field] = q[0]['points']
+            result[field] = get_stats_by_node(node, field, 'mean', span, now)
 
         for field in INT_FIELDS:
-            q = stats.db.client.query(
-                '''select max(%s) from "%s:%d" group by time(2m) limit %d'''
-                % (field, host, port, limit))
-            result[field] = q[0]['points']
+            result[field] = get_stats_by_node(node, field, 'max', span, now)
 
         return base.json_result(result)
 

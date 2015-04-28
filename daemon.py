@@ -7,7 +7,6 @@ import time
 import logging
 import threading
 import random
-from collections import OrderedDict
 from socket import error as SocketError
 from hiredis import ReplyError
 from retrying import retry
@@ -26,20 +25,6 @@ INTERVAL = 10
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 CMD_PROXY = '+PROXY\r\n'
-
-COLUMNS = OrderedDict([
-    ('used_memory', 'used_memory'),
-    ('used_memory_rss', 'used_memory_rss'),
-    ('connected_clients', 'connected_clients'),
-    ('total_commands_processed', 'total_commands_processed'),
-    ('expired_keys', 'expired_keys'),
-    ('evicted_keys', 'evicted_keys'),
-    ('keyspace_hits', 'keyspace_hits'),
-    ('keyspace_misses', 'keyspace_misses'),
-    ('used_cpu_sys', 'used_cpu_sys'),
-    ('used_cpu_user', 'used_cpu_user'),
-    ('response_time', 'response_time'),
-])
 
 algalon_client = None
 session = None
@@ -129,29 +114,23 @@ class RedisNode(NodeBase):
     __tablename__ = 'redis_node_status'
 
     def send_to_influxdb(self):
-        def cpu_delta(now, pre, t):
-            return float(now - pre) / (time.time() - t)
-
-        points = [
-            self['mem'][COLUMNS['used_memory']],
-            self['mem'][COLUMNS['used_memory_rss']],
-            self['conn'][COLUMNS['connected_clients']],
-            self['conn'][COLUMNS['total_commands_processed']],
-            self['storage'][COLUMNS['expired_keys']],
-            self['storage'][COLUMNS['evicted_keys']],
-            self['storage'][COLUMNS['keyspace_hits']],
-            self['storage'][COLUMNS['keyspace_misses']],
-            self['cpu'][COLUMNS['used_cpu_sys']],
-            self['cpu'][COLUMNS['used_cpu_user']],
-            self['response_time'],
-        ]
-        json_body = [{
+        _emit_data([{
             'name': self.addr,
-            'columns': COLUMNS.keys(),
-            'points': [points],
-        }]
-
-        _emit_data(json_body)
+            'fields': {
+                'used_memory': self['mem']['used_memory'],
+                'used_memory_rss': self['mem']['used_memory_rss'],
+                'connected_clients': self['conn']['connected_clients'],
+                'total_commands_processed': self['conn'][
+                    'total_commands_processed'],
+                'expired_keys': self['storage']['expired_keys'],
+                'evicted_keys': self['storage']['evicted_keys'],
+                'keyspace_hits': self['storage']['keyspace_hits'],
+                'keyspace_misses': self['storage']['keyspace_misses'],
+                'used_cpu_sys': self['cpu']['used_cpu_sys'],
+                'used_cpu_user': self['cpu']['used_cpu_user'],
+                'response_time': self['response_time'],
+            },
+        }])
 
     @retry(stop_max_attempt_number=3, wait_fixed=200)
     def _collect_stats(self):
@@ -198,22 +177,16 @@ class Proxy(NodeBase):
     __tablename__ = 'proxy_status'
 
     def send_to_influxdb(self):
-        points = [
-            self['mem']['mem_buffer_alloc'],
-            self['conn']['connected_clients'],
-            self['conn']['completed_commands'],
-            self['conn']['total_process_elapse'],
-            self['response_time'],
-        ]
-        json_body = [{
+        _emit_data([{
             'name': self.addr + ':p',
-            'columns': ['mem_buffer_alloc', 'connected_clients',
-                        'completed_commands', 'total_process_elapse',
-                        'response_time'],
-            'points': [points],
-        }]
-
-        _emit_data(json_body)
+            'fields': {
+                'mem_buffer_alloc': self['mem']['mem_buffer_alloc'],
+                'connected_clients': self['conn']['connected_clients'],
+                'completed_commands': self['conn']['completed_commands'],
+                'total_process_elapse': self['conn']['total_process_elapse'],
+                'response_time': self['response_time'],
+            },
+        }])
 
     @retry(stop_max_attempt_number=3, wait_fixed=200)
     def _collect_stats(self):
