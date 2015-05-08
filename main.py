@@ -1,5 +1,4 @@
 import config
-import models.recover
 import models.base
 import stats.db
 
@@ -28,7 +27,6 @@ def init_app():
     app = handlers.base.app
     app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
     models.base.init_db(app)
-    models.recover.recover()
     return app, config.DEBUG == 1
 
 if __name__ == '__main__':

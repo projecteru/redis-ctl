@@ -1,10 +1,10 @@
 from socket import error as SocketError
-import hiredis
 import logging
 import redistrib.command
 
 import base
 import models.cluster
+import models.task
 import models.proxy
 import models.node as nm
 from models.base import db
@@ -43,11 +43,13 @@ def set_cluster_info(request):
 
 @base.post_async('/cluster/recover_migrate')
 def recover_migrate_status(request):
-    c = models.cluster.Cluster.lock_by_id(int(request.form['cluster_id']))
-    logging.info('Start - recover cluster migrate #%d', c.id)
+    c = models.cluster.get_by_id(int(request.form['cluster_id']))
+    if c is None:
+        raise ValueError('no such cluster')
+    task = models.task.ClusterTask(cluster_id=c.id)
     for node in c.nodes:
-        redistrib.command.fix_migrating(node.host, node.port)
-    logging.info('Done - recover cluster migrate #%d', c.id)
+        task.add_step('fix_migrate', host=node.host, port=node.port)
+    db.session.add(task)
 
 
 @base.post_async('/cluster/migrate_slots')
@@ -59,50 +61,49 @@ def migrate_slots(request):
     slots = [int(s) for s in request.form['slots'].split(',')]
 
     src = nm.pick_by(src_host, src_port)
-    models.cluster.Cluster.lock_by_id(src.assignee_id)
 
-    redistrib.command.migrate_slots(src.host, src.port, dst_host,
-                                    dst_port, slots)
+    task = models.task.ClusterTask(cluster_id=src.assignee_id)
+    task.add_step('migrate', src_host=src.host, src_port=src.port,
+                  dst_host=dst_host, dst_port=dst_port, slots=slots)
+    db.session.add(task)
 
 
 @base.post_async('/cluster/join')
 def join_cluster(request):
-    nm.pick_and_expand(request.form['host'], int(request.form['port']),
-                       int(request.form['cluster_id']),
-                       redistrib.command.join_cluster)
-
-NOT_IN_CLUSTER_MESSAGE = 'not in a cluster'
+    c = models.cluster.get_by_id(int(request.form['cluster_id']))
+    if c is None or len(c.nodes) == 0:
+        raise ValueError('no such cluster')
+    task = models.task.ClusterTask(cluster_id=c.id)
+    task.add_step('join', cluster_id=c.id, cluster_host=c.nodes[0].host,
+                  cluster_port=c.nodes[0].port,
+                  newin_host=request.form['host'],
+                  newin_port=int(request.form['port']))
+    db.session.add(task)
 
 
 @base.post_async('/cluster/quit')
 def quit_cluster(request):
-    node = nm.pick_by(request.form['host'], int(request.form['port']))
-    cluster = models.cluster.Cluster.lock_by_id(
-        int(request.form['cluster_id']))
+    n = nm.get_by_host_port(request.form['host'], int(request.form['port']))
+    if n is None:
+        raise ValueError('no such node')
 
-    try:
-        nm.quit(node.host, node.port, cluster.id,
-                redistrib.command.quit_cluster)
-    except SocketError, e:
-        logging.exception(e)
-        logging.info('Remove instance from cluster on exception')
-        node.assignee = None
-        db.session.add(node)
-    except hiredis.ProtocolError, e:
-        if NOT_IN_CLUSTER_MESSAGE not in e.message:
-            raise
-        node.assignee = None
-        db.session.add(node)
-
-    models.cluster.remove_empty_cluster(cluster.id)
+    task = models.task.ClusterTask(cluster_id=n.assignee_id)
+    task.add_step('quit', cluster_id=n.assignee_id, host=n.host, port=n.port)
+    db.session.add(task)
 
 
 @base.post_async('/cluster/replicate')
 def replicate(request):
-    nm.pick_and_replicate(
-        request.form['master_host'], int(request.form['master_port']),
-        request.form['slave_host'], int(request.form['slave_port']),
-        redistrib.command.replicate)
+    n = nm.get_by_host_port(
+        request.form['master_host'], int(request.form['master_port']))
+    if n is None or n.assignee_id is None:
+        raise ValueError('unable to replicate')
+    task = models.task.ClusterTask(cluster_id=n.assignee_id)
+    task.add_step('replicate', cluster_id=n.assignee_id,
+                  master_host=n.host, master_port=n.port,
+                  slave_host=request.form['slave_host'],
+                  slave_port=int(request.form['slave_port']))
+    db.session.add(task)
 
 
 @base.get_async('/cluster/autodiscover')

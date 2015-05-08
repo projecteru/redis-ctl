@@ -223,9 +223,19 @@ $('.deleter').click(function() {
     });
 });
 
-$('.fix-marker').click(function() {
+$('.reconnect-btn').click(function() {
     var btn = $(this);
-    $.post('/nodes/fix', {
+    $.post('/nodes/reconnect', {
+        host: btn.data('host'),
+        port: btn.data('port')
+    }, function() {
+        window.location.reload();
+    });
+});
+
+$('.fix-migrating-btn').click(function() {
+    var btn = $(this);
+    $.post('/nodes/fixmigrating', {
         host: btn.data('host'),
         port: btn.data('port')
     }, function() {
@@ -384,20 +394,13 @@ $('#add-nodes').click(function() {
         </table>
         <div>
             <button class='btn toggle-next'>退出集群</button>
-            <button class='btn btn-primary' id='ncp-quit-cluster'>确认</button>
+            <button class='btn btn-primary' id='ncp-quit-cluster'>添加后台任务</button>
         </div>
         <div id='ncp-migrate-slots-out'>
             迁出槽位
             数量<input id='ncp-migrate-slots-count'>
             至<select id='ncp-migrate-dst-select'></select>
-            <button class='btn btn-primary' id='ncp-migrate'>确认</button>
-            <div id='ncp-migrating-counter' style='display: none'>
-                已经迁移
-                <span id='ncp-migrating-count-done'></span>
-                /
-                <span id='ncp-migrating-count-total'></span>
-                个槽位
-            </div>
+            <button class='btn btn-primary' id='ncp-migrate'>添加后台任务</button>
         </div>
     </div>
 
@@ -500,33 +503,23 @@ $('#ncp-migrate').click(function() {
 
     btn.attr('disabled', 'disabled').text('请稍候');
 
-    $('#ncp-migrating-counter').show();
-    $('#ncp-migrating-count-total').text(slots.length);
-
-    -function migrateSome(begin, end) {
-        $('#ncp-migrating-count-done').text(begin);
-
-        $.ajax({
-            url: '/cluster/migrate_slots',
-            type: 'POST',
-            data: {
-                src_host: btn.data('host'),
-                src_port: btn.data('port'),
-                dst_host: dst.data('host'),
-                dst_port: dst.data('port'),
-                slots: slots.slice(begin, end).join(',')
-            },
-            success: function() {
-                if (end >= slots.length) {
-                    return window.location.reload();
-                }
-                migrateSome(end, end + 16);
-            },
-            error: function(r) {
-                btn.parent().text('失败: ' + r.responseText);
-            }
-        });
-    }(0, 16);
+    $.ajax({
+        url: '/cluster/migrate_slots',
+        type: 'POST',
+        data: {
+            src_host: btn.data('host'),
+            src_port: btn.data('port'),
+            dst_host: dst.data('host'),
+            dst_port: dst.data('port'),
+            slots: slots.join(',')
+        },
+        success: function() {
+            return window.location.reload();
+        },
+        error: function(r) {
+            btn.parent().text('失败: ' + r.responseText);
+        }
+    });
 });
 
 function showStandbyPanel(host, port) {

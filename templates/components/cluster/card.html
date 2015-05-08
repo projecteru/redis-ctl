@@ -29,7 +29,7 @@
             <td>
                 <span card-detailto='proxy-sla'>
                     {{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%
-                    <span style='float: right' class='card-previewonly alert-status {{ '' if proxy.suppress_alert else 'alert-enabled' }}'><span class='label label-danger'>报警关闭</span></span>
+                    <span style='float: right' class='card-previewonly alert-status {{ '' if proxy.suppress_alert else 'alert-enabled' }}'><span class='label label-warning'>报警关闭</span></span>
                 </span>
             </td>
         </tr>

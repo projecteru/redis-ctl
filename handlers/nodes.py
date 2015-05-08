@@ -21,10 +21,21 @@ def del_node(request):
     file_ipc.write_nodes_proxies_from_db()
 
 
-@base.post_async('/nodes/fix')
-def fix_node(request):
+@base.post_async('/nodes/reconnect')
+def reconnect_node(request):
     models.recover.recover_by_addr(
         request.form['host'], int(request.form['port']))
+
+
+@base.post_async('/nodes/fixmigrating')
+def fix_node_migrating(request):
+    n = models.node.get_by_host_port(request.form['host'],
+                                     int(request.form['port']))
+    if n is None or n.assignee is None:
+        raise ValueError('no such node in cluster')
+    task = models.task.ClusterTask(cluster_id=n.assignee.id)
+    task.add_step('fix_migrate', host=n.host, port=n.port)
+    db.session.add(task)
 
 
 def _set_alert_status(n, request):

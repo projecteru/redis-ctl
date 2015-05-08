@@ -11,6 +11,8 @@ class Cluster(Base):
     description = db.Column(DB_STRING_TYPE)
     nodes = db.relationship('RedisNode', backref='assignee')
     proxies = db.relationship('Proxy', backref='cluster')
+    tasks = db.relationship('ClusterTask', backref='cluster')
+    current_task = db.relationship('TaskLock', backref='cluster')
 
     @staticmethod
     def lock_by_id(cluster_id):
@@ -34,7 +36,7 @@ def create_cluster(description):
 
 
 def remove_empty_cluster(cluster_id):
-    c = Cluster.lock_by_id(cluster_id)
+    c = get_by_id(cluster_id)
     if len(c.nodes) == 0:
         logging.info('Remove cluster %d', cluster_id)
         c.proxies = []

@@ -3,6 +3,7 @@ from sqlalchemy.ext.declarative import declared_attr
 
 db = SQLAlchemy()
 DB_STRING_TYPE = db.Unicode(256)
+DB_TEXT_TYPE = db.TEXT(convert_unicode=True)
 
 
 def init_db(app):
