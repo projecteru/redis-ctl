@@ -1,12 +1,8 @@
 <div class='card card-root'>
     {% set proxy = cluster.proxies[0] if cluster.proxies else none %}
     <span class='card-title' id='cluster-{{ cluster.id }}'>集群 #{{ cluster.id }}</span>
-    <button class='btn btn-info card-detailonly' style='float: right; margin-top: -9px'
-            onclick='launchClusterSetting({{ cluster.id|tojson }},
-                                          {{ cluster.description|tojson }},
-                                          {{ (proxy.host if proxy else '')|tojson }},
-                                          {{ (proxy.port if proxy else '')|tojson }})'>集群设定</button>
-    <table class='card-preview'>
+    <a href='/clusterp/{{ cluster.id }}' style='float: right; margin-top: -9px' class='btn btn-info card-detailonly'>集群控制面板</a>
+    <table class='card-preview table'>
         <tr>
             <td class='label-cell'>描述</td>
             <td><span card-detailto='cluster-descr'>{{ cluster.description|e or '<i>没有描述</i>' }}</span></td>
@@ -15,52 +11,46 @@
             <td class='label-cell'>节点数</td>
             <td>{{ cluster.nodes|length }}</td>
         </tr>
-        {% if proxy %}
+        {% if cluster.proxies %}
         <tr>
-            <td class='label-cell'>代理</td>
-            <td>
-                <span card-detailto='cluster-proxy'>
-                    {{ proxy|render_proxy('label') }}
-                </span>
-            </td>
-        </tr>
-        <tr>
-            <td class='label-cell'>SLA</td>
-            <td>
-                <span card-detailto='proxy-sla'>
-                    {{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%
-                    <span style='float: right' class='card-previewonly alert-status {{ '' if proxy.suppress_alert else 'alert-enabled' }}'><span class='label label-warning'>报警关闭</span></span>
-                </span>
+            <td colspan='2'>
+                <div card-detailto='cluster-proxy'>
+                    {% for proxy in cluster.proxies %}
+                    <div class='proxy-in-card alert-status-root'>
+                        <div>
+                            <span class='label-cell'>代理</span>
+                            <span>{{ proxy|render_proxy('label') }}</span>
+                        </div>
+                        <div class='card-detailonly'>
+                            <span class='label-cell'>版本</span>
+                            <span>{{ proxy.detail.version|e }}</span>
+                        </div>
+                        <div>
+                            <span class='label-cell'>SLA</span>
+                            <span>
+                                {{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%
+                                <span class='card-previewonly alert-status {{ '' if proxy.suppress_alert else 'alert-enabled' }}'><span class='label label-warning'>报警关闭</span></span>
+                            </span>
+                        </div>
+                        <div class='card-detailonly'>
+                            <span style='text-align: center'>
+                                <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
+                                <button class='check-suppress-alert check-group {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
+                                    <span class='check-group-label'>关闭报警</span>
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </td>
         </tr>
         {% endif %}
     </table>
     <div class='card-detail'>
         <div card-detailfrom='cluster-descr'></div>
-        {% if proxy %}
-        <table style='clear: both; margin: auto'>
-            <caption>代理</caption>
-            <tr>
-                <td class='label-cell'>地址</td>
-                <td card-detailfrom='cluster-proxy'></td>
-            </tr>
-            <tr>
-                <td class='label-cell'>SLA</td>
-                <td card-detailfrom='proxy-sla'></td>
-            </tr>
-            <tr>
-                <td class='label-cell'>版本</td>
-                <td>{{ proxy.detail.version|e }}</td>
-            </tr>
-            <tr>
-                <td colspan='2' style='text-align: center'>
-                    <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
-                    <span class='check-group {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
-                        <span class='check-group-label'>关闭报警</span>
-                    </span>
-                </td>
-            </tr>
-        </table>
+        {% if cluster.proxies %}
+        <div card-detailfrom='cluster-proxy'></div>
         {% endif %}
         <table style='width: 90%; margin: auto; text-align: center'>
             <thead>

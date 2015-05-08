@@ -1,0 +1,24 @@
+<table class='cluster-proxy-quickinfo'>
+    <caption>代理</caption>
+    <tr>
+        <td class='label-cell'>地址</td>
+        <td>{{ proxy.host|e }}:{{ proxy.port }}</td>
+    </tr>
+    <tr>
+        <td class='label-cell'>状态</td>
+        <td>
+            <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
+            <button class='check-suppress-alert check-group {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
+                <span class='check-group-label'>关闭报警</span>
+            </button>
+        </td>
+    </tr>
+    {% if showdelbtn %}
+    <tr>
+        <td class='label-cell'>移除</td>
+        <td>
+            <button class='btn btn-danger delete-proxy-btn' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port }}'>从监视面板移除此代理</button>
+        </td>
+    </tr>
+    {% endif %}
+</table>

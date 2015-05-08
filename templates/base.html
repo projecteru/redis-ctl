@@ -3,14 +3,15 @@
 <head>
 <meta charset='utf-8'>
 <title>{% block title %}{% endblock %}</title>
+<link rel='stylesheet' type='text/css' href='/static/common.css'>
 <link rel='stylesheet' type='text/css' href='/static/flatstrap.css'>
 <link rel='stylesheet' type='text/css' href='/static/lib/css/font-awesome.css'>
+<link rel='stylesheet' type='text/css' href='/static/card.css'>
+<link rel='stylesheet' type='text/css' href='/static/components.css'>
 <script src='/static/jquery.js'></script>
-<style>
-.selected {
-    background-color: #fc8;
-}
-</style>
+<script src='/static/common.js'></script>
+<script src='/static/card.js'></script>
+<script src='/static/components.js'></script>
 <script>
 function selectHash() {
     var e = document.getElementById(window.location.hash.slice(1));
@@ -47,5 +48,5 @@ $(document).ready(function() {
 </div>
 <hr>
 <div style='text-align: right'>
-    &copy; HunanTV Platform developers - ver0.5.0-2015-04-28
+    &copy; HunanTV Platform developers - ver0.6.0-preview
 </div>

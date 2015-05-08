@@ -8,6 +8,7 @@
 
         return this.each(function() {
             var self = $(this);
+
             var fa = $('<i>').addClass('fa');
             self.prepend(fa);
 

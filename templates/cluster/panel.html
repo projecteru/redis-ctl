@@ -1,0 +1,187 @@
+{% extends './base.html' %}
+
+{% block title %}集群控制面板{% endblock %}
+
+{% block head %}
+<style>
+.cluster-proxy-quickinfo {
+    float: left;
+    min-width: 360px;
+}
+</style>
+{% endblock %}
+
+{% block body %}
+
+<h1>基本设置</h1>
+<table style='width: 100%' class='table'>
+    <tr>
+        <td class='label-cell'>集群 ID</td>
+        <td>{{ cluster.id }}</td>
+    </tr>
+    <tr>
+        <td class='label-cell'>集群描述</td>
+        <td>
+            <input id='cluster-descr-inp' value={{ cluster.description|tojson }}>
+            <button class='btn btn-primary' id='cluster-set-descr'>改</button>
+        </td>
+    </tr>
+    <tr>
+        <td class='label-cell'>代理数</td>
+        <td>{{ cluster.proxies|length }}</td>
+    </tr>
+    <tr>
+        <td class='label-cell'>节点数</td>
+        <td>{{ cluster.nodes|length }}</td>
+    </tr>
+    <tr>
+        <td class='label-cell'>操作</td>
+        <td>
+            <button class='btn btn-primary' id='cluster-fix-migrating'>修复槽位迁移</button>
+            <button class='btn btn-primary' id='cluster-enable-all-nodes-alert'>打开所有节点的报警</button>
+            <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert'>关闭所有节点的报警</button>
+        </td>
+    </tr>
+</table>
+
+<script>
+$('#cluster-set-descr').click(function() {
+    var btn = $(this);
+    btn.attr('disabled', 'disabled');
+    $.ajax({
+        url: '/cluster/set_info',
+        type: 'POST',
+        data: {
+            cluster_id: {{ cluster.id|tojson }},
+            descr: $('#cluster-descr-inp').val()
+        },
+        success: function() {
+            btn.removeAttr('disabled');
+        },
+        error: function(e) {
+            btn.text('失败: ' + e.responseText);
+        }
+    });
+});
+
+$('#cluster-fix-migrating').click(function() {
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('请稍候');
+    $.ajax({
+        url: '/cluster/recover_migrate',
+        type: 'POST',
+        data: {
+            cluster_id: {{ cluster.id|tojson }}
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(e) {
+            btn.text('失败: ' + e.responseText);
+        }
+    });
+});
+
+$('#cluster-enable-all-nodes-alert').click(function() {
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('请稍候');
+    $.ajax({
+        url: '/cluster/suppress_all_nodes_alert',
+        type: 'POST',
+        data: {
+            cluster_id: {{ cluster.id|tojson }},
+            suppress: 0
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(e) {
+            btn.text('失败: ' + e.responseText);
+        }
+    });
+})
+
+$('#cluster-suppress-all-nodes-alert').click(function() {
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('请稍候');
+    $.ajax({
+        url: '/cluster/suppress_all_nodes_alert',
+        type: 'POST',
+        data: {
+            cluster_id: {{ cluster.id|tojson }},
+            suppress: 1
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(e) {
+            btn.text('失败: ' + e.responseText);
+        }
+    });
+})
+</script>
+
+<hr>
+
+<h1>代理设置</h1>
+<div>
+{% for p in cluster.proxies %}
+    {{ p|render_proxy('quickinfo', showdelbtn=True) }}
+{% endfor %}
+</div>
+
+<div style='clear: both'>
+    <table style='margin: 1em; border-collapse: separate; border-spacing: 1em'>
+        <tr>
+            <td>注册新集群代理</td>
+            <td>
+                地址
+                <br>
+                <sup>如 127.0.0.1:8889</sup>
+            </td>
+            <td>
+                <input id='new-proxy-addr'>
+                <button class='btn btn-primary' id='new-proxy-btn'>注册代理</button>
+                <span class='label label-danger' id='new-proxy-error' style='display: none'></span>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<script>
+$('#new-proxy-btn').click(function() {
+    var addr = $('#new-proxy-addr').val();
+    if (!addr) {
+        return $('#new-proxy-error').show().text('请输入一个地址');
+    }
+    var host_port = addr.split(':');
+    if (host_port.length != 2) {
+        return $('#new-proxy-error').show().text('地址格式不正确');
+    }
+
+    var port = parseInt(host_port[1]);
+    if (isNaN(port) || !host_port[0]) {
+        return $('#new-proxy-error').show().text('地址格式不正确');
+    }
+
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('请稍候');
+    $.ajax({
+        url: '/cluster/register_proxy',
+        type: 'POST',
+        data: {
+            cluster_id: {{ cluster.id|tojson }},
+            host: host_port[0],
+            port: port
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(e) {
+            btn.text('失败: ' + e.responseText);
+        }
+    });
+});
+</script>
+
+{% endblock %}

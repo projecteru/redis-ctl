@@ -10,6 +10,14 @@ import models.node as nm
 from models.base import db
 
 
+@base.get('/clusterp/<int:cluster_id>')
+def cluster_panel(request, cluster_id):
+    c = models.cluster.get_by_id(cluster_id)
+    if c is None:
+        return base.not_found()
+    return request.render('cluster/panel.html', cluster=c)
+
+
 @base.post_async('/cluster/add')
 def add_cluster(request):
     return str(models.cluster.create_cluster(request.form['descr']).id)
@@ -31,14 +39,25 @@ def start_cluster(request):
 @base.post_async('/cluster/set_info')
 def set_cluster_info(request):
     c = models.cluster.get_by_id(int(request.form['cluster_id']))
+    if c is None:
+        raise ValueError('no such cluster')
     c.description = request.form.get('descr', '')
-    if request.form.get('proxy_host'):
-        host = request.form['proxy_host']
-        port = int(request.form['proxy_port'])
-        p = models.proxy.get_or_create(host, port)
-        p.cluster_id = c.id
-        db.session.add(p)
     db.session.add(c)
+
+
+@base.post_async('/cluster/delete_proxy')
+def delete_proxy(request):
+    models.proxy.del_by_host_port(request.form['host'],
+                                  int(request.form['port']))
+
+
+@base.post_async('/cluster/register_proxy')
+def register_proxy(request):
+    c = models.cluster.get_by_id(int(request.form['cluster_id']))
+    if c is None:
+        raise ValueError('no such cluster')
+    models.proxy.get_or_create(request.form['host'], int(request.form['port']),
+                               c.id)
 
 
 @base.post_async('/cluster/recover_migrate')
@@ -104,6 +123,17 @@ def replicate(request):
                   slave_host=request.form['slave_host'],
                   slave_port=int(request.form['slave_port']))
     db.session.add(task)
+
+
+@base.post_async('/cluster/suppress_all_nodes_alert')
+def suppress_all_nodes_alert(request):
+    c = models.cluster.get_by_id(request.form['cluster_id'])
+    if c is None:
+        raise ValueError('no such cluster')
+    suppress = int(request.form['suppress'])
+    for n in c.nodes:
+        n.suppress_alert = suppress
+        db.session.add(n)
 
 
 @base.get_async('/cluster/autodiscover')

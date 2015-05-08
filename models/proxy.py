@@ -18,11 +18,16 @@ def get_by_host_port(host, port):
         Proxy.host == host, Proxy.port == port).first()
 
 
-def get_or_create(host, port):
+def del_by_host_port(host, port):
+    return db.session.query(Proxy).filter(
+        Proxy.host == host, Proxy.port == port).delete()
+
+
+def get_or_create(host, port, cluster_id=None):
     p = db.session.query(Proxy).filter(
         Proxy.host == host, Proxy.port == port).first()
     if p is None:
-        p = Proxy(host=host, port=port)
+        p = Proxy(host=host, port=port, cluster_id=cluster_id)
         db.session.add(p)
         db.session.flush()
     return p

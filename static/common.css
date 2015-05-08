@@ -1,0 +1,84 @@
+hr {
+    clear: both;
+    margin-top: 1em;
+}
+
+.selected {
+    background-color: #fc8;
+}
+
+input:not([type]), input[type='text'] {
+    min-width: 400px;
+    padding: 0.5em;
+}
+
+th {
+    padding: 4px;
+}
+
+.label-cell {
+    min-width: 72px;
+    padding-right: 2em;
+}
+
+.status-table {
+    float: left;
+    min-width: 280px;
+    margin-right: 20px;
+}
+
+.master {color: #044}
+.slave {color: #440}
+
+.cluster-ceiling {
+    border-top: 1px solid;
+    text-align: left;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    filter: alpha(opacity=50);
+    -moz-opacity:0.5;
+    -khtml-opacity: 0.5;
+    opacity: 0.5;
+}
+
+.overlay-panel {
+    position: fixed;
+    top: 10%;
+    left: 10%;
+    width: 80%;
+    height: 80%;
+    background-color: white;
+    overflow: scroll;
+}
+
+.cluster-table {
+    text-align: center;
+    width: 100%;
+    margin: auto;
+    margin-bottom: 16px;
+}
+
+.cluster-table tbody {
+    border-left: 1px solid #aaa;
+    border-right: 1px solid #aaa;
+}
+
+.cluster-table th {
+    text-align: center;
+}
+
+.cluster-info {
+    clear: both;
+    margin-left: 1em;
+}
+
+.alert-enabled, .card-previewonly.alert-enabled, .card-detailonly.alert-enabled {
+    display: none;
+}
