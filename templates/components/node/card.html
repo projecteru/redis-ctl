@@ -1,8 +1,8 @@
-<div class='card card-root'>
+<div class='card card-root alert-status-root'>
     {% set cluster = node.assignee %}
     {% set awaiting_polling = node.stat and not node.detail %}
     <span class='card-title' id='node-i-{{ node.host|e }}-{{ node.port }}'>节点 {{ node.host|e }}:{{ node.port }}</span>
-    <span style='float: right' class='card-previewonly alert-status {{ '' if node.suppress_alert else 'alert-enabled' }}'><span class='label label-danger'>报警关闭</span></span>
+    <span style='float: right' class='card-previewonly alert-status {{ '' if node.suppress_alert else 'alert-enabled' }}'><span class='label label-warning'>报警关闭</span></span>
     <div class='card-preview'>
         {% if awaiting_polling %}
         <p class='slave' style='text-align: center' card-detailto='node-awaiting-polling'>等待轮询</p>
@@ -188,9 +188,9 @@
                 <a href='/stats/view?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史</a>
             {% endif %}
 
-            <span class='check-group {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
+            <button class='check-suppress-alert check-group {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
                 <span class='check-group-label'>关闭报警</span>
-            </span>
+            </button>
         </div>
     </div>
 </div>

@@ -39,7 +39,9 @@
             if (!c) {
                 return;
             }
-            c.replaceWith($('<span>').attr('card-detailrecover', detailfrom));
+            var placeholder = $('<span>').attr('card-detailrecover', detailfrom);
+            placeholder.insertAfter(c);
+            c.detach();
             $(this).append(c);
         });
     }

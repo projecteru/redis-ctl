@@ -72,8 +72,13 @@ class HttpRequest(unittest.TestCase):
             r = client.post('/cluster/set_info', data={
                 'cluster_id': cluster_id,
                 'descr': '.',
-                'proxy_host': '127.0.0.1',
-                'proxy_port': '8889',
+            })
+            self.assertEqual(200, r.status_code)
+
+            r = client.post('/cluster/register_proxy', data={
+                'cluster_id': cluster_id,
+                'host': '127.0.0.1',
+                'port': '8889',
             })
             self.assertEqual(200, r.status_code)
 
@@ -196,8 +201,13 @@ class HttpRequest(unittest.TestCase):
             r = client.post('/cluster/set_info', data={
                 'cluster_id': cluster_id,
                 'descr': '.',
-                'proxy_host': '127.0.0.1',
-                'proxy_port': '8889',
+            })
+            self.assertEqual(200, r.status_code)
+
+            r = client.post('/cluster/register_proxy', data={
+                'cluster_id': cluster_id,
+                'host': '127.0.0.1',
+                'port': '8889',
             })
             self.assertEqual(200, r.status_code)
 
