@@ -16,8 +16,9 @@ def main():
 
     import file_ipc
     file_ipc.write_nodes_proxies_from_db()
-    app.debug = config.DEBUG == 1
-    app.run(port=config.SERVER_PORT)
+    debug = config.DEBUG == 1
+    app.debug = debug
+    app.run(host='127.0.0.1' if debug else '0.0.0.0', port=config.SERVER_PORT)
 
 if __name__ == '__main__':
     main()
