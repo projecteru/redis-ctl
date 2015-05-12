@@ -1,11 +1,10 @@
 import os
+import config
 import logging
-import tempfile
 import json
 
-PERMDIR = os.getenv('NBE_PERMDIR', tempfile.gettempdir())
-INSTANCE_FILE = os.path.join(PERMDIR, 'instances.json')
-INSTANCE_INTERMEDIA_FILE = os.path.join(PERMDIR, 'instances.tmp.json')
+INSTANCE_FILE = os.path.join(config.PERMDIR, 'instances.json')
+INSTANCE_INTERMEDIA_FILE = os.path.join(config.PERMDIR, 'instances.tmp.json')
 
 
 def write(nodes, proxies):
@@ -22,8 +21,8 @@ def read():
         logging.exception(e)
         return {'nodes': [], 'proxies': []}
 
-POLL_FILE = os.path.join(PERMDIR, 'poll.json')
-POLL_INTERMEDIA_FILE = os.path.join(PERMDIR, 'poll.tmp.json')
+POLL_FILE = os.path.join(config.PERMDIR, 'poll.json')
+POLL_INTERMEDIA_FILE = os.path.join(config.PERMDIR, 'poll.tmp.json')
 
 
 def write_poll(nodes, proxies):
