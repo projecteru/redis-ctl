@@ -20,7 +20,7 @@ INFLUXDB = {
 
 ALGALON = {
     'csrf_token': os.getenv('ALGALON_CSRF_TOKEN', ''),
-    'dns': os.getenv('ALGALON_DSN', ''),
+    'dsn': os.getenv('ALGALON_DSN', ''),
 }
 
 LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())

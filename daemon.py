@@ -106,7 +106,7 @@ def main():
     if config.INFLUXDB and config.INFLUXDB['host']:
         stats.db.init(**config.INFLUXDB)
     algalon_client = (AlgalonClient(**config.ALGALON)
-                      if config.ALGALON and config.ALGALON['dns'] else None)
+                      if config.ALGALON and config.ALGALON['dsn'] else None)
     run(config.POLL_INTERVAL, algalon_client, app)
 
 if __name__ == '__main__':
