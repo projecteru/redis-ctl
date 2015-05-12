@@ -1,14 +1,9 @@
-import unittest
-
-import testdb
+import base
 import models.node as nm
 import models.cluster as clu
 
 
-class InstanceManagement(unittest.TestCase):
-    def setUp(self):
-        testdb.reset_db()
-
+class InstanceManagement(base.TestCase):
     def test_request_instance(self):
         nm.create_instance('10.1.201.10', 9000, 536870912)
         nm.create_instance('10.1.201.10', 9001, 1000000000)

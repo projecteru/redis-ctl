@@ -1,23 +1,19 @@
 import json
-import unittest
 import redistrib.command as comm
 
-import testdb
+import base
 import file_ipc
+import daemonutils.cluster_task
 from models.base import db
 from models.proxy import Proxy
 from models.cluster import Cluster
+import models.task
 import handlers.base
 
 
-class HttpRequest(unittest.TestCase):
-    def setUp(self):
-        testdb.reset_db()
-
+class HttpRequest(base.TestCase):
     def test_http(self):
-        app = handlers.base.app
-
-        with app.test_client() as client:
+        with self.app.test_client() as client:
             r = client.post('/nodes/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',
@@ -41,9 +37,7 @@ class HttpRequest(unittest.TestCase):
             comm.shutdown_cluster('127.0.0.1', 7100)
 
     def test_cluster(self):
-        app = handlers.base.app
-
-        with app.test_client() as client:
+        with self.app.test_client() as client:
             comm.start_cluster('127.0.0.1', 7100)
             r = client.get('/cluster/autodiscover?host=127.0.0.1&port=7100')
             self.assertEqual(200, r.status_code)
@@ -106,9 +100,7 @@ class HttpRequest(unittest.TestCase):
             comm.shutdown_cluster('127.0.0.1', 7100)
 
     def test_cluster_with_multiple_nodes(self):
-        app = handlers.base.app
-
-        with app.test_client() as client:
+        with self.app.test_client() as client:
             r = client.post('/nodes/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',
@@ -143,8 +135,15 @@ class HttpRequest(unittest.TestCase):
             self.assertEqual(200, r.status_code)
 
             nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)
+            self.assertEqual(1, len(nodes))
+
+            tasks = list(models.task.undone_tasks())
+            self.assertEqual(1, len(tasks))
+            self.exec_all_tasks()
+
+            nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)
             self.assertEqual(2, len(nodes))
-            self.assertEqual(range(8192, 16384), node_7100.assigned_slots)
+            self.assertEqual(16384, len(node_7100.assigned_slots))
 
             r = client.post('/cluster/migrate_slots', data={
                 'src_host': '127.0.0.1',
@@ -157,19 +156,40 @@ class HttpRequest(unittest.TestCase):
 
             nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)
             self.assertEqual(2, len(nodes))
-            self.assertEqual(range(8196, 16384), node_7100.assigned_slots)
+            self.assertEqual(16384, len(node_7100.assigned_slots))
 
-            r = client.post('/cluster/quit', data={
-                'cluster_id': cluster_id,
+            tasks = list(models.task.undone_tasks())
+            self.assertEqual(1, len(tasks))
+            self.exec_all_tasks()
+
+            nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)
+            self.assertEqual(2, len(nodes))
+            self.assertEqual(16380, len(node_7100.assigned_slots))
+
+            r = client.post('/cluster/quit', data=json.dumps({
                 'host': '127.0.0.1',
-                'port': 7100,
-            })
-            comm.shutdown_cluster('127.0.0.1', 7101)
+                'port': 7101,
+                'migratings': [{
+                    'host': '127.0.0.1',
+                    'port': 7100,
+                    'slots': [8192, 8193, 8194, 8195],
+                }],
+            }))
+            self.assertReqStatus(200, r)
+
+            nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)
+            self.assertEqual(2, len(nodes))
+
+            tasks = list(models.task.undone_tasks())
+            self.assertEqual(1, len(tasks))
+            self.exec_all_tasks()
+
+            nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)
+            self.assertEqual(1, len(nodes))
+            comm.shutdown_cluster('127.0.0.1', 7100)
 
     def test_suppress_alert(self):
-        app = handlers.base.app
-
-        with app.test_client() as client:
+        with self.app.test_client() as client:
             r = client.post('/nodes/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',

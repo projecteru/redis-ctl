@@ -31,7 +31,7 @@ $('.deleter').click(function() {
         host: btn.data('host'),
         port: btn.data('port')
     }, function() {
-        btn.parent().html('NODE DELETED');
+        btn.parent().html('节点已被移除');
     });
 });
 
@@ -178,289 +178,6 @@ $('#add-nodes').click(function() {
 });
 </script>
 
-<div id='node-cluster-panel' style='display: none'>
-    <h1 style='float: left; margin-left: 6px'>集群控制面板</h1>
-    <div style='float: right'><button id='node-cluster-quit' class='btn btn-danger'>X</button></div>
-    <hr style='clear: both'>
-    <h1 style='margin-left: 1em'>
-        <span id='ncp-node-host'></span>
-        :
-        <span id='ncp-node-port'></span>
-        -
-        <span id='ncp-node-id'></span>
-    </h1>
-
-    <hr>
-
-    <div id='ncp-serving'>
-        <table>
-            <caption>集群在役中</caption>
-            <tr>
-                <th>集群 ID</th>
-                <td id='ncp-cluster-id'></td>
-            </tr>
-            <tr>
-                <th>槽位数</th>
-                <td id='ncp-slots'></td>
-            </tr>
-        </table>
-        <div>
-            <button class='btn toggle-next'>退出集群</button>
-            <button class='btn btn-primary' id='ncp-quit-cluster'>添加后台任务</button>
-        </div>
-        <div id='ncp-migrate-slots-out'>
-            迁出槽位
-            数量<input id='ncp-migrate-slots-count'>
-            至<select id='ncp-migrate-dst-select'></select>
-            <button class='btn btn-primary' id='ncp-migrate'>添加后台任务</button>
-        </div>
-    </div>
-
-    <div id='ncp-stand-by'>
-        <div>
-            <button class='btn toggle-next'>以该节点启动一个集群</button>
-            <span>
-                集群描述: <input id='ncp-cluster-descr'>
-                <button class='btn btn-primary' id='ncp-launch-as-cluster'>启动</button>
-            </span>
-        </div>
-        <div>
-            <button class='btn toggle-next'>加入集群</button>
-            <span>
-                <select id='ncp-select-cluster'></select>
-                <button class='btn btn-primary' id='ncp-join-cluster'>以主节点方式加入</button>
-                -- 或 --
-                <select id='ncp-select-master'></select>
-                <button class='btn btn-primary' id='ncp-replicate'>以左边选择的主节点的副本身份加入</button>
-            <span>
-        </div>
-    </div>
-</div>
-
-<script>
-var CLUSTERS = {{ clusters_json|tojson }};
-
-function createOverlapPanel() {
-    var bg = jQuery('<div>').addClass('overlay');
-    var panel = jQuery('<div>').addClass('overlay-panel');
-    jQuery(document.body).append(bg).append(panel);
-    panel.quit = function() {
-        bg.remove();
-        panel.remove();
-    }
-    return panel;
-}
-
-function launchClusterPanel(nodeId, host, port, clusterId, slots) {
-    var panel = $('#node-cluster-panel').detach();
-    var ovl = createOverlapPanel();
-    ovl.append(panel.show());
-    $('#node-cluster-quit').unbind('click').click(function() {
-        panel.detach();
-        $(document.body).append(panel.hide());
-        ovl.quit();
-    });
-    $('.toggle-next').next().hide();
-
-    $('#ncp-node-host').text(host);
-    $('#ncp-node-port').text(port);
-    $('#ncp-node-id').text(nodeId ? nodeId : '<无节点 ID>');
-
-    if (clusterId) {
-        showServingPanel(host, port, clusterId, slots);
-    } else {
-        showStandbyPanel(host, port);
-    }
-}
-
-function fillMasterNodesTo(cluster, select, exclude) {
-    exclude = exclude || function(e) { return false; };
-    select.html('').append(cluster.nodes.map(function(e) {
-        if (e.slave || exclude(e)) {
-            return '';
-        }
-        return $('<option>').text([e.host, ':', e.port, ' - ', e.node_id].join('')).data({host: e.host, port: e.port});
-    }));
-}
-
-function showServingPanel(host, port, clusterId, slots) {
-    $('#ncp-stand-by').hide();
-    $('#ncp-serving').show();
-
-    $('#ncp-quit-cluster').data({host: host, port: port, cluster_id: clusterId});
-    $('#ncp-cluster-id').text(clusterId);
-    $('#ncp-slots').text(slots ? slots.length : '-');
-
-    $('#ncp-migrate-slots-out').hide();
-    if (slots.length > 0) {
-        $('#ncp-migrate').data({slots: slots, host: host, port: port});
-        $('#ncp-migrate-slots-out').show();
-        $('#ncp-migrate-slots-count').val('').attr('placeholder', '1-' + slots.length);
-        fillMasterNodesTo(CLUSTERS[clusterId], $('#ncp-migrate-dst-select'), function(e) {
-            return e.host === host && e.port === port;
-        });
-    }
-}
-
-$('#ncp-migrate').click(function() {
-    var btn = $(this);
-    var slots = btn.data('slots').slice(0, parseInt($('#ncp-migrate-slots-count').val()));
-    if (slots.length === 0) {
-        return;
-    }
-    var dst = $('#ncp-migrate-dst-select :selected');
-    if (!dst) {
-        return;
-    }
-
-    btn.attr('disabled', 'disabled').text('请稍候');
-
-    $.ajax({
-        url: '/cluster/migrate_slots',
-        type: 'POST',
-        data: {
-            src_host: btn.data('host'),
-            src_port: btn.data('port'),
-            dst_host: dst.data('host'),
-            dst_port: dst.data('port'),
-            slots: slots.join(',')
-        },
-        success: function() {
-            return window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text('失败: ' + r.responseText);
-        }
-    });
-});
-
-function showStandbyPanel(host, port) {
-    $('#ncp-stand-by').show();
-    $('#ncp-serving').hide();
-    $('#ncp-select-cluster').html('').append($('<option>').text('选择集群'));
-    for (var id in CLUSTERS) {
-        var cluster = CLUSTERS[id];
-        if (cluster.nodes.length == 0) {
-            continue;
-        }
-        $('#ncp-select-cluster').append($('<option>').text([cluster.descr, '-', cluster.nodes.length, '个节点'].join(' ')).val(id));
-    }
-    $('#ncp-launch-as-cluster').data({host: host, port: port});
-    $('#ncp-join-cluster').data({host: host, port: port});
-    $('#ncp-replicate').data({host: host, port: port});
-}
-
-$('#ncp-select-cluster').change(function() {
-    var cluster = CLUSTERS[$(this).val()];
-    $('#ncp-select-master').html('');
-    if (!cluster) {
-        return;
-    }
-    fillMasterNodesTo(cluster, $('#ncp-select-master'));
-});
-
-$('#ncp-quit-cluster').click(function() {
-    var btn = $(this);
-    btn.attr('disabled', 'disabled').text('请稍候');
-    $.ajax({
-        url: '/cluster/quit',
-        type: 'POST',
-        data: {
-            host: btn.data('host'),
-            port: btn.data('port'),
-            cluster_id: btn.data('cluster_id')
-        },
-        success: function() {
-            window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text('失败: ' + r.responseText);
-        }
-    });
-});
-
-$('#ncp-launch-as-cluster').click(function() {
-    if ($('#ncp-cluster-descr').val().length === 0) {
-        return $('#ncp-cluster-descr').focus();
-    }
-    var btn = $(this);
-    btn.text('请稍候');
-    $('#ncp-stand-by button').attr('disabled', 'disabled');
-    $.post('/cluster/add', {
-        descr: $('#ncp-cluster-descr').val()
-    }, function(r) {
-        $.ajax({
-            url: '/cluster/launch',
-            type: 'POST',
-            data: {
-                cluster_id: r,
-                host: btn.data('host'),
-                port: btn.data('port')
-            },
-            success: function() {
-                window.location.reload();
-            },
-            error: function(r) {
-                btn.parent().text('失败: ' + r.responseText);
-            }
-        });
-    });
-});
-
-$('#ncp-join-cluster').click(function() {
-    var btn = $(this);
-    var cluster_id = parseInt($('#ncp-select-cluster').val());
-    if (isNaN(cluster_id)) {
-        return;
-    }
-    $('#ncp-stand-by button').attr('disabled', 'disabled');
-    btn.text('请稍候');
-    $.ajax({
-        url: '/cluster/join',
-        type: 'POST',
-        data: {
-            host: btn.data('host'),
-            port: btn.data('port'),
-            cluster_id: cluster_id
-        },
-        success: function() {
-            window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text('失败: ' + r.responseText);
-        }
-    });
-});
-
-$('#ncp-replicate').click(function() {
-    var opt = $('#ncp-select-master :selected');
-    if (!opt || !opt.data('host')) {
-        return;
-    }
-    $('#ncp-stand-by button').attr('disabled', 'disabled');
-    var btn = $(this);
-    btn.text('请稍候');
-    $.ajax({
-        url: '/cluster/replicate',
-        type: 'POST',
-        data: {
-            master_host: opt.data('host'),
-            master_port: opt.data('port'),
-            slave_host: btn.data('host'),
-            slave_port: btn.data('port')
-        },
-        success: function() {
-            window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text('失败: ' + r.responseText);
-        }
-    });
-});
-
-$('.toggle-next').click(function() {$(this).next().toggle();});
-</script>
-
 <div id='cluster-auto-discover' style='display: none'>
     <h1 style='float: left; margin-left: 6px'>自动发现</h1>
     <div style='float: right'><button id='cluster-auto-discover-quit' class='btn btn-danger'>X</button></div>
@@ -490,6 +207,17 @@ $('.toggle-next').click(function() {$(this).next().toggle();});
 </div>
 
 <script>
+function createOverlapPanel() {
+    var bg = jQuery('<div>').addClass('overlay');
+    var panel = jQuery('<div>').addClass('overlay-panel');
+    jQuery(document.body).append(bg).append(panel);
+    panel.quit = function() {
+        bg.remove();
+        panel.remove();
+    }
+    return panel;
+}
+
 var cadNodesDiv = $('#cad-nodes').parent();
 var cadAutoJoinDiv = $('#cad-auto-join-cluster').parent();
 

@@ -1,0 +1,445 @@
+{% extends './base.html' %}
+
+{% block title %}节点控制面板{% endblock %}
+
+{% block head %}
+<style>
+.table { text-align: center; }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1>{{ node.host|e }}:{{ node.port }} - {{ detail.node_id|e }}</h1>
+
+{% if node.assignee %}
+
+<table class='table'>
+    <tr>
+        <th>所属集群</th>
+        <td><a target='_blank' href='/clusterp/{{ node.assignee.id }}'>{{ node.assignee.description|e }}</a></td>
+    </tr>
+    <tr>
+        <th>槽位数</th>
+        <td>{{ detail.slots|length }}</td>
+    </tr>
+</table>
+
+<div>
+    <button class='btn panel-btn' id='quit-cluster-btn' data-bind='quit-cluster'>退出集群</button>
+    <button class='btn panel-btn' id='migrating-slots-btn' data-bind='migrating-slots'>迁移槽位</button>
+</div>
+
+<div class='panel-div' id='quit-cluster'>
+    <span class='loading-cluster-info'>正在加载集群信息...</span>
+    <table class='table' style='display: none'>
+        <caption>退出集群</caption>
+        <thead>
+            <tr>
+                <th>编号</th>
+                <th>地址</th>
+                <th>槽位数</th>
+                <th>迁入此节点的槽位数</th>
+                <th>迁移后的槽位数</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+            <tr>
+                <td colspan='5'>
+                    <button class='btn' id='avg-migr-slots-btn'>平均分配迁出的槽位</button>
+                    <button class='btn btn-danger' id='quit-cluster-confirm'>迁移全部槽位并退出集群</button>
+                    <span id='slots-remain-err' style='visibility: hidden' class='label label-warning invalid-migrating-label'>退出集群前节点槽位必须完全迁出</span>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<div class='panel-div' id='migrating-slots'>
+    <span class='loading-cluster-info'>正在加载集群信息...</span>
+    <table class='table' style='display: none'>
+        <caption>迁移槽位</caption>
+        <thead>
+            <tr>
+                <th>编号</th>
+                <th>地址</th>
+                <th>槽位数</th>
+                <th>迁入此节点的槽位数</th>
+                <th>迁移后的槽位数</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+        <tfoot>
+            <tr>
+                <td colspan='5'>
+                    <button id='migrating-slots-conform' class='btn btn-primary'>开始迁移</button>
+                    <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label'>槽位不足</span>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<script>
+var local = {
+    loadingClusterInfo: false,
+    clusterNodes: null,
+    holdingSlots: {{ detail.slots|tojson }}
+};
+
+function updateSlotsResult() {
+    $('.node-info').each(function() {
+        var row = $(this);
+        var input = row.find('input');
+        var result = row.find('.slots-result');
+        result.text((parseInt(input.val()) || 0) + row.data('slots'));
+    });
+
+    $('.node-myself').each(function() {
+        var table = $(this).parent().parent();
+        var slots = 0;
+        table.find('input').each(function() {
+            slots += parseInt($(this).val()) || 0;
+        })
+        $(this).find('.slots-result').text(local.holdingSlots.length - slots);
+    });
+
+    $('.invalid-migrating-label').css('visibility', 'hidden');
+}
+
+$('#avg-migr-slots-btn').click(function() {
+    var input = $('#quit-cluster .node-info input');
+    var forEach = Math.floor(local.holdingSlots.length / input.length);
+    input.each(function() {
+        $(this).val(forEach);
+    });
+    for (var i = 0; i < local.holdingSlots.length - input.length * forEach; ++i) {
+        input[i].value = parseInt(input[i].value) + 1;
+    }
+
+    updateSlotsResult();
+});
+
+$('#quit-cluster-confirm').click(function() {
+    updateSlotsResult();
+
+    if (parseInt($('#quit-cluster .node-myself .slots-result').text()) != 0) {
+        return $('#slots-remain-err').css('visibility', 'visible');
+    }
+    var btn = $(this);
+    btn.attr('disabled', 'disabled');
+
+    var migratings = [];
+    var sliceStart = 0
+    $('#quit-cluster .node-info').each(function() {
+        var migrCount = parseInt($(this).find('input').val());
+        if (!migrCount) {
+            return;
+        }
+        migratings.push({host: $(this).data('host'), port: $(this).data('port'), slots: local.holdingSlots.slice(sliceStart, sliceStart + migrCount)});
+        sliceStart += migrCount;
+    });
+
+    $.ajax({
+        url: '/cluster/quit',
+        type: 'POST',
+        data: JSON.stringify({
+            host: {{ node.host|tojson }},
+            port: {{ node.port|tojson }},
+            migratings: migratings
+        }),
+        success: function() {
+            return window.location.reload();
+        },
+        error: function(r) {
+            btn.parent().text('失败: ' + r.responseText);
+        }
+    });
+});
+
+$('#migrating-slots-confirm').click(function() {
+    updateSlotsResult();
+
+    if (parseInt($('#migrating-slots .node-myself .slots-result').text()) != 0) {
+        return $('#insuff-slots-err').css('visibility', 'visible');
+    }
+    var btn = $(this);
+    btn.attr('disabled', 'disabled');
+
+    var sliceStart = 0
+    $('#migrating-slots .node-info').each(function() {
+        var migrCount = parseInt($(this).find('input').val());
+        if (!migrCount) {
+            return;
+        }
+
+        sliceStart += migrCount;
+        $.ajax({
+            url: '/cluster/migrate_slots',
+            type: 'POST',
+            data: {
+                src_host: {{ node.host|tojson }},
+                src_port: {{ node.port|tojson }},
+                dst_host: $(this).data('host'),
+                src_port: $(this).data('port'),
+                slots: local.holdingSlots.slice(sliceStart, sliceStart + migrCount).join(',')
+            },
+            success: function() {
+                return window.location.reload();
+            },
+            error: function(r) {
+                btn.parent().text('失败: ' + r.responseText);
+            }
+        });
+    });
+});
+
+$('#quit-cluster-btn,#migrating-slots-btn').click(function() {
+    if (local.loadingClusterInfo) {
+        return;
+    }
+    local.loadingClusterInfo = true;
+
+    function nodeRow(i, node) {
+        return $('<tr>').addClass('node-info').data('host', node.host).data('port', node.port).data('slots', node.slots_count
+            ).append($('<td>').text('#' + i)
+            ).append($('<td>').text(node.host + ':' + node.port)
+            ).append($('<td>').text(node.slots_count)
+            ).append($('<td>').append($('<input>'))
+            ).append($('<td>').addClass('slots-result').text(node.slots_count)
+            );
+    }
+
+    function nodeMyself(i, node) {
+        return $('<tr>').addClass('node-myself'
+            ).append($('<td>').text('#' + i)
+            ).append($('<td>').text(node.host + ':' + node.port)
+            ).append($('<td>').text(node.slots_count)
+            ).append($('<td>').text('当前节点')
+            ).append($('<td>').addClass('slots-result').text(node.slots_count)
+            );
+    }
+
+    function addNodesToTable(t, nodes) {
+        $.each(nodes, function(i, node) {
+            if (node.host === {{ node.host|tojson }} && node.port === {{ node.port|tojson }}) {
+                t.append(nodeMyself(i, node));
+            } else {
+                t.append(nodeRow(i, node));
+            }
+        });
+        return t;
+    }
+
+    $.ajax({
+        url: '/cluster/get_masters',
+        type: 'GET',
+        data: {
+            id: {{ node.assignee_id|tojson }}
+        },
+        success: function(r) {
+            $('.loading-cluster-info').remove();
+            local.clusterNodes = r;
+            r.sort(function(a, b) {
+                if (a.host < b.host) {
+                    return -1;
+                }
+                if (b.host < a.host) {
+                    return 1;
+                }
+                return a.port - b.port;
+            });
+            addNodesToTable($('#quit-cluster tbody'), r);
+            addNodesToTable($('#migrating-slots tbody'), r);
+            $('#quit-cluster .table').show();
+            $('#migrating-slots .table').show();
+
+            if (r.length === 1) {
+                $('#quit-cluster button').attr('disabled', 'disabled');
+                $('#migrating-slots button').attr('disabled', 'disabled');
+            }
+
+            $('.node-info input').blur(updateSlotsResult);
+        },
+        error: function(r) {
+            $('.loading-cluster-info').text('失败: ' + r.responseText);
+        }
+    });
+});
+</script>
+
+{% else %}
+
+<div style='margin-bottom: 1em'>
+    <button class='btn panel-btn' id='start-cluster-btn' data-bind='start-cluster'>启动集群</button>
+    <button class='btn panel-btn' id='join-cluster-btn' data-bind='join-cluster'>加入集群</button>
+</div>
+
+<div class='panel-div' id='start-cluster'>
+    集群描述: <input id='start-cluster-descr'>
+    <button class='btn btn-primary' id='start-cluster-confirm'>启动</button>
+</div>
+
+<div class='panel-div' id='join-cluster'>
+    <span id='loading-cluster-list'>正在加载集群列表...</span>
+    <select id='select-cluster'></select>
+    <button class='btn btn-primary' id='join-cluster-confirm'>加入成为主节点</button>
+    -- 或 --
+    <select id='select-master'></select>
+    <button class='btn btn-primary' id='replicate-confirm'>以此主节点的副本加入</button>
+</div>
+
+<script>
+var local = {
+    loadingClusterList: false,
+    clusterList: null,
+    clusterMasters: {}
+};
+
+$('#start-cluster-confirm').click(function() {
+    if ($('#start-cluster-descr').val().length === 0) {
+        return $('#start-cluster-descr').focus();
+    }
+    var btn = $(this);
+    btn.text('请稍候').attr('disabled', 'disabled');
+    $.post('/cluster/add', {
+        descr: $('#start-cluster-descr').val()
+    }, function(r) {
+        $.ajax({
+            url: '/cluster/launch',
+            type: 'POST',
+            data: {
+                host: {{ node.host|tojson }},
+                port: {{ node.port|tojson }},
+                cluster_id: r
+            },
+            success: function() {
+                window.location.reload();
+            },
+            error: function(r) {
+                btn.parent().text('失败: ' + r.responseText);
+            }
+        });
+    });
+});
+
+$('#join-cluster-btn').click(function() {
+    if (local.loadingClusterList) {
+        return;
+    }
+    local.loadingClusterList = true;
+
+    $.ajax({
+        url: '/cluster/list',
+        type: 'GET',
+        success: function(r) {
+            $('#loading-cluster-list').remove();
+            $('#select-cluster').append($('<option>').text('选择集群'));
+            local.clusterList = r;
+            for (var i in r) {
+                var cluster = r[i];
+                $('#select-cluster').append($('<option>').text([cluster.descr, '-', cluster.nodes, '个节点'].join(' ')).val(cluster.id));
+            }
+        },
+        error: function(r) {
+            $('#loading-cluster-list').text('失败: ' + r.responseText);
+        }
+    });
+});
+
+$('#select-cluster').change(function() {
+    var select = $(this);
+    var clusterId = select.val();
+    var cluster = local.clusterMasters[clusterId];
+    if (cluster) {
+        return fillMasterNodesTo(cluster, $('#select-master'));
+    }
+
+    $.ajax({
+        url: '/cluster/get_masters',
+        type: 'GET',
+        data: {
+            id: $(this).val()
+        },
+        success: function(r) {
+            local.clusterMasters[clusterId] = r;
+            if (select.val() === clusterId) {
+                fillMasterNodesTo(r, $('#select-master'));
+            }
+        },
+        error: function(r) {
+            console.error('失败: ' + r.responseText);
+        }
+    });
+});
+
+function fillMasterNodesTo(cluster, select) {
+    select.html('').append(cluster.map(function(e) {
+        return $('<option>').text([e.host, ':', e.port].join('')).data({host: e.host, port: e.port});
+    }));
+}
+
+$('#join-cluster-confirm').click(function() {
+    var btn = $(this);
+    var clusterId = parseInt($('#select-cluster').val());
+    if (isNaN(clusterId)) {
+        return;
+    }
+    $('#join-cluster button').attr('disabled', 'disabled');
+    btn.text('请稍候');
+    $.ajax({
+        url: '/cluster/join',
+        type: 'POST',
+        data: {
+            host: {{ node.host|tojson }},
+            port: {{ node.port|tojson }},
+            cluster_id: clusterId
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(r) {
+            btn.parent().text('失败: ' + r.responseText);
+        }
+    });
+});
+
+$('#replicate-confirm').click(function() {
+    var opt = $('#select-master :selected');
+    if (!opt || !opt.data('host')) {
+        return;
+    }
+    $('#join-cluster button').attr('disabled', 'disabled');
+    var btn = $(this);
+    btn.text('请稍候');
+    $.ajax({
+        url: '/cluster/replicate',
+        type: 'POST',
+        data: {
+            master_host: opt.data('host'),
+            master_port: opt.data('port'),
+            slave_host: {{ node.host|tojson }},
+            slave_port: {{ node.port|tojson }}
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(r) {
+            btn.parent().text('失败: ' + r.responseText);
+        }
+    });
+});
+</script>
+
+{% endif %}
+
+<script>
+$(document).ready(function() {
+    $('.panel-div').hide();
+    $('.panel-btn').click(function() {
+        $('.panel-div').hide();
+        $('#' + $(this).data('bind')).show();
+    });
+});
+</script>
+{% endblock %}

@@ -125,6 +125,9 @@ NOT_IN_CLUSTER_MESSAGE = 'not in a cluster'
 
 def _quit(cluster_id, host, port):
     try:
+        me = redistrib.command.list_nodes(host, port, host)[1]
+        if len(me.assigned_slots) != 0:
+            raise ValueError('node still holding slots')
         redistrib.command.quit_cluster(host, port)
     except SocketError, e:
         logging.exception(e)

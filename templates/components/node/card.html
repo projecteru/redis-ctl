@@ -171,12 +171,7 @@
         {% endif %}
         <div style='clear: both; text-align: center'>
             {% if node.node_id %}
-            <button class='btn btn-primary' data-host='{{ node.host|e }}' data-port='{{ node.port }}'
-                onclick='launchClusterPanel({{ node.node_id|tojson }},
-                                            {{ node.host|tojson }},
-                                            {{ node.port|tojson }},
-                                            {{ (cluster.id or '')|tojson }},
-                                            {{ (node.detail.slots or [])|tojson }})'>节点控制面板</button>
+            <a href='/nodep/{{ node.host|e }}/{{ node.port}}'>节点控制面板</a>
                 {% if node.stat %}
                     <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>集群自动发现</button>
                 {% else %}

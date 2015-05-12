@@ -6,6 +6,22 @@ from models.base import db
 import file_ipc
 
 
+@base.get('/nodep/<host>/<int:port>')
+def node_panel(request, host, port):
+    node = models.node.get_by_host_port(host, port)
+    if node is None:
+        return base.not_found()
+    detail = {}
+    try:
+        for n in file_ipc.read()['nodes']:
+            if n['host'] == host and n['port'] == port:
+                detail = n
+                break
+    except (IOError, ValueError, KeyError):
+        pass
+    return request.render('node/panel.html', node=node, detail=detail)
+
+
 @base.post_async('/nodes/add')
 def add_node(request):
     models.node.create_instance(

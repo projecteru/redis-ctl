@@ -41,6 +41,46 @@ class TaskRunner(threading.Thread):
                 db.session.commit()
 
 
+def try_create_exec_thread_by_task(t, app):
+    from models.base import db
+
+    t.check_completed()
+    if t.completion is not None:
+        return None
+    if not t.runnable():
+        return None
+
+    lock = t.acquire_lock()
+    if lock is None:
+        return None
+
+    step = t.next_step()
+
+    # When decide to run a task, it's possible that
+    # its next step has been started at the last poll.
+    # So we check
+    #   if no step have been bound to the lock, bind the next
+    #   if the step bound to the lock is still running, skip it
+    #   the step bound to the lock is completed, bind the next
+    if lock.step_id is None:
+        lock.step_id = step.id
+        db.session.add(lock)
+    elif lock.step.completion is None:
+        return None
+    else:
+        lock.step_id = step.id
+        db.session.add(lock)
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return None
+
+    logging.debug('Run task %d', t.id)
+    return TaskRunner(app, t, step)
+
+
 class TaskPoller(threading.Thread):
     def __init__(self, app, interval):
         threading.Thread.__init__(self)
@@ -49,44 +89,11 @@ class TaskPoller(threading.Thread):
         self.interval = interval
 
     def _shot(self):
-        from models.base import db
         import models.task
-        for t in models.task.undone_tasks():
-            t.check_completed()
-            if t.completion is not None:
-                continue
-            if not t.runnable():
-                continue
-
-            lock = t.acquire_lock()
-            if lock is None:
-                continue
-
-            step = t.next_step()
-
-            # When decide to run a task, it's possible that
-            # its next step has been started at the last poll.
-            # So we check
-            #   if no step have been bound to the lock, bind the next
-            #   if the step bound to the lock is still running, skip it
-            #   the step bound to the lock is completed, bind the next
-            if lock.step_id is None:
-                lock.step_id = step.id
-                db.session.add(lock)
-            elif lock.step.completion is None:
-                continue
-            else:
-                lock.step_id = step.id
-                db.session.add(lock)
-
-            try:
-                db.session.commit()
-            except IntegrityError:
-                db.session.rollback()
-                continue
-
-            logging.debug('Run task %d', t.id)
-            TaskRunner(self.app, t, step).start()
+        for task in models.task.undone_tasks():
+            t = try_create_exec_thread_by_task(task, self.app)
+            if t is not None:
+                t.start()
 
     def run(self):
         import models.task

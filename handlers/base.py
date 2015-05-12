@@ -1,4 +1,5 @@
 import os
+import json
 import types
 import logging
 import functools
@@ -66,6 +67,10 @@ class Request(object):
     @cached_property
     def post_body_text(self):
         return unicode(strip_irregular_space(self.post_body), 'utf-8')
+
+    @cached_property
+    def post_json(self):
+        return json.loads(self.post_body_text)
 
     @cached_property
     def form(self):

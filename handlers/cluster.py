@@ -3,11 +3,14 @@ import logging
 import redistrib.command
 
 import base
+import file_ipc
 import models.cluster
 import models.task
 import models.proxy
 import models.node as nm
 from models.base import db
+
+SLOTS_SLICE_GROUP = 8
 
 
 @base.get('/clusterp/<int:cluster_id>')
@@ -16,6 +19,38 @@ def cluster_panel(request, cluster_id):
     if c is None:
         return base.not_found()
     return request.render('cluster/panel.html', cluster=c)
+
+
+@base.get_async('/cluster/get_masters')
+def cluster_get_masters_info(request):
+    c = models.cluster.get_by_id(request.args['id'])
+    if c is None or len(c.nodes) == 0:
+        return base.not_found()
+    node = c.nodes[0]
+    master = redistrib.command.list_masters(node.host, node.port)[0]
+    node_details = {(n['host'], n['port']): n
+                    for n in file_ipc.read()['nodes']}
+    result = []
+    for n in redistrib.command.list_masters(node.host, node.port)[0]:
+        r = {'host': n.host, 'port': n.port}
+        if (n.host, n.port) in node_details:
+            r['slots_count'] = len(node_details[(n.host, n.port)]['slots'])
+        result.append(r)
+    return base.json_result(result)
+
+
+@base.get_async('/cluster/list')
+def list_clusters(request):
+    r = []
+    for c in models.cluster.list_all():
+        if len(c.nodes) == 0:
+            continue
+        r.append({
+            'id': c.id,
+            'descr': c.description,
+            'nodes': len(c.nodes),
+        })
+    return base.json_result(r)
 
 
 @base.post_async('/cluster/add')
@@ -71,6 +106,11 @@ def recover_migrate_status(request):
     db.session.add(task)
 
 
+def _slice_slots(slots):
+    return [slots[i: i + SLOTS_SLICE_GROUP]
+            for i in xrange(0, len(slots), SLOTS_SLICE_GROUP)]
+
+
 @base.post_async('/cluster/migrate_slots')
 def migrate_slots(request):
     src_host = request.form['src_host']
@@ -82,8 +122,9 @@ def migrate_slots(request):
     src = nm.pick_by(src_host, src_port)
 
     task = models.task.ClusterTask(cluster_id=src.assignee_id)
-    task.add_step('migrate', src_host=src.host, src_port=src.port,
-                  dst_host=dst_host, dst_port=dst_port, slots=slots)
+    for slots_group in _slice_slots(slots):
+        task.add_step('migrate', src_host=src.host, src_port=src.port,
+                      dst_host=dst_host, dst_port=dst_port, slots=slots_group)
     db.session.add(task)
 
 
@@ -102,11 +143,17 @@ def join_cluster(request):
 
 @base.post_async('/cluster/quit')
 def quit_cluster(request):
-    n = nm.get_by_host_port(request.form['host'], int(request.form['port']))
+    n = nm.get_by_host_port(request.post_json['host'],
+                            int(request.post_json['port']))
     if n is None:
         raise ValueError('no such node')
 
     task = models.task.ClusterTask(cluster_id=n.assignee_id)
+    for migr in request.post_json['migratings']:
+        for slots_group in _slice_slots(migr['slots']):
+            task.add_step('migrate', src_host=n.host, src_port=n.port,
+                          dst_host=migr['host'], dst_port=migr['port'],
+                          slots=slots_group)
     task.add_step('quit', cluster_id=n.assignee_id, host=n.host, port=n.port)
     db.session.add(task)
 
