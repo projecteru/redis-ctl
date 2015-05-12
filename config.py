@@ -1,13 +1,14 @@
 import os
 import logging
+import tempfile
 
 SERVER_PORT = int(os.getenv('SERVER_PORT', 5000))
 
-MYSQL_HOST = os.getenv('MYSQL_HOST', '')
-MYSQL_PORT = int(os.getenv('MYSQL_PORT', 0))
-MYSQL_USERNAME = os.getenv('MYSQL_USERNAME', '')
+MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
+MYSQL_PORT = int(os.getenv('MYSQL_PORT', '3306'))
+MYSQL_USERNAME = os.getenv('MYSQL_USERNAME', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
-MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', '')
+MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'redis-ctl')
 
 INFLUXDB = {
     'host': os.getenv('INFLUXDB_HOST', ''),
@@ -28,6 +29,7 @@ LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
 
 DEBUG = int(os.getenv('DEBUG', 0))
 POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', 10))
+PERMDIR = os.getenv('PERMDIR', tempfile.gettempdir())
 
 try:
     from override_config import *
