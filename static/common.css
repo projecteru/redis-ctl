@@ -1,6 +1,25 @@
+header {
+    background-color: #333;
+    color: #bbb;
+    padding: 8px;
+    min-height: 24px;
+    line-height: 22px;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+.nav-link {
+    color: #68d098;
+}
+.nav-link:hover {
+    color: #4cc;
+    text-decoration: none;
+}
+.main-width {
+    width: 1024px;
+    margin: auto;
+}
 hr {
     clear: both;
-    margin-top: 1em;
 }
 
 .selected {

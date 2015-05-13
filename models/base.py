@@ -13,6 +13,7 @@ def init_db(app):
 
 class Base(db.Model):
     __abstract__ = True
+    __table_args__ = {'mysql_charset': 'utf8'}
 
     @declared_attr
     def id(cls):

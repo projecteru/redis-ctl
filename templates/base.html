@@ -35,15 +35,13 @@ $(document).ready(function() {
 {% block head %}{% endblock %}
 </head>
 <body>
-
-<div class="navbar navbar-default navbar-fixed-top">
-    <div class="container">
-        <div class="navbar-header">
-            <a href="/" class="navbar-brand">RedisCtl</a>
-        </div>
+<header>
+    <div class='main-width'>
+        <a class='nav-link' href='/'>RedisCtl</a>
     </div>
-</div>
-<div style='margin-top: 60px' class='container'>
+</header>
+
+<div class='main-width'>
 {% block body %}{% endblock %}
 </div>
 <hr>
