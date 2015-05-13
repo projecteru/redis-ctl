@@ -4,8 +4,8 @@ import tempfile
 import unittest
 
 import daemonutils.cluster_task
-import models.base
 import handlers.base
+import models.base
 
 app = handlers.base.app
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://%s:%s@%s:%d/%s' % (
@@ -19,6 +19,7 @@ logging.basicConfig(
 
 
 def reset_db():
+    models.base.db.session.close()
     models.base.db.drop_all()
     models.base.db.create_all()
 
@@ -27,6 +28,7 @@ class TestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         self.app = app
+        self.db = models.base.db
 
     def setUp(self):
         reset_db()

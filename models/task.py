@@ -31,6 +31,12 @@ class ClusterTask(Base):
         self.completion = datetime.now()
         db.session.add(self)
 
+    def fail(self, exec_error):
+        self.completion = datetime.now()
+        self.exec_error = 'Step fails'
+        db.session.delete(self.acquired_lock())
+        db.session.add(self)
+
     def add_step(self, command, **kwargs):
         step = TaskStep(task=self, command=command,
                         args_json=json.dumps(kwargs))

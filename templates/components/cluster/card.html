@@ -35,7 +35,7 @@
                         <div class='card-detailonly'>
                             <span style='text-align: center'>
                                 <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
-                                <button class='check-suppress-alert check-group {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
+                                <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
                                     <span class='check-group-label'>关闭报警</span>
                                 </button>
                             </span>
