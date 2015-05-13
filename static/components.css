@@ -1,8 +1,9 @@
 .check-group {
     display: inline-block;
     cursor: pointer;
-    border: 1px solid #bbb;
+    border: 1px solid #ddd;
     padding: 6px 12px;
+    height: 100%;
     margin-bottom: 0;
     font-weight: 400;
     text-align: center;
@@ -18,7 +19,21 @@
     user-select: none;
 }
 
-.check-group-checked {
+.check-group-label {
+    margin-left: 0.2em;
+}
+
+.check-group-checked.check-group-danger {
     background-color: #d9534f;
+    color: white;
+}
+
+.check-group-checked.check-group-info {
+    background-color: #5bc0de;
+    color: white;
+}
+
+.check-group-checked.check-group-success {
+    background-color: #5cb85c;
     color: white;
 }

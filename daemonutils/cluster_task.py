@@ -24,11 +24,9 @@ class TaskRunner(threading.Thread):
                 return task.check_completed()
 
             try:
-                logging.info('Execute step %d', self.step.id)
+                logging.info('Execute step %d', step.id)
                 if not step.execute():
-                    task.completion = datetime.now()
-                    task.exec_error = 'Step fails'
-                    db.session.add(self.task)
+                    task.fail('Step fails')
                     db.session.commit()
                     return
                 task.check_completed()
@@ -37,7 +35,7 @@ class TaskRunner(threading.Thread):
                 db.session.rollback()
                 task.exec_error = traceback.format_exc()
                 task.completion = datetime.now()
-                db.session.add(self.task)
+                db.session.add(task)
                 db.session.commit()
 
 

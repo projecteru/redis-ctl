@@ -187,7 +187,7 @@
                 <a href='/stats/view?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史</a>
             {% endif %}
 
-            <button class='check-suppress-alert check-group {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
+            <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
                 <span class='check-group-label'>关闭报警</span>
             </button>
 
