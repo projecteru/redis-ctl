@@ -27,12 +27,13 @@
 <div>
     <button class='btn panel-btn' id='quit-cluster-btn' data-bind='quit-cluster'>退出集群</button>
     <button class='btn panel-btn' id='migrating-slots-btn' data-bind='migrating-slots'>迁移槽位</button>
+    <button class='btn btn-info' style='display: none' id='quit-cluster-force'>此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联</button>
 </div>
 
 <div class='panel-div' id='quit-cluster'>
     <span class='loading-cluster-info'>正在加载集群信息...</span>
     <table class='table' style='display: none'>
-        <caption>退出集群</caption>
+        <caption><h2>退出集群 - 迁出该节点上的所有槽位才能退出</h2></caption>
         <thead>
             <tr>
                 <th>编号</th>
@@ -58,7 +59,6 @@
 <div class='panel-div' id='migrating-slots'>
     <span class='loading-cluster-info'>正在加载集群信息...</span>
     <table class='table' style='display: none'>
-        <caption>迁移槽位</caption>
         <thead>
             <tr>
                 <th>编号</th>
@@ -72,7 +72,7 @@
         <tfoot>
             <tr>
                 <td colspan='5'>
-                    <button id='migrating-slots-conform' class='btn btn-primary'>开始迁移</button>
+                    <button id='migrating-slots-confirm' class='btn btn-primary'>开始迁移</button>
                     <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label'>槽位不足</span>
                 </td>
             </tr>
@@ -88,11 +88,22 @@ var local = {
 };
 
 function updateSlotsResult() {
+    $('.invalid-migrating-label').css('visibility', 'hidden');
+    $('.node-info').removeClass('has-error');
+
     $('.node-info').each(function() {
         var row = $(this);
         var input = row.find('input');
         var result = row.find('.slots-result');
-        result.text((parseInt(input.val()) || 0) + row.data('slots'));
+        var inputVal = input.val();
+        if (inputVal.length !== 0) {
+            var migrSlots = parseInt(input.val());
+            if (isNaN(migrSlots) || migrSlots < 0) {
+                row.addClass('has-error');
+            } else {
+                result.text(migrSlots + row.data('slots'));
+            }
+        }
     });
 
     $('.node-myself').each(function() {
@@ -103,8 +114,6 @@ function updateSlotsResult() {
         })
         $(this).find('.slots-result').text(local.holdingSlots.length - slots);
     });
-
-    $('.invalid-migrating-label').css('visibility', 'hidden');
 }
 
 $('#avg-migr-slots-btn').click(function() {
@@ -136,7 +145,11 @@ $('#quit-cluster-confirm').click(function() {
         if (!migrCount) {
             return;
         }
-        migratings.push({host: $(this).data('host'), port: $(this).data('port'), slots: local.holdingSlots.slice(sliceStart, sliceStart + migrCount)});
+        migratings.push({
+            host: $(this).data('host'),
+            port: $(this).data('port'),
+            slots: local.holdingSlots.slice(sliceStart, sliceStart + migrCount)
+        });
         sliceStart += migrCount;
     });
 
@@ -160,7 +173,12 @@ $('#quit-cluster-confirm').click(function() {
 $('#migrating-slots-confirm').click(function() {
     updateSlotsResult();
 
-    if (parseInt($('#migrating-slots .node-myself .slots-result').text()) != 0) {
+    var errorInput = $('#migrating-slots .has-error input');
+    if (errorInput.length > 0) {
+        return $(errorInput[0]).focus();
+    }
+
+    if (parseInt($('#migrating-slots .node-myself .slots-result').text()) < 0) {
         return $('#insuff-slots-err').css('visibility', 'visible');
     }
     var btn = $(this);
@@ -181,7 +199,7 @@ $('#migrating-slots-confirm').click(function() {
                 src_host: {{ node.host|tojson }},
                 src_port: {{ node.port|tojson }},
                 dst_host: $(this).data('host'),
-                src_port: $(this).data('port'),
+                dst_port: $(this).data('port'),
                 slots: local.holdingSlots.slice(sliceStart, sliceStart + migrCount).join(',')
             },
             success: function() {
@@ -201,11 +219,11 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
     local.loadingClusterInfo = true;
 
     function nodeRow(i, node) {
-        return $('<tr>').addClass('node-info').data('host', node.host).data('port', node.port).data('slots', node.slots_count
+        return $('<tr>').addClass('node-info').addClass('form-group').data('host', node.host).data('port', node.port).data('slots', node.slots_count
             ).append($('<td>').text('#' + i)
             ).append($('<td>').text(node.host + ':' + node.port)
             ).append($('<td>').text(node.slots_count)
-            ).append($('<td>').append($('<input>'))
+            ).append($('<td>').append($('<input>').addClass('form-control'))
             ).append($('<td>').addClass('slots-result').text(node.slots_count)
             );
     }
@@ -251,6 +269,26 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
             });
             addNodesToTable($('#quit-cluster tbody'), r);
             addNodesToTable($('#migrating-slots tbody'), r);
+            if ($('.node-myself').length === 0) {
+                return $('#quit-cluster-force').click(function() {
+                    var btn = $(this).attr('disabled', 'disabled');
+                    $.ajax({
+                        url: '/cluster/quit',
+                        type: 'POST',
+                        data: JSON.stringify({
+                            host: {{ node.host|tojson }},
+                            port: {{ node.port|tojson }},
+                            migratings: [],
+                        }),
+                        success: function() {
+                            return window.location.reload();
+                        },
+                        error: function(r) {
+                            btn.text('失败: ' + r.responseText);
+                        }
+                    });
+                }).show();
+            }
             $('#quit-cluster .table').show();
             $('#migrating-slots .table').show();
 

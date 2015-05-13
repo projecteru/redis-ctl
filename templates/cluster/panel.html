@@ -22,7 +22,7 @@
     <tr>
         <td class='label-cell'>集群描述</td>
         <td>
-            <input id='cluster-descr-inp' value={{ cluster.description|tojson }}>
+            <input id='cluster-descr-inp' value="{{ cluster.description|e }}">
             <button class='btn btn-primary' id='cluster-set-descr'>改</button>
         </td>
     </tr>
