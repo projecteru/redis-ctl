@@ -23,6 +23,8 @@ ALGALON = {
     'dsn': os.getenv('ALGALON_DSN', ''),
 }
 
+ERU_URL = os.getenv('ERU_URL', None)
+
 LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
 LOG_FILE = os.getenv('LOG_FILE', '')
 LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')

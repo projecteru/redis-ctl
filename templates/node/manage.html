@@ -1,0 +1,67 @@
+{% extends './base.html' %}
+
+{% block title %}节点管理{% endblock %}
+
+{% block body %}
+
+{% if not eru %}
+<span class='label label-important'>没有设定 ERU 地址</span>
+{% else %}
+<div>
+    ERU 地址: {{ eru|e }}
+    <button class='btn btn-primary' onclick='requestEruNode(this)'>申请一个 ERU 节点</button>
+    <span style='display: none' id='error' class='label label-important'></span>
+</div>
+
+<table class='table'>
+    <thead>
+        <tr>
+            <th>容器 ID</th>
+            <th>地址</th>
+            <th>下线容器</th>
+        </tr>
+    </thead>
+    <tbody id='eru-nodes'>
+    {% for n in eru_nodes %}
+        <tr>
+            <td>{{ n.eru_container_id|e }}</td>
+            <td>{{ n.host|e }}</td>
+            <td>
+                <button class='btn toggle-next' data-cid='{{ n.eru_container_id|e }}'>下线容器</button>
+                <button class='btn btn-danger'>确定</button>
+            </td>
+        <tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<script>
+function requestEruNode(btn) {
+    function deleteButton(containerId) {
+        var toggleNext = $('<button>').addClass('btn').text('下线容器').click(
+                function() {$(this).next().toggle();});
+        var offline = $('<button>').addClass('btn').addClass('btn-danger').hide().text('确定');
+        return [toggleNext, offline];
+    }
+
+    $(btn).attr('disabled', 'disabled');
+    $.ajax({
+        url: '/nodes/create/eru',
+        type: 'POST',
+        data: {},
+        success: function(r) {
+            $(btn).removeAttr('disabled');
+            $('#eru-nodes').append($('<tr>'
+                    ).append($('<td>').text(r.container_id)
+                    ).append($('<td>').text(r.host)
+                    ).append($('<td>').append(deleteButton(r.container_id))
+                    ));
+        },
+        error: function(e) {
+            $('#error').show().text('有错误发生: ' + e.responseText);
+        }
+    });
+}
+</script>
+{% endif %}
+{% endblock %}

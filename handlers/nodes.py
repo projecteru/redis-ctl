@@ -1,9 +1,13 @@
+from retrying import retry
+
+import config
+import file_ipc
 import base
 import models.recover
 import models.node
 import models.proxy
 from models.base import db
-import file_ipc
+from eru_client import EruClient
 
 
 @base.get('/nodep/<host>/<int:port>')
@@ -20,6 +24,46 @@ def node_panel(request, host, port):
     except (IOError, ValueError, KeyError):
         pass
     return request.render('node/panel.html', node=node, detail=detail)
+
+
+@base.get('/nodes/manage')
+def nodes_manage_page(request):
+    return request.render('node/manage.html', eru=config.ERU_URL,
+                          eru_nodes=models.node.list_all_eru_nodes())
+
+
+if config.ERU_URL is not None:
+    _eru_client = EruClient(config.ERU_URL)
+    _redis_repo_version = 'b2fa5dc'
+
+    @retry(stop_max_attempt_number=64, wait_fixed=200)
+    def _poll_task_for_container_id(task_id):
+        r = _eru_client.get_task(task_id)
+        if r['result'] != 1:
+            raise ValueError('task not finished')
+        return r['props']['container_ids'][0]
+
+    @base.post_async('/nodes/create/eru')
+    def create_eru_node(request):
+        network = _eru_client.get_network_by_name('net')
+        r = _eru_client.deploy_private(
+            'group', 'pod', 'redis', 1, 1, _redis_repo_version, 'aof', 'prod',
+            [network['id']])
+        try:
+            task_id = r['tasks'][0]
+        except LookupError:
+            raise ValueError('eru fail to create a task')
+
+        cid = _poll_task_for_container_id(task_id)
+        try:
+            host = _eru_client.container_info(cid)['networks'][0]['address']
+        except LookupError:
+            raise ValueError('eru gives incorrent container info')
+        models.node.create_eru_instance(host, cid)
+        return base.json_result({
+            'host': host,
+            'container_id': cid,
+        })
 
 
 @base.post_async('/nodes/add')
