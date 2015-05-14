@@ -18,6 +18,17 @@ header {
     width: 1024px;
     margin: auto;
 }
+
+footer {
+    background-color: #eee;
+    color: #666;
+    min-height: 32px;
+    line-height: 28px;
+    font-size: 16px;
+    margin-top: 10px;
+    border-top: 1px dashed #aaa;
+}
+
 hr {
     clear: both;
 }
