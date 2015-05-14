@@ -19,11 +19,11 @@ class HttpRequest(base.TestCase):
                 'port': '7100',
                 'mem': '1048576',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             r = client.post('/cluster/add', data={
                 'descr': 'the-quick-brown-fox',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             cluster_id = r.data
 
             r = client.post('/cluster/launch', data={
@@ -31,7 +31,7 @@ class HttpRequest(base.TestCase):
                 'host': '127.0.0.1',
                 'port': 7100,
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             self.assertRaises(ValueError, comm.quit_cluster, '127.0.0.1', 7100)
             comm.shutdown_cluster('127.0.0.1', 7100)
@@ -40,7 +40,7 @@ class HttpRequest(base.TestCase):
         with self.app.test_client() as client:
             comm.start_cluster('127.0.0.1', 7100)
             r = client.get('/cluster/autodiscover?host=127.0.0.1&port=7100')
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             nodes = json.loads(r.data)
             self.assertEqual(1, len(nodes))
             self.assertEqual({
@@ -54,27 +54,27 @@ class HttpRequest(base.TestCase):
                 'port': '7100',
                 'mem': '1048576',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             r = client.post('/cluster/autojoin', data={
                 'host': '127.0.0.1',
                 'port': '7100',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             cluster_id = r.data
 
             r = client.post('/cluster/set_info', data={
                 'cluster_id': cluster_id,
                 'descr': '.',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             r = client.post('/cluster/register_proxy', data={
                 'cluster_id': cluster_id,
                 'host': '127.0.0.1',
                 'port': '8889',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             r = list(db.session.query(Proxy).all())
             self.assertEqual(1, len(r))
@@ -91,7 +91,7 @@ class HttpRequest(base.TestCase):
                 'cluster_id': cluster_id,
                 'descr': 'xyzw',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             r = list(db.session.query(Cluster).all())
             self.assertEqual(1, len(r))
@@ -106,18 +106,18 @@ class HttpRequest(base.TestCase):
                 'port': '7100',
                 'mem': '1048576',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             r = client.post('/nodes/add', data={
                 'host': '127.0.0.1',
                 'port': '7101',
                 'mem': '1048576',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             r = client.post('/cluster/add', data={
                 'descr': 'the-quick-brown-fox',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             cluster_id = r.data
 
             r = client.post('/cluster/launch', data={
@@ -125,14 +125,14 @@ class HttpRequest(base.TestCase):
                 'host': '127.0.0.1',
                 'port': 7100,
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             r = client.post('/cluster/join', data={
                 'cluster_id': cluster_id,
                 'host': '127.0.0.1',
                 'port': 7101,
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)
             self.assertEqual(1, len(nodes))
@@ -152,7 +152,7 @@ class HttpRequest(base.TestCase):
                 'dst_port': 7101,
                 'slots': '8192,8193,8194,8195',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
             nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)
             self.assertEqual(2, len(nodes))

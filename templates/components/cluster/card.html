@@ -1,6 +1,9 @@
 <div class='card card-root'>
     {% set proxy = cluster.proxies[0] if cluster.proxies else none %}
-    <span class='card-title' id='cluster-{{ cluster.id }}'>集群 #{{ cluster.id }}</span>
+    <span class='card-title' id='cluster-{{ cluster.id }}'>
+        集群 #{{ cluster.id }}
+        {% if cluster.current_task %}<i class='fa fa-wrench'></i>{% endif %}
+    </span>
     <a href='/clusterp/{{ cluster.id }}' style='float: right; margin-top: -9px' class='btn btn-info card-detailonly'>集群控制面板</a>
     <table class='card-preview table'>
         <tr>

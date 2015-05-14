@@ -9,6 +9,7 @@
 <link rel='stylesheet' type='text/css' href='/static/card.css'>
 <link rel='stylesheet' type='text/css' href='/static/components.css'>
 <script src='/static/jquery.js'></script>
+<script src='/static/bootstrap.js'></script>
 <script src='/static/common.js'></script>
 <script src='/static/card.js'></script>
 <script src='/static/components.js'></script>
@@ -41,9 +42,7 @@ $(document).ready(function() {
     </div>
 </header>
 
-<div class='main-width'>
-{% block body %}{% endblock %}
-</div>
+<div class='main-width'>{% block body %}{% endblock %}</div>
 
 <footer>
     <div class='main-width'>

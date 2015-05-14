@@ -12,11 +12,11 @@ class Task(base.TestCase):
                 'port': '7100',
                 'mem': '1048576',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             r = client.post('/cluster/add', data={
                 'descr': 'lazy dog',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             cluster_id = r.data
 
             r = client.post('/cluster/launch', data={
@@ -24,9 +24,9 @@ class Task(base.TestCase):
                 'host': '127.0.0.1',
                 'port': 7100,
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
-            task = ClusterTask(cluster_id=int(cluster_id))
+            task = ClusterTask(cluster_id=int(cluster_id), task_type=0)
             task.add_step(
                 'join', cluster_id=cluster_id, cluster_host='127.0.0.1',
                 cluster_port=7100, newin_host='127.0.0.1', newin_port=7101)
@@ -59,11 +59,11 @@ class Task(base.TestCase):
                 'port': '7100',
                 'mem': '1048576',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             r = client.post('/cluster/add', data={
                 'descr': 'lazy dog',
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
             cluster_id = r.data
 
             r = client.post('/cluster/launch', data={
@@ -71,9 +71,9 @@ class Task(base.TestCase):
                 'host': '127.0.0.1',
                 'port': 7100,
             })
-            self.assertEqual(200, r.status_code)
+            self.assertReqStatus(200, r)
 
-            task = ClusterTask(cluster_id=int(cluster_id))
+            task = ClusterTask(cluster_id=int(cluster_id), task_type=0)
             task.add_step(
                 'join', cluster_id=cluster_id, cluster_host='127.0.0.1',
                 cluster_port=7100, newin_host='127.0.0.1', newin_port=7101)

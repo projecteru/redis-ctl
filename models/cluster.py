@@ -1,4 +1,6 @@
 import logging
+from werkzeug.utils import cached_property
+
 from base import db, Base, DB_STRING_TYPE
 
 COL_ID = 0
@@ -11,13 +13,24 @@ class Cluster(Base):
     description = db.Column(DB_STRING_TYPE)
     nodes = db.relationship('RedisNode', backref='assignee')
     proxies = db.relationship('Proxy', backref='cluster')
-    tasks = db.relationship('ClusterTask', backref='cluster')
-    current_task = db.relationship('TaskLock', backref='cluster')
 
     @staticmethod
     def lock_by_id(cluster_id):
         return db.session.query(Cluster).filter(
             Cluster.id == cluster_id).with_for_update().one()
+
+    @cached_property
+    def current_task(self):
+        from task import TaskLock
+        lock = db.session.query(TaskLock).filter(
+            TaskLock.cluster_id == self.id).first()
+        return None if lock is None else lock.task
+
+    def get_tasks(self, skip=0, limit=10):
+        from task import ClusterTask
+        return db.session.query(ClusterTask).filter(
+            ClusterTask.cluster_id == self.id).order_by(
+                ClusterTask.id.desc()).offset(skip).limit(limit).all()
 
 
 def get_by_id(cluster_id):

@@ -21,6 +21,23 @@ def cluster_panel(request, cluster_id):
     return request.render('cluster/panel.html', cluster=c)
 
 
+@base.get_async('/cluster/task/steps')
+def cluster_get_task_steps(request):
+    t = models.task.get_task_by_id(int(request.args['id']))
+    if t is None:
+        return base.not_found()
+    return base.json_result([{
+        'id': step.id,
+        'command': step.command,
+        'args': step.args,
+        'status': 'completed' if step.completed else (
+            'running' if step.running else 'pending'),
+        'start_time': step.start_time,
+        'completion': step.completion,
+        'exec_error': step.exec_error,
+    } for step in t.all_steps])
+
+
 @base.get_async('/cluster/get_masters')
 def cluster_get_masters_info(request):
     c = models.cluster.get_by_id(request.args['id'])
@@ -100,7 +117,8 @@ def recover_migrate_status(request):
     c = models.cluster.get_by_id(int(request.form['cluster_id']))
     if c is None:
         raise ValueError('no such cluster')
-    task = models.task.ClusterTask(cluster_id=c.id)
+    task = models.task.ClusterTask(cluster_id=c.id,
+                                   task_type=models.task.TASK_TYPE_FIX_MIGRATE)
     for node in c.nodes:
         task.add_step('fix_migrate', host=node.host, port=node.port)
     db.session.add(task)
@@ -121,7 +139,8 @@ def migrate_slots(request):
 
     src = nm.pick_by(src_host, src_port)
 
-    task = models.task.ClusterTask(cluster_id=src.assignee_id)
+    task = models.task.ClusterTask(cluster_id=src.assignee_id,
+                                   task_type=models.task.TASK_TYPE_MIGRATE)
     for slots_group in _slice_slots(slots):
         task.add_step('migrate', src_host=src.host, src_port=src.port,
                       dst_host=dst_host, dst_port=dst_port, slots=slots_group)
@@ -133,7 +152,8 @@ def join_cluster(request):
     c = models.cluster.get_by_id(int(request.form['cluster_id']))
     if c is None or len(c.nodes) == 0:
         raise ValueError('no such cluster')
-    task = models.task.ClusterTask(cluster_id=c.id)
+    task = models.task.ClusterTask(cluster_id=c.id,
+                                   task_type=models.task.TASK_TYPE_JOIN)
     task.add_step('join', cluster_id=c.id, cluster_host=c.nodes[0].host,
                   cluster_port=c.nodes[0].port,
                   newin_host=request.form['host'],
@@ -148,7 +168,8 @@ def quit_cluster(request):
     if n is None:
         raise ValueError('no such node')
 
-    task = models.task.ClusterTask(cluster_id=n.assignee_id)
+    task = models.task.ClusterTask(cluster_id=n.assignee_id,
+                                   task_type=models.task.TASK_TYPE_QUIT)
     for migr in request.post_json['migratings']:
         for slots_group in _slice_slots(migr['slots']):
             task.add_step('migrate', src_host=n.host, src_port=n.port,
@@ -164,7 +185,8 @@ def replicate(request):
         request.form['master_host'], int(request.form['master_port']))
     if n is None or n.assignee_id is None:
         raise ValueError('unable to replicate')
-    task = models.task.ClusterTask(cluster_id=n.assignee_id)
+    task = models.task.ClusterTask(cluster_id=n.assignee_id,
+                                   task_type=models.task.TASK_TYPE_REPLICATE)
     task.add_step('replicate', cluster_id=n.assignee_id,
                   master_host=n.host, master_port=n.port,
                   slave_host=request.form['slave_host'],

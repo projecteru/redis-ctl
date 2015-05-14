@@ -191,7 +191,6 @@ $('#migrating-slots-confirm').click(function() {
             return;
         }
 
-        sliceStart += migrCount;
         $.ajax({
             url: '/cluster/migrate_slots',
             type: 'POST',
@@ -209,6 +208,7 @@ $('#migrating-slots-confirm').click(function() {
                 btn.parent().text('失败: ' + r.responseText);
             }
         });
+        sliceStart += migrCount;
     });
 });
 
