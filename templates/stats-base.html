@@ -17,12 +17,13 @@
 </style>
 
 <script>
+var TIME_OFFSET = (new Date()).getTimezoneOffset();
+
 function statistics(gMetricsDatum, uri, host, port, fields) {
     var POINTS_LENGTH = 1000;
     var POLL_SECS = 120;
     var POLL_INTERVAL = POLL_SECS * 1000;
     var gDatumTimestamp = {};
-    var TIME_OFFSET = (new Date()).getTimezoneOffset();
 
     function timeStrFromUTC(t) {
         t.setMinutes(t.getMinutes() - TIME_OFFSET);
@@ -59,10 +60,14 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
                   if (e.deriv) {
                       values = [{x: gMetricsDatum[e.keyName][0].x, y: 0}];
                       for (var i = 1; i < gMetricsDatum[e.keyName].length; ++i) {
+                          var diff = 0;
+                          if (gMetricsDatum[e.keyName][i - 1].y !== null) {
+                              diff = Math.max(0, (gMetricsDatum[e.keyName][i].y - gMetricsDatum[e.keyName][i - 1].y) /
+                                                 (gMetricsDatum[e.keyName][i].x - gMetricsDatum[e.keyName][i - 1].x))
+                          }
                           values.push({
                               x: gMetricsDatum[e.keyName][i].x,
-                              y: Math.max(0, (gMetricsDatum[e.keyName][i].y - gMetricsDatum[e.keyName][i - 1].y) /
-                                             (gMetricsDatum[e.keyName][i].x - gMetricsDatum[e.keyName][i - 1].x))
+                              y: diff
                           });
                       }
                   } else {
