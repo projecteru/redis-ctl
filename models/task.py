@@ -13,6 +13,12 @@ from base import db, Base, DB_TEXT_TYPE
 from cluster import Cluster, remove_empty_cluster
 from node import get_by_host_port as get_node_by_host_port
 
+TASK_TYPE_FIX_MIGRATE = 0
+TASK_TYPE_MIGRATE = 1
+TASK_TYPE_JOIN = 2
+TASK_TYPE_REPLICATE = 3
+TASK_TYPE_QUIT = 4
+
 
 class ClusterTask(Base):
     __tablename__ = 'cluster_task'
@@ -20,6 +26,7 @@ class ClusterTask(Base):
     cluster_id = db.Column(db.ForeignKey(Cluster.id), nullable=False)
     creation = db.Column(db.DateTime, default=datetime.now, nullable=False,
                          index=True)
+    task_type = db.Column(db.Integer, nullable=False)
     exec_error = db.Column(DB_TEXT_TYPE)
     completion = db.Column(db.DateTime, index=True)
 
@@ -63,6 +70,7 @@ class ClusterTask(Base):
         return db.session.query(TaskLock).filter(
             TaskLock.task_id == self.id).first()
 
+    @cached_property
     def running(self):
         return self.acquired_lock() is not None
 
@@ -97,6 +105,10 @@ class ClusterTask(Base):
 
     def reattach(self):
         return db.session.query(ClusterTask).get(self.id)
+
+
+def get_task_by_id(task_id):
+    return db.session.query(ClusterTask).get(task_id)
 
 
 def undone_tasks():
@@ -166,7 +178,6 @@ class TaskStep(Base):
         'migrate': redistrib.command.migrate_slots,
         'join': _join,
         'replicate': _replicate,
-        'fix': redistrib.command.fix_migrating,
         'quit': _quit,
     }
 

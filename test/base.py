@@ -1,6 +1,17 @@
 import os
-import logging
+import errno
 import tempfile
+
+import config
+
+config.PERMDIR = os.path.join(tempfile.gettempdir(), 'redistribpytestpermdir')
+try:
+    os.makedirs(config.PERMDIR)
+except OSError as exc:
+    if exc.errno == errno.EEXIST and os.path.isdir(config.PERMDIR):
+        pass
+
+import logging
 import unittest
 
 import daemonutils.cluster_task
@@ -8,6 +19,7 @@ import handlers.base
 import models.base
 
 app = handlers.base.app
+app.debug = True
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://%s:%s@%s:%d/%s' % (
     'root', '123456', '127.0.0.1', 3306, 'redisctltest')
 models.base.init_db(app)

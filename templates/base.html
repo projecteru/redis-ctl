@@ -9,6 +9,7 @@
 <link rel='stylesheet' type='text/css' href='/static/card.css'>
 <link rel='stylesheet' type='text/css' href='/static/components.css'>
 <script src='/static/jquery.js'></script>
+<script src='/static/bootstrap.js'></script>
 <script src='/static/common.js'></script>
 <script src='/static/card.js'></script>
 <script src='/static/components.js'></script>
@@ -42,10 +43,13 @@ $(document).ready(function() {
     </div>
 </header>
 
-<div class='main-width'>
-{% block body %}{% endblock %}
-</div>
-<hr>
-<div style='text-align: right'>
-    &copy; HunanTV Platform developers - ver0.6.0-beta
-</div>
+<div class='main-width'>{% block body %}{% endblock %}</div>
+
+<footer>
+    <div class='main-width'>
+        <span style='float: right'>
+            &copy; HunanTV Platform developers - ver0.6.0-2015-05-15
+            <a href='https://github.com/HunanTV/redis-ctl'><i class='fa fa-github'></i></a>
+        </span>
+    </div>
+</footer>
