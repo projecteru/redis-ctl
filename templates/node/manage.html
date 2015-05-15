@@ -9,14 +9,28 @@
 {% else %}
 <div>
     ERU 地址: {{ eru|e }}
-    <button class='btn btn-primary' onclick='requestEruNode(this)'>申请一个 ERU 节点</button>
-    <span style='display: none' id='error' class='label label-important'></span>
+    {% if image_versions|length == 0 %}
+    没有找到合适的镜像版本
+    {% else %}
+    <div>
+        选择镜像版本
+        <select id='image-version'>
+            {% for v in image_versions %}
+            <option value='{{ v.sha|e }}'>{{ v.sha[:8]|e }} : {{ v.created|e }}</option>
+            {% endfor %}
+        </select>
+        <button id='aofEnable' class='check-group check-group-info'> 启用 AOF</button>
+        <button class='btn btn-primary' onclick='requestEruNode(this)'>申请一个 ERU 节点</button>
+        <span style='display: none' id='error' class='label label-important'></span>
+    </div>
+    {% endif %}
 </div>
 
 <table class='table'>
     <thead>
         <tr>
             <th>容器 ID</th>
+            <th>镜像版本</th>
             <th>地址</th>
             <th>下线容器</th>
         </tr>
@@ -24,11 +38,12 @@
     <tbody id='eru-nodes'>
     {% for n in eru_nodes %}
         <tr>
-            <td>{{ n.eru_container_id|e }}</td>
+            <td>{{ n.eru_container_id[:16]|e }}</td>
+            <td>{{ n.eru_image_sha|e }}</td>
             <td>{{ n.host|e }}</td>
             <td>
-                <button class='btn toggle-next' data-cid='{{ n.eru_container_id|e }}'>下线容器</button>
-                <button class='btn btn-danger'>确定</button>
+                <button class='btn toggle-next'>下线容器</button>
+                <button class='btn btn-danger' onclick='delContainer(this, {{ n.eru_container_id|tojson }})'>确定</button>
             </td>
         <tr>
     {% endfor %}
@@ -36,29 +51,56 @@
 </table>
 
 <script>
+$('.check-group').enableLabelCheck();
+
 function requestEruNode(btn) {
     function deleteButton(containerId) {
         var toggleNext = $('<button>').addClass('btn').text('下线容器').click(
                 function() {$(this).next().toggle();});
         var offline = $('<button>').addClass('btn').addClass('btn-danger').hide().text('确定');
+        offline.click(function() {
+            delContainer(this, containerId);
+        });
         return [toggleNext, offline];
     }
 
     $(btn).attr('disabled', 'disabled');
+    var version = $('#image-version').val();
     $.ajax({
         url: '/nodes/create/eru',
         type: 'POST',
-        data: {},
+        data: {
+            version: version,
+            aof: $('#aofEnable').prop('checked') ? 'y' : 'n'
+        },
         success: function(r) {
             $(btn).removeAttr('disabled');
             $('#eru-nodes').append($('<tr>'
-                    ).append($('<td>').text(r.container_id)
+                    ).append($('<td>').text(r.container_id.slice(0, 16))
+                    ).append($('<td>').text(version)
                     ).append($('<td>').text(r.host)
                     ).append($('<td>').append(deleteButton(r.container_id))
                     ));
         },
         error: function(e) {
             $('#error').show().text('有错误发生: ' + e.responseText);
+        }
+    });
+}
+
+function delContainer(btn, id) {
+    var self = $(btn).attr('disabled', 'disabled');
+    $.ajax({
+        url: '/nodes/delete/eru',
+        method: 'POST',
+        data: {
+            id: id
+        },
+        success: function() {
+            window.location.reload();
+        },
+        error: function(e) {
+            self.text('发生错误: ' + e.responseText);
         }
     });
 }

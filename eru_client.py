@@ -126,6 +126,11 @@ class EruClient(object):
         }
         return self.post(url, data=data)
 
+    def rm_containers(self, container_ids):
+        return self.put('/api/deploy/rmcontainers/', data={
+            'cids': container_ids,
+        })
+
     def offline_version(self, group_name, pod_name, app_name, version):
         url = '/api/deploy/rmversion/{0}/{1}/{2}'.format(group_name, pod_name, app_name)
         data = {'version': version}
@@ -228,3 +233,6 @@ class EruClient(object):
 
     def container_info(self, container_id):
         return self.get('/api/container/%s/' % container_id)
+
+    def get_versions(self, app):
+        return self.get('/api/app/%s/versions/' % app)

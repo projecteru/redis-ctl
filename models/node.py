@@ -15,7 +15,8 @@ class RedisNode(Base):
     host = db.Column(db.String(32), nullable=False)
     port = db.Column(db.Integer, nullable=False)
     max_mem = db.Column(db.Integer, nullable=False)
-    eru_container_id = db.Column(db.String(64), index=False)
+    eru_container_id = db.Column(db.String(64), index=True)
+    eru_image_sha = db.Column(db.String(40))
     assignee_id = db.Column(db.ForeignKey(Cluster.id), index=True)
     suppress_alert = db.Column(db.Integer, nullable=False, default=1)
 
@@ -46,12 +47,21 @@ def create_instance(host, port, max_mem):
     return node
 
 
-def create_eru_instance(host, eru_container_id):
+def create_eru_instance(host, eru_container_id, eru_image_sha):
     node = RedisNode(host=host, port=6379, max_mem=1 << 28,
-                     eru_container_id=eru_container_id)
+                     eru_container_id=eru_container_id,
+                     eru_image_sha=eru_image_sha)
     db.session.add(node)
     db.session.flush()
     return node
+
+
+def delete_eru_instance(eru_container_id):
+    i = db.session.query(RedisNode).filter(
+        RedisNode.eru_container_id == eru_container_id).first()
+    if i is None or i.assginee_id is not None:
+        raise ValueError('node not free')
+    db.session.delete(i)
 
 
 def delete_free_instance(host, port):
