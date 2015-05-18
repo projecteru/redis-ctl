@@ -8,7 +8,7 @@ import models.node
 from models.base import db
 from eru_client import EruClient
 
-DEFAULT_MAX_MEM = 1024 * 000 * 000 # 1GB
+DEFAULT_MAX_MEM = 1024 * 1000 * 1000 # 1GB
 ERU_MAX_MEM_LIMIT = (64 * 1000 * 1000, config.ERU_NODE_MAX_MEM)
 
 
