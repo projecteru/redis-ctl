@@ -95,15 +95,16 @@ function updateSlotsResult() {
         var row = $(this);
         var input = row.find('input');
         var result = row.find('.slots-result');
-        var inputVal = input.val();
+        var inputVal = input.val().trim(), migrSlots = 0;
         if (inputVal.length !== 0) {
-            var migrSlots = parseInt(input.val());
+            migrSlots = parseInt(input.val());
             if (isNaN(migrSlots) || migrSlots < 0) {
-                row.addClass('has-error');
-            } else {
-                result.text(migrSlots + row.data('slots'));
+                return row.addClass('has-error');
             }
         }
+
+        input.val(migrSlots);
+        result.text(migrSlots + row.data('slots'));
     });
 
     $('.node-myself').each(function() {

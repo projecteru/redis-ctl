@@ -2,7 +2,7 @@ $(document).ready(function() {
     $('.card').attachCardExpand();
 
     $('.check-suppress-alert').enableLabelCheck({
-        onClick: function(self, checked) {
+        onClick: function(self) {
             var root = self.parent();
             while (root.length && !root.hasClass('alert-status-root')) {
                 root = root.parent();
@@ -11,7 +11,7 @@ $(document).ready(function() {
             $.post('/set_alert_status/' + self.data('ntype'), {
                 host: self.data('host'),
                 port: self.data('port'),
-                suppress: checked ? '1' : '0'
+                suppress: self.prop('checked') ? '1' : '0'
             });
         }
     });
