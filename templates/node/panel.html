@@ -11,16 +11,14 @@
 {% block body %}
 <h1>{{ node.host|e }}:{{ node.port }} - {{ detail.node_id|e }}</h1>
 
-{% if node.assignee %}
-
 <table class='table'>
     <tr>
-        <th>所属集群</th>
-        <td><a target='_blank' href='/clusterp/{{ node.assignee.id }}'>{{ node.assignee.description|e }}</a></td>
+        <th>节点 ID</th>
+        <td>{{ detail.node_id|e }}</td>
     </tr>
     <tr>
-        <th>槽位数</th>
-        <td>{{ detail.slots|length }}</td>
+        <th>版本</th>
+        <td>{{ detail.version }}</td>
     </tr>
     {% if node.eru_deployed %}
     <tr>
@@ -65,6 +63,19 @@
         </td>
     </tr>
     {% endif %}
+</table>
+
+{% if node.assignee %}
+
+<table class='table'>
+    <tr>
+        <th>所属集群</th>
+        <td><a target='_blank' href='/clusterp/{{ node.assignee.id }}'>{{ node.assignee.description|e }}</a></td>
+    </tr>
+    <tr>
+        <th>槽位数</th>
+        <td>{{ detail.slots|length }}</td>
+    </tr>
 </table>
 
 <div>
