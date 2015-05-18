@@ -7,6 +7,7 @@ import base
 import models.recover
 import models.node
 import models.proxy
+import models.task
 from models.base import db
 from eru_client import EruClient
 
@@ -112,7 +113,8 @@ def fix_node_migrating(request):
                                      int(request.form['port']))
     if n is None or n.assignee is None:
         raise ValueError('no such node in cluster')
-    task = models.task.ClusterTask(cluster_id=n.assignee.id)
+    task = models.task.ClusterTask(cluster_id=n.assignee.id,
+                                   task_type=models.task.TASK_TYPE_FIX_MIGRATE)
     task.add_step('fix_migrate', host=n.host, port=n.port)
     db.session.add(task)
 
