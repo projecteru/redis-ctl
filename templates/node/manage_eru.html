@@ -26,12 +26,13 @@
     {% endif %}
 </div>
 
-<table class='table'>
+<table class='table' style='text-align: center'>
     <thead>
         <tr>
             <th>容器 ID</th>
             <th>镜像版本</th>
             <th>地址</th>
+            <th>最大内存</th>
             <th>下线容器</th>
         </tr>
     </thead>
@@ -39,11 +40,16 @@
     {% for n in eru_nodes %}
         <tr>
             <td>{{ n.eru_container_id[:16]|e }}</td>
-            <td>{{ n.eru_image_sha|e }}</td>
-            <td>{{ n.host|e }}</td>
+            <td>{{ n.eru_image_sha[:16]|e }}</td>
+            <td><a href='/nodep/{{ n.host|e }}/6379'>{{ n.host|e }}</a></td>
+            <td>{{ n.max_mem|filesizeformat }}</td>
             <td>
+                {% if n.assignee_id %}
+                集群在役中
+                {% else %}
                 <button class='btn toggle-next'>下线容器</button>
                 <button class='btn btn-danger' onclick='delContainer(this, {{ n.eru_container_id|tojson }})'>确定</button>
+                {% endif %}
             </td>
         <tr>
     {% endfor %}
@@ -77,8 +83,9 @@ function requestEruNode(btn) {
             $(btn).removeAttr('disabled');
             $('#eru-nodes').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
-                    ).append($('<td>').text(version)
-                    ).append($('<td>').text(r.host)
+                    ).append($('<td>').text(version.slice(0, 16))
+                    ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.host + '/6379').text(r.host))
+                    ).append($('<td>').text((r.max_mem / 1000 / 1000) + 'MB')
                     ).append($('<td>').append(deleteButton(r.container_id))
                     ));
         },

@@ -1,4 +1,5 @@
 import logging
+from werkzeug.utils import cached_property
 
 from base import db, Base
 from cluster import Cluster
@@ -25,6 +26,10 @@ class RedisNode(Base):
     def free(self):
         return self.assignee_id is None
 
+    @cached_property
+    def eru_deployed(self):
+        return self.eru_container_id is not None
+
 
 def get_by_host_port(host, port):
     return db.session.query(RedisNode).filter(
@@ -47,8 +52,8 @@ def create_instance(host, port, max_mem):
     return node
 
 
-def create_eru_instance(host, eru_container_id, eru_image_sha):
-    node = RedisNode(host=host, port=6379, max_mem=1 << 28,
+def create_eru_instance(host, max_mem, eru_container_id, eru_image_sha):
+    node = RedisNode(host=host, port=6379, max_mem=max_mem,
                      eru_container_id=eru_container_id,
                      eru_image_sha=eru_image_sha)
     db.session.add(node)
@@ -59,7 +64,7 @@ def create_eru_instance(host, eru_container_id, eru_image_sha):
 def delete_eru_instance(eru_container_id):
     i = db.session.query(RedisNode).filter(
         RedisNode.eru_container_id == eru_container_id).first()
-    if i is None or i.assginee_id is not None:
+    if i is None or i.assignee_id is not None:
         raise ValueError('node not free')
     db.session.delete(i)
 

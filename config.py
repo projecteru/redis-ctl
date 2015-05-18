@@ -24,6 +24,7 @@ ALGALON = {
 }
 
 ERU_URL = os.getenv('ERU_URL', None)
+ERU_NODE_MAX_MEM = int(os.getenv('ERU_NODE_MAM_MEM', 2048 * 1000 * 1000))
 
 LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
 LOG_FILE = os.getenv('LOG_FILE', '')

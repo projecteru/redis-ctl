@@ -1,8 +1,14 @@
 <div class='card card-root alert-status-root'>
     {% set cluster = node.assignee %}
     {% set awaiting_polling = node.stat and not node.detail %}
-    <span class='card-title' id='node-i-{{ node.host|e }}-{{ node.port }}'>节点 {{ node.host|e }}:{{ node.port }}</span>
-    <span style='float: right' class='card-previewonly alert-status {{ '' if node.suppress_alert else 'alert-enabled' }}'><span class='label label-warning'>报警关闭</span></span>
+    <span class='card-title' id='node-i-{{ node.host|e }}-{{ node.port }}'>
+        {{ node.host|e }}:{{ node.port }}
+        {% if node.eru_deployed %}
+        <span class='label label-info card-previewonly'><i class='fa fa-cube'></i></span>
+        {% endif %}
+    </span>
+    <span style='float: right' class='card-previewonly alert-status {{ '' if node.suppress_alert else 'alert-enabled' }}'
+        ><span class='label label-warning'><i class='fa fa-bell-slash'></i></span></span>
     <a style='float: right; margin-top: -9px' href='/nodep/{{ node.host|e }}/{{ node.port}}' class='btn btn-info card-detailonly'>节点控制面板</a>
     <div class='card-preview'>
         {% if awaiting_polling %}
@@ -14,14 +20,11 @@
                 <td>
                     <span card-detailto='node-status'>
                         {% if node.stat %}
-                            <span class='label label-success'>
                             {% if not cluster %}
-                                就绪
+                            <span class='label label-success'>就绪</span>
                             {% else %}
-                                在役
+                            <span class='label label-info'>在役</span>
                             {% endif %}
-
-                            </span>
                         {% else %}
                             <span class='label label-danger'>ERROR</span>
                         {% endif %}
@@ -63,7 +66,12 @@
                 {% if node.stat %}
                 <tr>
                     <td class='label-cell'>Redis 版本</td>
-                    <td>{{ node.detail.version }}</td>
+                    <td>
+                        {{ node.detail.version }}
+                        {% if node.eru_deployed %}
+                        <span class='label label-info'><i class='fa fa-cube'></i> ERU</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 <tr>
                     <td class='label-cell'>节点 ID</td>
@@ -179,7 +187,7 @@
                 {% endif %}
             {% endif %}
 
-            {% if not cluster %}
+            {% if not cluster and not node.eru_deployed %}
                 <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
             {% endif %}
 
