@@ -1,11 +1,11 @@
 {% extends './base.html' %}
 
-{% block title %}节点管理{% endblock %}
+{% block title %}ERU 节点管理{% endblock %}
 
 {% block body %}
 
 {% if not eru %}
-<span class='label label-important'>没有设定 ERU 地址</span>
+<span class='label label-danger'>没有设定 ERU 地址</span>
 {% else %}
 <div>
     ERU 地址: {{ eru|e }}

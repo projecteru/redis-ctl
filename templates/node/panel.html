@@ -25,43 +25,45 @@
         <th>部署</th>
         <td><i class='fa fa-cube'></i> ERU 容器</td>
     </tr>
-    <tr>
-        <th>内存</th>
-        <td>
-            {{ detail.mem.used_memory_human|e }} /
-            <a href='javascript:void(0)' onclick="$(this).hide(); $('#edit_max_mem').show()">{{ node.max_mem|filesizeformat }}</a>
-            <span id='edit_max_mem' style='display: none'>
-                <input id='max_mem_input' value='{{ node.max_mem }}'>
-                <button onclick='editMaxMem()' class='btn btn-primary'>修改</button>
-                <span class='label label-warning' style='display: none' id='edit-error'>设置的最大内存值超过范围</span>
-            </span>
-            <script>
-            function editMaxMem() {
-                $('#edit-error').hide();
-                var m = parseInt($('#max_mem_input').val());
-                if (isNaN(m) || m < 64 * 1000 * 1000 || m > {{ max_mem_limit|tojson }}) {
-                    $('#edit-error').show();
-                    return $('#edit_max_mem').focus();
-                }
-                $.ajax({
-                    url: '/nodes/set_max_mem/eru',
-                    type: 'POST',
-                    data: {
-                        host: {{ node.host|tojson }},
-                        port: {{ node.port|tojson }},
-                        max_mem: m
-                    },
-                    success: function() {
-                        window.location.reload();
-                    },
-                    error: function(r) {
-                        console.error(r);
+        {% if detail and detail.mem %}
+        <tr>
+            <th>内存</th>
+            <td>
+                {{ detail.mem.used_memory_human|e }} /
+                <a href='javascript:void(0)' onclick="$(this).hide(); $('#edit_max_mem').show()">{{ node.max_mem|filesizeformat }}</a>
+                <span id='edit_max_mem' style='display: none'>
+                    <input id='max_mem_input' value='{{ node.max_mem }}'>
+                    <button onclick='editMaxMem()' class='btn btn-primary'>修改</button>
+                    <span class='label label-warning' style='display: none' id='edit-error'>设置的最大内存值超过范围</span>
+                </span>
+                <script>
+                function editMaxMem() {
+                    $('#edit-error').hide();
+                    var m = parseInt($('#max_mem_input').val());
+                    if (isNaN(m) || m < 64 * 1000 * 1000 || m > {{ max_mem_limit|tojson }}) {
+                        $('#edit-error').show();
+                        return $('#edit_max_mem').focus();
                     }
-                });
-            }
-            </script>
-        </td>
-    </tr>
+                    $.ajax({
+                        url: '/nodes/set_max_mem/eru',
+                        type: 'POST',
+                        data: {
+                            host: {{ node.host|tojson }},
+                            port: {{ node.port|tojson }},
+                            max_mem: m
+                        },
+                        success: function() {
+                            window.location.reload();
+                        },
+                        error: function(r) {
+                            console.error(r);
+                        }
+                    });
+                }
+                </script>
+            </td>
+        </tr>
+        {% endif %}
     {% endif %}
 </table>
 

@@ -32,7 +32,8 @@
                             <span class='label-cell'>SLA</span>
                             <span>
                                 {{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%
-                                <span class='card-previewonly alert-status {{ '' if proxy.suppress_alert else 'alert-enabled' }}'><span class='label label-warning'>报警关闭</span></span>
+                                <span class='card-previewonly alert-status {{ '' if proxy.suppress_alert else 'alert-enabled' }}'
+                                    ><span class='label label-warning'><i class='fa fa-bell-slash'></i></span></span>
                             </span>
                         </div>
                         <div class='card-detailonly'>
