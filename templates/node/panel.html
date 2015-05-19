@@ -16,7 +16,7 @@
 <table class='table'>
     <tr>
         <th>所属集群</th>
-        <td><a target='_blank' href='/clusterp/{{ node.assignee.id }}'>{{ node.assignee.description|e }}</a></td>
+        <td><a target='_blank' href='/clusterp/{{ node.assignee.id }}'>{{ node.assignee.description|e }} <i class='fa fa-external-link'></i></a></td>
     </tr>
     <tr>
         <th>槽位数</th>
@@ -32,6 +32,7 @@
 
 <div class='panel-div' id='quit-cluster'>
     <span class='loading-cluster-info'>正在加载集群信息...</span>
+    <button class='btn btn-info' style='display: none' id='quit-cluster-replica'>确定退出</button>
     <table class='table' style='display: none'>
         <caption><h2>退出集群 - 迁出该节点上的所有槽位才能退出</h2></caption>
         <thead>
@@ -72,7 +73,7 @@
         <tfoot>
             <tr>
                 <td colspan='5'>
-                    <button id='migrating-slots-confirm' class='btn btn-primary'>开始迁移</button>
+                    <button id='migrating-slots-confirm' class='btn btn-primary'>迁移</button>
                     <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label'>槽位不足</span>
                 </td>
             </tr>
@@ -84,7 +85,7 @@
 var local = {
     loadingClusterInfo: false,
     clusterNodes: null,
-    holdingSlots: {{ detail.slots|tojson }}
+    holdingSlots: {{ (detail.slots if detail and detail.slots else [])|tojson }}
 };
 
 function updateSlotsResult() {
@@ -251,26 +252,36 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
     }
 
     $.ajax({
-        url: '/cluster/get_masters',
+        url: '/nodes/get_masters',
         type: 'GET',
         data: {
-            id: {{ node.assignee_id|tojson }}
+            host: {{ node.host|tojson }},
+            port: {{ node.port|tojson }}
         },
         success: function(r) {
+            if (r.myself.role === 'slave') {
+                $('.loading-cluster-info').text('此节点是从节点');
+                return $('#quit-cluster-replica').click(function() {
+                    var btn = $(this).attr('disabled', 'disabled');
+                    $.ajax({
+                        url: '/cluster/quit',
+                        type: 'POST',
+                        data: JSON.stringify({
+                            host: {{ node.host|tojson }},
+                            port: {{ node.port|tojson }},
+                            migratings: [],
+                        }),
+                        success: function() {
+                            return window.location.reload();
+                        },
+                        error: function(r) {
+                            btn.text('失败: ' + r.responseText);
+                        }
+                    });
+                }).show();
+            }
             $('.loading-cluster-info').remove();
-            local.clusterNodes = r;
-            r.sort(function(a, b) {
-                if (a.host < b.host) {
-                    return -1;
-                }
-                if (b.host < a.host) {
-                    return 1;
-                }
-                return a.port - b.port;
-            });
-            addNodesToTable($('#quit-cluster tbody'), r);
-            addNodesToTable($('#migrating-slots tbody'), r);
-            if ($('.node-myself').length === 0) {
+            if (r.masters.length <= 1 && $('.node-myself').length === 0) {
                 return $('#quit-cluster-force').click(function() {
                     var btn = $(this).attr('disabled', 'disabled');
                     $.ajax({
@@ -290,10 +301,22 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
                     });
                 }).show();
             }
+            local.clusterNodes = r.masters;
+            local.clusterNodes.sort(function(a, b) {
+                if (a.host < b.host) {
+                    return -1;
+                }
+                if (b.host < a.host) {
+                    return 1;
+                }
+                return a.port - b.port;
+            });
+            addNodesToTable($('#quit-cluster tbody'), local.clusterNodes);
+            addNodesToTable($('#migrating-slots tbody'), local.clusterNodes);
             $('#quit-cluster .table').show();
             $('#migrating-slots .table').show();
 
-            if (r.length === 1) {
+            if (local.clusterNodes.length === 1) {
                 $('#quit-cluster button').attr('disabled', 'disabled');
                 $('#migrating-slots button').attr('disabled', 'disabled');
             }
@@ -391,7 +414,7 @@ $('#select-cluster').change(function() {
     var clusterId = select.val();
     var cluster = local.clusterMasters[clusterId];
     if (cluster) {
-        return fillMasterNodesTo(cluster, $('#select-master'));
+        return fillMasterNodesTo(cluster);
     }
 
     $.ajax({
@@ -403,7 +426,7 @@ $('#select-cluster').change(function() {
         success: function(r) {
             local.clusterMasters[clusterId] = r;
             if (select.val() === clusterId) {
-                fillMasterNodesTo(r, $('#select-master'));
+                fillMasterNodesTo(r);
             }
         },
         error: function(r) {
@@ -413,7 +436,7 @@ $('#select-cluster').change(function() {
 });
 
 function fillMasterNodesTo(cluster, select) {
-    select.html('').append(cluster.map(function(e) {
+    $('#select-master').html('').append(cluster.map(function(e) {
         return $('<option>').text([e.host, ':', e.port].join('')).data({host: e.host, port: e.port});
     }));
 }

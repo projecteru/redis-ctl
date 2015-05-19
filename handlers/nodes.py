@@ -1,10 +1,13 @@
+import redistrib.command
+
+import file_ipc
+import utils
 import base
 import models.recover
 import models.node
 import models.proxy
 import models.task
 from models.base import db
-import file_ipc
 
 
 @base.get('/nodep/<host>/<int:port>')
@@ -75,3 +78,16 @@ def set_redis_alert(request):
 def set_proxy_alert(request):
     _set_alert_status(models.proxy.get_by_host_port(
         request.form['host'], int(request.form['port'])), request)
+
+
+@base.get_async('/nodes/get_masters')
+def nodes_get_masters_info(request):
+    masters, myself = utils.masters_info(
+            request.args['host'], int(request.args['port']))
+    return base.json_result({
+        'masters': masters,
+        'myself': {
+            'role': myself.role_in_cluster,
+            'slots': len(myself.assigned_slots),
+        },
+    })

@@ -26,7 +26,7 @@ class Cluster(Base):
             TaskLock.cluster_id == self.id).first()
         return None if lock is None else lock.task
 
-    def get_tasks(self, skip=0, limit=10):
+    def get_tasks(self, skip=0, limit=5):
         from task import ClusterTask
         return db.session.query(ClusterTask).filter(
             ClusterTask.cluster_id == self.id).order_by(

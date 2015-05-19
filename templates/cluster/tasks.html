@@ -1,0 +1,28 @@
+{% extends './base.html' %}
+
+{% block title %}集群后台任务{% endblock %}
+
+{% block head %}
+<script src='/static/cluster_task.js'></script>
+{% endblock %}
+
+{% block body %}
+
+{% block pagination %}
+<nav>
+    <ul class='pager'>
+        {% if page != 0 %}
+        <li class='previous'><a href='/cluster/tasks/list/{{ cluster.id }}'><span aria-hidden='true'>&laquo;</span> 首页</a></li>
+        <li class='previous'><a href='/cluster/tasks/list/{{ cluster.id }}/{{ page - 1 }}'><span aria-hidden='true'>&larr;</span> 上一页</a></li>
+        {% endif %}
+        <li><a href='/clusterp/{{ cluster.id }}'>回到集群面板</a></li>
+        <li class='next'><a href='/cluster/tasks/list/{{ cluster.id }}/{{ page + 1 }}'>下一页 <span aria-hidden='true'>&rarr;</span></a></li>
+    </ul>
+</nav>
+{% endblock %}
+
+{{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks(page * 50, 50)) }}
+
+{{ self.pagination() }}
+
+{% endblock %}

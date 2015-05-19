@@ -61,8 +61,8 @@ statistics({
     selector: '#keys',
     fields: [
         {keyName: 'expired_keys', keyDisp: 'Expired keys', color: '#880'},
-        {keyName: 'evicted_keys', keyDisp: 'Evicted keys', color: '#088'},
-        {keyName: 'keyspace_hits', keyDisp: 'Keyspace hits', color: '#808'},
+        {keyName: 'evicted_keys', keyDisp: 'Evicted keys', color: 'red'},
+        {keyName: 'keyspace_hits', keyDisp: 'Keyspace hits', color: '#088'},
         {keyName: 'keyspace_misses', keyDisp: 'Keyspace misses', color: '#444'}
     ],
     yMapF: function(y) {return y;},

@@ -1,0 +1,67 @@
+<table class='table'>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>类型</th>
+            {% set task_types = ['修复迁移状态', '迁移槽位', '扩容', '添加从节点', '移除节点'] %}
+            <th>创建时间</th>
+            <th>执行状态</th>
+            <th>详情</th>
+        </tr>
+    </thead>
+    <tbody style='text-align: center'>
+    {% for task in tasks %}
+        <tr>
+            <td>#{{ task.id }}</td>
+            <td>{{ task_types[task.task_type]|e }}</td>
+            <td>{{ task.creation|strftime }}</td>
+            <td>
+            {% if task.completed %}
+                {% if task.exec_error %}
+                    <span class='label label-danger'>失败</span>
+                {% else %}
+                    <span class='label label-success'>完毕</span>
+                {% endif %}
+                {{ task.completion|strftime }}
+            {% elif task.running %}
+                <span class='label label-primary'>正在执行</span>
+            {% else %}
+                <span class='label label-info'>等待中</span>
+            {% endif %}
+            </td>
+            <td>
+                <button class='btn' data-toggle='modal' data-target='#taskDetail' data-taskid='{{ task.id }}'>查看详情</button>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<div class='modal fade bs-example-modal-lg' id='taskDetail' tabindex='-1' role='dialog' aria-labelledby='taskDetailTitle' aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <button type='button' class='close' data-dismiss='modal' aria-label='Close'><span aria-hidden='true'>&times;</span></button>
+                <h4 class='modal-title' id='taskDetailTitle'>任务 #<span id='taskDetailId'></span></h4>
+            </div>
+            <div class='modal-body'>
+                <span id='taskDetailLoaderPlaceholder'>正在载入任务详情...</span>
+                <div id='taskDetailContent'>
+                    <table class='table'>
+                        <caption>任务步骤 (共 <span id='taskDetailStepCount'></span> 项)</caption>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>命令</th>
+                                <th>参数</th>
+                                <th>开始时间</th>
+                                <th>执行状态</th>
+                            </tr>
+                        </thead>
+                        <tbody style='text-align: center' id='taskDetailSteps'></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
