@@ -96,4 +96,4 @@ def f_iter(x):
 
 
 def render(filename, **kwargs):
-    return _env.get_template(filename).render(**kwargs)
+    return _env.get_template(filename).render(render_template=render, **kwargs)

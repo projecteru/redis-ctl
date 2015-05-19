@@ -2,6 +2,7 @@ from socket import error as SocketError
 import logging
 import redistrib.command
 
+import utils
 import base
 import file_ipc
 import models.cluster
@@ -19,6 +20,14 @@ def cluster_panel(request, cluster_id):
     if c is None:
         return base.not_found()
     return request.render('cluster/panel.html', cluster=c)
+
+
+@base.paged('/cluster/tasks/list/<int:cluster_id>')
+def list_cluster_tasks(request, page, cluster_id):
+    c = models.cluster.get_by_id(cluster_id)
+    if c is None:
+        return base.not_found()
+    return request.render('cluster/tasks.html', cluster=c, page=page)
 
 
 @base.get_async('/cluster/task/steps')
@@ -44,16 +53,7 @@ def cluster_get_masters_info(request):
     if c is None or len(c.nodes) == 0:
         return base.not_found()
     node = c.nodes[0]
-    master = redistrib.command.list_masters(node.host, node.port)[0]
-    node_details = {(n['host'], n['port']): n
-                    for n in file_ipc.read()['nodes']}
-    result = []
-    for n in redistrib.command.list_masters(node.host, node.port)[0]:
-        r = {'host': n.host, 'port': n.port}
-        if (n.host, n.port) in node_details:
-            r['slots_count'] = len(node_details[(n.host, n.port)]['slots'])
-        result.append(r)
-    return base.json_result(result)
+    return base.json_result(utils.masters_info(node.host, node.port)[0])
 
 
 @base.get_async('/cluster/list')
