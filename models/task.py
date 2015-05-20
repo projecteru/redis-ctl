@@ -40,7 +40,9 @@ class ClusterTask(Base):
     def fail(self, exec_error):
         self.completion = datetime.now()
         self.exec_error = 'Step fails'
-        db.session.delete(self.acquired_lock())
+        lock = self.acquired_lock()
+        if lock is not None:
+            db.session.delete(lock)
         db.session.add(self)
 
     def add_step(self, command, **kwargs):
