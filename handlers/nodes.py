@@ -1,5 +1,3 @@
-import redistrib.command
-
 import file_ipc
 import utils
 import base
@@ -82,8 +80,8 @@ def set_proxy_alert(request):
 
 @base.get_async('/nodes/get_masters')
 def nodes_get_masters_info(request):
-    masters, myself = utils.masters_info(
-            request.args['host'], int(request.args['port']))
+    masters, myself = utils.masters_detail(
+        request.args['host'], int(request.args['port']))
     return base.json_result({
         'masters': masters,
         'myself': {

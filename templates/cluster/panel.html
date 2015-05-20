@@ -4,6 +4,7 @@
 
 {% block head %}
 <script src='/static/cluster_task.js'></script>
+<script src='/static/redis_node.js'></script>
 <style>
 .cluster-proxy-quickinfo {
     float: left;
@@ -41,9 +42,12 @@
             <button class='btn btn-primary' id='cluster-fix-migrating'>修复槽位迁移</button>
             <button class='btn btn-primary' id='cluster-enable-all-nodes-alert'>打开所有节点的报警</button>
             <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert'>关闭所有节点的报警</button>
+            <button class='btn' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
         </td>
     </tr>
 </table>
+
+{{ render_template('components/node/autodiscover.html', host=cluster.nodes[0].host, port=cluster.nodes[0].port, max_mem=cluster.nodes[0].max_mem) }}
 
 <script>
 $('#cluster-set-descr').click(function() {
@@ -198,15 +202,25 @@ $('#new-proxy-btn').click(function() {
         <tr>
             <th>ID</th>
             <th>地址</th>
-            <th>最大内存</th>
+            <th>内存</th>
+            <th>角色</th>
+            <th>槽位数量</th>
         </tr>
     </thead>
     <tbody style='text-align: center'>
     {% for n in cluster.nodes %}
+        {% set detail = node_details.get((n.host, n.port), {}) %}
         <tr>
             <td>#{{ n.id }}</td>
             <td><a href='/nodep/{{ n.host|e }}/{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
-            <td>{{ n.max_mem|filesizeformat }}</td>
+            <td>
+                {% if detail.mem %}
+                {{ detail.mem.used_memory_human }} /
+                {% endif %}
+                {{ n.max_mem|filesizeformat }}
+            </td>
+            <td>{{ '从' if detail.slave else '主' }}</td>
+            <td>{{ detail.slots|length }}</td>
         </tr>
     {% endfor %}
     </tbody>

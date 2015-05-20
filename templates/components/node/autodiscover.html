@@ -1,0 +1,136 @@
+<div class='modal fade bs-example-modal-lg' id='clusterAutoDiscover' tabindex='-1' role='dialog' aria-labelledby='clusterAutoDiscoverTitle' aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <button type='button' class='close' data-dismiss='modal' aria-label='Close'><span aria-hidden='true'>&times;</span></button>
+                <h4 class='modal-title' id='clusterAutoDiscoverTitle'>集群自动发现</h4>
+            </div>
+            <div class='modal-body'>
+                <span id='clusterDiscoverLoaderPlaceholder'></span>
+                <table class='table' id='clusterDiscoverNodes' style='display: none'>
+                    <thead>
+                        <tr>
+                            <th>地址</th>
+                            <th>角色</th>
+                            <th>内存设置</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody style='text-align: center'></tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan='3' id='clusterDiscoverControls'>
+                                <button class='btn' id='discoverAutoSetMaxMem'>自动设置内存等于当前节点 <small>({{ max_mem|filesizeformat }})</small></button>
+                                <button class='btn btn-primary' id='discoverAutoAddNodes'>注册这些节点并加入集群</button>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$('#clusterAutoDiscover').on('show.bs.modal', function(event) {
+    var pl = $('#clusterDiscoverLoaderPlaceholder');
+    if (pl.length === 0) {
+        return;
+    }
+    pl.text('正在载入集群信息...');
+    $.ajax({
+        url: '/cluster/autodiscover',
+        type: 'GET',
+        data: {
+            host: {{ host|tojson }},
+            port: {{ port|tojson }}
+        },
+        success: function(r) {
+            if (!r.cluster_discovered) {
+                return pl.text('节点不在集群中');
+            }
+            pl.remove();
+            var tbody = $('#clusterDiscoverNodes').show().find('tbody');
+            r.nodes.sort(function(a, b) {
+                if (a.host < b.host) {
+                    return -1;
+                }
+                if (b.host < a.host) {
+                    return 1;
+                }
+                return a.port - b.port;
+            });
+            $.each(r.nodes, function(i, e) {
+                var row = $('<tr>'
+                    ).append($('<td>').text(e.host + ':' + e.port)
+                    ).append($('<td>').text(e.role == 'master' ? '主' : '从')
+                    );
+                if (e.known) {
+                    row.append($('<td>').text('已注册'));
+                } else {
+                    row.addClass('row-unknown').append($('<td>').addClass('mem-td'
+                            ).append($('<input>').addClass('input-max-mem')
+                        )).append($('<td>').addClass('mem-disp-td'
+                            ).append($('<span>').text(' = ')
+                            ).append($('<span>').addClass('mem-parsed').text(0)
+                            ).append($('<span>').addClass('mem-error')
+                        ));
+                    row.data('host', e.host).data('port', e.port);
+                    bindMemoryTrans(row);
+                }
+                tbody.append(row)
+            });
+            $('#discoverAutoSetMaxMem').click(function() {
+                tbody.find('.input-max-mem').val({{ max_mem|tojson }});
+                tbody.find('.mem-error').text('');
+                tbody.find('.mem-parsed').text({{ max_mem|tojson }});
+                tbody.find('.input-max-mem').data('mem', {{ max_mem|tojson }});
+            });
+            $('#discoverAutoAddNodes').click(function() {
+                var btn = $(this);
+                btn.attr('disabled', 'disabled');
+                -function addNode(rows, index) {
+                    if (rows.length === index) {
+                        $.ajax({
+                            url: '/cluster/autojoin',
+                            type: 'POST',
+                            data: {
+                                host: {{ host|tojson }},
+                                port: {{ port|tojson }}
+                            },
+                            success: function() {
+                                window.location.reload();
+                            },
+                            error: function(r) {
+                                console.error(r);
+                                btn.text('失败: ' + r.responseText);
+                            }
+                        });
+                    }
+                    var row = $(rows[index]);
+                    var mem = row.find('input').data('mem');
+                    if (isNaN(mem)) {
+                        btn.removeAttr('disabled');
+                        return row.find('input').focus();
+                    }
+                    $.post('/nodes/add', {
+                        host: row.data('host'),
+                        port: row.data('port'),
+                        mem: mem,
+                    }, function() {
+                        row.removeClass('row-unknown');
+                        row.find('.mem-td').text('已注册');
+                        row.find('.mem-disp-td').html('');
+                        addNode(rows, index + 1);
+                    });
+                }($('.row-unknown'), 0);
+            });
+        },
+        error: function(r) {
+            console.error(r);
+            pl.text('错误 ');
+            pl.append(r.responseJSON.reason);
+        }
+    });
+});
+</script>

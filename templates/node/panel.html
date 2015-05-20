@@ -6,10 +6,11 @@
 <style>
 .table { text-align: center; }
 </style>
+<script src='/static/redis_node.js'></script>
 {% endblock %}
 
 {% block body %}
-<h1>{{ node.host|e }}:{{ node.port }} - {{ detail.node_id|e }}</h1>
+<h1>{{ node.host|e }}:{{ node.port }}</h1>
 
 {% if node.assignee %}
 
@@ -333,9 +334,12 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
 {% else %}
 
 <div style='margin-bottom: 1em'>
+    <button class='btn' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
     <button class='btn panel-btn' id='start-cluster-btn' data-bind='start-cluster'>启动集群</button>
     <button class='btn panel-btn' id='join-cluster-btn' data-bind='join-cluster'>加入集群</button>
 </div>
+
+{{ render_template('components/node/autodiscover.html', host=node.host, port=node.port, max_mem=node.max_mem) }}
 
 <div class='panel-div' id='start-cluster'>
     集群描述: <input id='start-cluster-descr'>

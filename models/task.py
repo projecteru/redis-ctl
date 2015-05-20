@@ -7,11 +7,10 @@ from hiredis import HiredisError, ProtocolError, ReplyError
 from redistrib.exceptions import RedisStatusError
 from werkzeug.utils import cached_property
 from sqlalchemy.exc import IntegrityError
-import redistrib.command
 
+from bgtask.proc import TASK_MAP
 from base import db, Base, DB_TEXT_TYPE
-from cluster import Cluster, remove_empty_cluster
-from node import get_by_host_port as get_node_by_host_port
+from cluster import Cluster
 
 TASK_TYPE_FIX_MIGRATE = 0
 TASK_TYPE_MIGRATE = 1
@@ -116,52 +115,6 @@ def undone_tasks():
         ClusterTask.completion == None).order_by(ClusterTask.id).all()
 
 
-def _join(cluster_id, cluster_host, cluster_port, newin_host, newin_port):
-    redistrib.command.join_no_load(cluster_host, cluster_port, newin_host,
-                                   newin_port)
-    n = get_node_by_host_port(newin_host, newin_port)
-    if n is None:
-        return
-    n.assignee_id = cluster_id
-    db.session.add(n)
-    db.session.commit()
-
-
-def _replicate(cluster_id, master_host, master_port, slave_host, slave_port):
-    redistrib.command.replicate(master_host, master_port, slave_host,
-                                slave_port)
-    n = get_node_by_host_port(slave_host, slave_port)
-    if n is None:
-        return
-    n.assignee_id = cluster_id
-    db.session.add(n)
-    db.session.commit()
-
-
-NOT_IN_CLUSTER_MESSAGE = 'not in a cluster'
-
-
-def _quit(cluster_id, host, port):
-    try:
-        me = redistrib.command.list_nodes(host, port, host)[1]
-        if len(me.assigned_slots) != 0:
-            raise ValueError('node still holding slots')
-        redistrib.command.quit_cluster(host, port)
-    except SocketError, e:
-        logging.exception(e)
-        logging.info('Remove instance from cluster on exception')
-    except ProtocolError, e:
-        if NOT_IN_CLUSTER_MESSAGE not in e.message:
-            raise
-
-    remove_empty_cluster(cluster_id)
-    n = get_node_by_host_port(host, port)
-    if n is not None:
-        n.assignee_id = None
-        db.session.add(n)
-    db.session.commit()
-
-
 class TaskStep(Base):
     __tablename__ = 'cluster_task_step'
 
@@ -172,14 +125,6 @@ class TaskStep(Base):
     exec_error = db.Column(DB_TEXT_TYPE)
     start_time = db.Column(db.DateTime)
     completion = db.Column(db.DateTime)
-
-    _COMMAND_MAP = {
-        'fix_migrate': redistrib.command.fix_migrating,
-        'migrate': redistrib.command.migrate_slots,
-        'join': _join,
-        'replicate': _replicate,
-        'quit': _quit,
-    }
 
     @cached_property
     def args(self):
@@ -197,22 +142,25 @@ class TaskStep(Base):
     def completed(self):
         return self.completion is not None
 
+    def complete(self, exec_error):
+        self.exec_error = exec_error
+        self.completion = datetime.now()
+        db.session.add(self)
+        db.session.commit()
+
     def execute(self):
         self.start_time = datetime.now()
         db.session.add(self)
         db.session.commit()
 
         try:
-            TaskStep._COMMAND_MAP[self.command](**self.args)
+            if TASK_MAP[self.command](self, **self.args):
+                self.complete(None)
             return True
         except (ValueError, LookupError, IOError, SocketError, HiredisError,
                 ProtocolError, ReplyError, RedisStatusError):
-            self.exec_error = traceback.format_exc()
+            self.complete(traceback.format_exc())
             return False
-        finally:
-            self.completion = datetime.now()
-            db.session.add(self)
-            db.session.commit()
 
     def reattach(self):
         return db.session.query(TaskStep).get(self.id)

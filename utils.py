@@ -3,7 +3,7 @@ import redistrib.command
 import file_ipc
 
 
-def masters_info(host, port):
+def masters_detail(host, port):
     node_details = {(n['host'], n['port']): n
                     for n in file_ipc.read()['nodes']}
     result = []
