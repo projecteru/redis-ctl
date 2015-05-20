@@ -5,6 +5,7 @@ import tempfile
 import config
 
 config.PERMDIR = os.path.join(tempfile.gettempdir(), 'redistribpytestpermdir')
+config.POLL_INTERVAL = 0
 try:
     os.makedirs(config.PERMDIR)
 except OSError as exc:

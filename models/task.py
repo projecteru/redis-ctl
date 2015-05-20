@@ -144,6 +144,10 @@ class TaskStep(Base):
     def completed(self):
         return self.completion is not None
 
+    def save(self):
+        self.args_json = json.dumps(self.args)
+        db.session.add(self)
+
     def complete(self, exec_error):
         self.exec_error = exec_error
         self.completion = datetime.now()
