@@ -37,10 +37,10 @@ $(document).ready(function() {
         }
         if (error) {
             return [$('<span>').addClass('label label-danger').text('失败'),
-                    $('<span>').text(' ' + new Date(completion).toLocaleString())];
+                    $('<span>').text(' ' + completion)];
         }
         return [$('<span>').addClass('label label-success').text('完成'),
-                $('<span>').text(' ' + new Date(completion).toLocaleString())];
+                $('<span>').text(' ' + completion)];
     }
 
     $('#taskDetail').on('show.bs.modal', function(event) {
@@ -60,7 +60,7 @@ $(document).ready(function() {
                         ).append($('<td>').text(e.id)
                         ).append($('<td>').text(STEP_TYPES[e.command])
                         ).append($('<td>').append(argsFormatters[e.command](e.args))
-                        ).append($('<td>').append(e.start_time !== null ? new Date(e.start_time).toLocaleString() : '')
+                        ).append($('<td>').append(e.start_time)
                         ).append($('<td>').append(renderStatus(e.status, e.exec_error, e.completion))
                         ));
                         if (e.exec_error) {
@@ -72,7 +72,8 @@ $(document).ready(function() {
                 $('#taskDetailContent').show();
             },
             error: function(r) {
+                console.error(r);
             }
         });
-    })
+    });
 });

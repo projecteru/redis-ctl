@@ -180,9 +180,7 @@
         {% endif %}
         <div style='clear: both; text-align: center'>
             {% if node.node_id %}
-                {% if node.stat %}
-                    <button class='btn btn-primary auto-discover' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>集群自动发现</button>
-                {% else %}
+                {% if not node.stat %}
                     <button class='btn btn-primary reconnect-btn' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>重连</button>
                 {% endif %}
             {% endif %}

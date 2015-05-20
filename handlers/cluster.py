@@ -5,13 +5,12 @@ import redistrib.command
 import utils
 import base
 import file_ipc
+import template
 import models.cluster
 import models.task
 import models.proxy
 import models.node as nm
 from models.base import db
-
-SLOTS_SLICE_GROUP = 8
 
 
 @base.get('/clusterp/<int:cluster_id>')
@@ -19,7 +18,8 @@ def cluster_panel(request, cluster_id):
     c = models.cluster.get_by_id(cluster_id)
     if c is None:
         return base.not_found()
-    return request.render('cluster/panel.html', cluster=c)
+    return request.render('cluster/panel.html', cluster=c, node_details={
+        (n['host'], n['port']): n for n in file_ipc.read()['nodes']})
 
 
 @base.paged('/cluster/tasks/list/<int:cluster_id>')
@@ -41,8 +41,8 @@ def cluster_get_task_steps(request):
         'args': step.args,
         'status': 'completed' if step.completed else (
             'running' if step.running else 'pending'),
-        'start_time': step.start_time,
-        'completion': step.completion,
+        'start_time': template.f_strftime(step.start_time),
+        'completion': template.f_strftime(step.completion),
         'exec_error': step.exec_error,
     } for step in t.all_steps])
 
@@ -53,7 +53,7 @@ def cluster_get_masters_info(request):
     if c is None or len(c.nodes) == 0:
         return base.not_found()
     node = c.nodes[0]
-    return base.json_result(utils.masters_info(node.host, node.port)[0])
+    return base.json_result(utils.masters_detail(node.host, node.port)[0])
 
 
 @base.get_async('/cluster/list')
@@ -117,16 +117,13 @@ def recover_migrate_status(request):
     c = models.cluster.get_by_id(int(request.form['cluster_id']))
     if c is None:
         raise ValueError('no such cluster')
+    masters = redistrib.command.list_masters(
+        c.nodes[0].host, c.nodes[0].port)[0]
     task = models.task.ClusterTask(cluster_id=c.id,
                                    task_type=models.task.TASK_TYPE_FIX_MIGRATE)
-    for node in c.nodes:
+    for node in masters:
         task.add_step('fix_migrate', host=node.host, port=node.port)
     db.session.add(task)
-
-
-def _slice_slots(slots):
-    return [slots[i: i + SLOTS_SLICE_GROUP]
-            for i in xrange(0, len(slots), SLOTS_SLICE_GROUP)]
 
 
 @base.post_async('/cluster/migrate_slots')
@@ -141,9 +138,8 @@ def migrate_slots(request):
 
     task = models.task.ClusterTask(cluster_id=src.assignee_id,
                                    task_type=models.task.TASK_TYPE_MIGRATE)
-    for slots_group in _slice_slots(slots):
-        task.add_step('migrate', src_host=src.host, src_port=src.port,
-                      dst_host=dst_host, dst_port=dst_port, slots=slots_group)
+    task.add_step('migrate', src_host=src.host, src_port=src.port,
+                  dst_host=dst_host, dst_port=dst_port, slots=slots)
     db.session.add(task)
 
 
@@ -171,10 +167,9 @@ def quit_cluster(request):
     task = models.task.ClusterTask(cluster_id=n.assignee_id,
                                    task_type=models.task.TASK_TYPE_QUIT)
     for migr in request.post_json['migratings']:
-        for slots_group in _slice_slots(migr['slots']):
-            task.add_step('migrate', src_host=n.host, src_port=n.port,
-                          dst_host=migr['host'], dst_port=migr['port'],
-                          slots=slots_group)
+        task.add_step('migrate', src_host=n.host, src_port=n.port,
+                      dst_host=migr['host'], dst_port=migr['port'],
+                      slots=migr['slots'])
     task.add_step('quit', cluster_id=n.assignee_id, host=n.host, port=n.port)
     db.session.add(task)
 
@@ -215,16 +210,18 @@ def cluster_auto_discover(request):
         logging.exception(e)
         raise ValueError(e)
 
-    unknown_nodes = []
-    for n in nodes:
-        if nm.get_by_host_port(n.host, n.port) is None:
-            unknown_nodes.append(n)
+    if len(nodes) <= 1 and len(nodes[0].assigned_slots) == 0:
+        return base.json_result({'cluster_discovered': False})
 
-    return base.json_result([{
-        'host': n.host,
-        'port': n.port,
-        'role': n.role_in_cluster,
-    } for n in unknown_nodes])
+    return base.json_result({
+        'cluster_discovered': True,
+        'nodes': [{
+            'host': n.host,
+            'port': n.port,
+            'role': n.role_in_cluster,
+            'known': nm.get_by_host_port(n.host, n.port) is not None,
+        } for n in nodes],
+    })
 
 
 @base.post_async('/cluster/autojoin')
