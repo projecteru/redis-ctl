@@ -189,6 +189,7 @@ $('#new-proxy-btn').click(function() {
 });
 </script>
 
+{{ render_template('components/command_console.html') }}
 <h1>后台任务</h1>
 
 {{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}

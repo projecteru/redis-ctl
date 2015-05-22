@@ -1,0 +1,114 @@
+<div class='modal fade bs-example-modal-lg' id='commandConsole' tabindex='-1' role='dialog' aria-labelledby='commandConsoleTitle' aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <button type='button' class='close' data-dismiss='modal' aria-label='Close'><span aria-hidden='true'>&times;</span></button>
+                <h4 class='modal-title' id='commandConsoleTitle'>集群自动发现</h4>
+            </div>
+            <div class='modal-body'>
+                <pre id='commandHistory'></pre>
+                <input class='input-block-level' id='commandInput'>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function parseCommandInput(input) {
+    function splitByQuotes(input) {
+        var re = /"[^"]*"/g;
+        var notQuoted = input.split(re);
+        var result = [notQuoted[0]];
+        var i = 0;
+        for (var m = re.exec(input); m; m = re.exec(input)) {
+            result.push(m[0].slice(1, m[0].length - 1));
+            result.push(notQuoted[++i]);
+        }
+        return result;
+    }
+    function splitBySpace(input) {
+        return input.split(' ');
+    }
+    function removeEmpty(arr) {
+        for (var i = 0; i < arr.length; ++i) {
+            if (!arr[i]) {
+                arr.splice(i, 1);
+                --i;
+            }
+        }
+        return arr;
+    }
+    var splited = splitByQuotes(input);
+    var result = splitBySpace(splited[0]);
+    for (var i = 1; i < splited.length; i += 2) {
+        result.push(splited[i]);
+        result = result.concat(splitBySpace(splited[i + 1]));
+    }
+    return removeEmpty(result);
+}
+
+$('#commandConsole').on('show.bs.modal', function(event) {
+    var source = $(event.relatedTarget);
+    var host = source.data('host');
+    var port = source.data('port');
+    var output = $('#commandHistory');
+    var input = $('#commandInput').focus();
+
+    var history = {
+        index: -1,
+        commands: []
+    };
+
+    function appendLine(what) {
+        output.append(what).append($('<br>'));
+    }
+
+    function send(cmd) {
+        $.ajax({
+            url: '/exec_command',
+            type: 'POST',
+            data: {
+                host: host,
+                port: port,
+                cmd: JSON.stringify(parseCommandInput(cmd))
+            },
+            success: function(r) {
+                if (r === null) {
+                    return appendLine('(nil)');
+                }
+                if (typeof r === 'string') {
+                    return appendLine(r);
+                }
+                if (r.constructor && r.constructor === Array) {
+                    for (var i = 0; i < r.length; ++i) {
+                        appendLine(i + ': ' + JSON.stringify(r[i]));
+                    }
+                    return;
+                }
+                for (var k in r) {
+                    appendLine(k + ': ' + JSON.stringify(r[k]));
+                }
+            }
+        });
+    }
+
+    output.append('Ready to send to ').append(host).append(':').append(port).append($('<br>'));
+    input.unbind('keydown').keydown(function(event) {
+        if (event.keyCode == 13 && input.val()) {
+            send(input.val());
+            appendLine('> ' + input.val());
+            history.index = history.commands.length;
+            history.commands.push(input.val());
+            return input.val('');
+        }
+        if (event.keyCode == 38 && history.index >= 0) {
+            input.val(history.commands[history.index]);
+            --history.index;
+            return;
+        }
+        if (event.keyCode == 40 && history.index < history.commands.length - 1) {
+            return input.val(history.commands[++history.index]);
+        }
+    });
+});
+</script>

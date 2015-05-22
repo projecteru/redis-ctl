@@ -29,6 +29,7 @@
     <button class='btn panel-btn' id='quit-cluster-btn' data-bind='quit-cluster'>退出集群</button>
     <button class='btn panel-btn' id='migrating-slots-btn' data-bind='migrating-slots'>迁出槽位</button>
     <button class='btn btn-info' style='display: none' id='quit-cluster-force'>此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联</button>
+    <button class='btn' data-toggle='modal' data-target='#commandConsole' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>直接发送指令</button>
 </div>
 
 <div class='panel-div' id='quit-cluster'>
@@ -337,6 +338,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
     <button class='btn' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
     <button class='btn panel-btn' id='start-cluster-btn' data-bind='start-cluster'>启动集群</button>
     <button class='btn panel-btn' id='join-cluster-btn' data-bind='join-cluster'>加入集群</button>
+    <button class='btn' data-toggle='modal' data-target='#commandConsole' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>直接发送指令</button>
 </div>
 
 {{ render_template('components/node/autodiscover.html', host=node.host, port=node.port, max_mem=node.max_mem) }}
@@ -512,4 +514,5 @@ $(document).ready(function() {
     });
 });
 </script>
+{{ render_template('components/command_console.html') }}
 {% endblock %}

@@ -1,3 +1,7 @@
+import json
+from hiredis import ReplyError
+from redistrib.clusternode import Talker
+
 import file_ipc
 import utils
 import base
@@ -89,3 +93,17 @@ def nodes_get_masters_info(request):
             'slots': len(myself.assigned_slots),
         },
     })
+
+
+@base.post_async('/exec_command')
+def node_exec_command(request):
+    t = Talker(request.form['host'], int(request.form['port']))
+    try:
+        r = t.talk(*json.loads(request.form['cmd']))
+    except ValueError as e:
+        r = None if e.message == 'No reply' else ('-ERROR: ' + e.message)
+    except ReplyError as e:
+        r = '-' + e.message
+    finally:
+        t.close()
+    return base.json_result(r)
