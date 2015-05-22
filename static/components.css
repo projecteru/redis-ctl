@@ -18,21 +18,170 @@
     user-select: none;
 }
 
-.check-group-label {
-    margin-left: 0.2em;
+.check-group .fa {
+    margin-right: 0.2em;
 }
 
 .check-group-checked.check-group-danger {
     background-color: #d9534f;
     color: white;
 }
-
 .check-group-checked.check-group-info {
     background-color: #5bc0de;
     color: white;
 }
-
 .check-group-checked.check-group-success {
     background-color: #5cb85c;
     color: white;
+}
+
+.select-hidden {
+    display: none;
+    visibility: hidden;
+}
+.select-wrap {
+    cursor: pointer;
+    display: inline-block;
+    position: relative;
+    font-size: 16px;
+    color: #eee;
+
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+}
+.select-styled {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 8px 15px;
+    -moz-transition: all 0.2s ease-in;
+    -o-transition: all 0.2s ease-in;
+    -webkit-transition: all 0.2s ease-in;
+    transition: all 0.2s ease-in;
+}
+
+.select-styled:after {
+    content: "";
+    width: 0;
+    height: 0;
+    border: 7px solid transparent;
+    border-color: #eee transparent transparent transparent;
+    position: absolute;
+    top: 16px;
+    right: 10px;
+}
+.select-styled:hover {
+    background-color: #3071a9;
+}
+.select-styled:active, .select-styled.active {
+    background-color: #2c699d;
+}
+.select-styled:active:after, .select-styled.active:after {
+    top: 9px;
+    border-color: transparent transparent #eee transparent;
+}
+
+.select-options {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    z-index: 999;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.select-options li {
+    margin: 0;
+    padding: 12px 0;
+    text-indent: 15px;
+    border-top: 1px solid #eee;
+    -moz-transition: all 0.15s ease-in;
+    -o-transition: all 0.15s ease-in;
+    -webkit-transition: all 0.15s ease-in;
+    transition: all 0.15s ease-in;
+}
+
+.select-default.select-styled, .select-default .select-options {
+    background-color: #ccc;
+    color: #222;
+}
+.select-default .select-options li:hover {
+    color: #ccc;
+    background-color: black;
+}
+.select-default .select-styled:after {
+    border-top-color: #444;
+}
+.select-default .select-styled:hover {
+    background-color: #ccc;
+}
+.select-default .select-styled:active, .select-styled.active {
+    background-color: #ddd;
+}
+.select-default .select-styled:active:after, .select-styled.active:after {
+    border-color: transparent transparent #444 transparent;
+}
+
+.select-embed.select-styled, .select-embed .select-options {
+    background-color: transparent;
+    color: initial;
+    padding: 0;
+}
+.select-embed .select-options li {
+    background-color: #ddd;
+    color: black;
+}
+.select-embed .select-options li:hover {
+    background-color: #eee;
+}
+.select-embed .select-styled:after {
+    border: none;
+}
+.select-embed .select-styled:hover {
+    background-color: transparent;
+}
+.select-embed .select-styled:active, .select-styled.active {
+    background-color: transparent;
+}
+.select-embed .select-styled:active:after, .select-styled.active:after {
+    border: none;
+}
+
+.select-danger.select-styled, .select-danger .select-options {
+    background-color: #d9534f;
+    color: white;
+}
+.select-danger .select-options li:hover {
+    color: #d9534f;
+    background-color: #eee;
+}
+.select-primary.select-styled, .select-primary .select-options {
+    background-color: #3276b1;
+    color: white;
+}
+.select-primary .select-options li:hover {
+    color: #3276b1;
+    background-color: #eee;
+}
+.select-info.select-styled, .select-info .select-options {
+    background-color: #5bc0de;
+    color: white;
+}
+.select-info .select-options li:hover {
+    color: #5bc0de;
+    background-color: #eee;
+}
+.select-success.select-styled, .select-success .select-options {
+    background-color: #5cb85c;
+    color: white;
+}
+.select-success .select-options li:hover {
+    color: #5cb85c;
+    background-color: #eee;
 }

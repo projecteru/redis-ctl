@@ -109,6 +109,18 @@ th {
     margin-left: 1em;
 }
 
-.alert-enabled, .card-previewonly.alert-enabled, .card-detailonly.alert-enabled {
+.alert-enabled .alert-status {
+    visibility: hidden;
+}
+
+.noalert-only .card-root.alert-enabled {
+    display: none;
+}
+
+.error-only .card-root.node-healthy {
+    display: none;
+}
+
+.migrating-only .card-root.node-stable {
     display: none;
 }

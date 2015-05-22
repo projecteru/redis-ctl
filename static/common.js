@@ -7,7 +7,7 @@ $(document).ready(function() {
             while (root.length && !root.hasClass('alert-status-root')) {
                 root = root.parent();
             }
-            root.find('.alert-status').toggleClass('alert-enabled');
+            root.toggleClass('alert-enabled');
             $.post('/set_alert_status/' + self.data('ntype'), {
                 host: self.data('host'),
                 port: self.data('port'),

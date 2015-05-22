@@ -20,10 +20,56 @@
 
 <hr>
 
-<h1>节点信息</h1>
+<h1 style='float: left'>节点信息</h1>
+<span style='float: right; margin: 2em'>
+    <select id='select-filter' data-select-style='select-embed'>
+        <option value='all'>显示全部节点</option>
+        <option value='error'>只显示出错节点</option>
+        <option value='noalert'>只显示忽略报警的节点</option>
+        <option value='migrating'>只显示有槽位正在迁移的节点</option>
+    </select>
+    <script>
+    -function() {
+        $('#select-filter').enableLabelSelect({
+            width: '1em',
+            listWidth: '15em',
+            onChange: function(value) {
+                switch (value) {
+                    case 'error':
+                        setDisplayClass('error-only');
+                        return setFilterIcon('fa-exclamation-triangle');
+                    case 'noalert':
+                        setDisplayClass('noalert-only');
+                        return setFilterIcon('fa-bell-slash');
+                    case 'migrating':
+                        setDisplayClass('migrating-only');
+                        return setFilterIcon('fa-exchange');
+                    default:
+                        clearDisplayClasses();
+                        return setFilterIcon('fa-eye');
+                }
+            }
+        });
+        var selectFilterLabel = $('#select-filter').parent().find('.select-styled');
+        function setFilterIcon(cls) {
+            selectFilterLabel.html('').append($('<i>').addClass('fa').addClass(cls));
+        }
+        setFilterIcon('fa-eye');
+        function clearDisplayClasses() {
+            return $('#nodes-area').removeClass('error-only').removeClass('noalert-only').removeClass('migrating-only');
+        }
+        function setDisplayClass(cls) {
+            clearDisplayClasses().addClass(cls);
+        }
+    }();
+    </script>
+</span>
+<hr style='clear: both'>
+<div id='nodes-area'>
 {% for node in nodes %}
     {{ node|render_node(stats_enabled=stats_enabled) }}
 {% endfor %}
+</div>
 
 <script>
 $('.deleter').click(function() {

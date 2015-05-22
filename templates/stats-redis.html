@@ -1,7 +1,7 @@
 {% extends './stats-base.html' %}
 {% block title %}节点状态历史{% endblock %}
 
-{% block body %}
+{% block graph %}
 <div>
     <div><p>CPU 状况</p><svg id='usages_cpu'></svg></div>
     <div><p>内存状况</p><svg id='usages_mem'></svg></div>
@@ -26,7 +26,7 @@ statistics({
     expired_keys: [],
     keyspace_hits: [],
     keyspace_misses: []
-}, '/stats/fetch', {{ host|tojson }}, {{ port|tojson }}, [{
+}, '/stats/fetchredis', {{ host|tojson }}, {{ port|tojson }}, [{
     selector: '#usages_cpu',
     fields: [
         {keyName: 'used_cpu_user', keyDisp: '用户态', color: '#0c0', deriv: true},

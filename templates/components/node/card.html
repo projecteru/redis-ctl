@@ -1,8 +1,8 @@
-<div class='card card-root alert-status-root'>
+<div class='card card-root alert-status-root {{ '' if node.suppress_alert else 'alert-enabled' }} {{ 'node-healthy' if node.stat else '' }} {{ '' if node.detail.slots_migrating else 'node-stable' }}'>
     {% set cluster = node.assignee %}
     {% set awaiting_polling = node.stat and not node.detail %}
     <span class='card-title' id='node-i-{{ node.host|e }}-{{ node.port }}'>节点 {{ node.host|e }}:{{ node.port }}</span>
-    <span style='float: right' class='card-previewonly alert-status {{ '' if node.suppress_alert else 'alert-enabled' }}'><span class='label label-warning'>报警关闭</span></span>
+    <span style='float: right' class='card-previewonly alert-status'><span class='label label-warning'>报警关闭</span></span>
     <a style='float: right; margin-top: -9px' href='/nodep/{{ node.host|e }}/{{ node.port}}' class='btn btn-info card-detailonly'>节点控制面板</a>
     <div class='card-preview'>
         {% if awaiting_polling %}
@@ -23,7 +23,7 @@
 
                             </span>
                         {% else %}
-                            <span class='label label-danger'>ERROR</span>
+                            <span class='label label-danger'><i class='fa fa-exclamation-triangle'></i></span>
                         {% endif %}
                         {% if node.detail.slots_migrating %}
                         <span class='card-previewonly label label-warning'>有槽位正在迁移</span>
@@ -182,7 +182,7 @@
             {% endif %}
 
             {% if stats_enabled %}
-                <a href='/stats/view?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史</a>
+            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
             {% endif %}
 
             <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>

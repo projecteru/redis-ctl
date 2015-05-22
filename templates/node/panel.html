@@ -27,7 +27,7 @@
 
 <div>
     <button class='btn panel-btn' id='quit-cluster-btn' data-bind='quit-cluster'>退出集群</button>
-    <button class='btn panel-btn' id='migrating-slots-btn' data-bind='migrating-slots'>迁移槽位</button>
+    <button class='btn panel-btn' id='migrating-slots-btn' data-bind='migrating-slots'>迁出槽位</button>
     <button class='btn btn-info' style='display: none' id='quit-cluster-force'>此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联</button>
 </div>
 
@@ -41,7 +41,7 @@
                 <th>编号</th>
                 <th>地址</th>
                 <th>槽位数</th>
-                <th>迁入此节点的槽位数</th>
+                <th>迁出至此节点的槽位数</th>
                 <th>迁移后的槽位数</th>
             </tr>
         </thead>
@@ -66,7 +66,7 @@
                 <th>编号</th>
                 <th>地址</th>
                 <th>槽位数</th>
-                <th>迁入此节点的槽位数</th>
+                <th>迁出至此节点的槽位数</th>
                 <th>迁移后的槽位数</th>
             </tr>
         </thead>
@@ -348,14 +348,19 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
 
 <div class='panel-div' id='join-cluster'>
     <span id='loading-cluster-list'>正在加载集群列表...</span>
-    <select id='select-cluster'></select>
+    <select id='select-cluster' data-select-style='select-default'>
+        <option value=''>选择集群</option>
+    </select>
     <button class='btn btn-primary' id='join-cluster-confirm'>加入成为主节点</button>
     -- 或 --
-    <select id='select-master'></select>
+    <select id='select-master' data-select-style='select-default' data-default-text='选择主节点'></select>
     <button class='btn btn-primary' id='replicate-confirm'>以此主节点的副本加入</button>
 </div>
 
 <script>
+$('#select-cluster').enableLabelSelect({width: 360});
+$('#select-master').enableLabelSelect({width: 220});
+
 var local = {
     loadingClusterList: false,
     clusterList: null,
@@ -400,12 +405,37 @@ $('#join-cluster-btn').click(function() {
         type: 'GET',
         success: function(r) {
             $('#loading-cluster-list').remove();
-            $('#select-cluster').append($('<option>').text('选择集群'));
             local.clusterList = r;
             for (var i in r) {
                 var cluster = r[i];
                 $('#select-cluster').append($('<option>').text([cluster.descr, '-', cluster.nodes, '个节点'].join(' ')).val(cluster.id));
             }
+            $('#select-cluster').enableLabelSelect({
+                itemWidth: 360,
+                onChange: function(clusterId, select) {
+                    var cluster = local.clusterMasters[clusterId];
+                    if (cluster) {
+                        return fillMasterNodesTo(cluster);
+                    }
+
+                    $.ajax({
+                        url: '/cluster/get_masters',
+                        type: 'GET',
+                        data: {
+                            id: clusterId
+                        },
+                        success: function(r) {
+                            local.clusterMasters[clusterId] = r;
+                            if (select.val() === clusterId) {
+                                fillMasterNodesTo(r);
+                            }
+                        },
+                        error: function(r) {
+                            console.error('失败: ' + r.responseText);
+                        }
+                    });
+                }
+            });
         },
         error: function(r) {
             $('#loading-cluster-list').text('失败: ' + r.responseText);
@@ -413,36 +443,10 @@ $('#join-cluster-btn').click(function() {
     });
 });
 
-$('#select-cluster').change(function() {
-    var select = $(this);
-    var clusterId = select.val();
-    var cluster = local.clusterMasters[clusterId];
-    if (cluster) {
-        return fillMasterNodesTo(cluster);
-    }
-
-    $.ajax({
-        url: '/cluster/get_masters',
-        type: 'GET',
-        data: {
-            id: $(this).val()
-        },
-        success: function(r) {
-            local.clusterMasters[clusterId] = r;
-            if (select.val() === clusterId) {
-                fillMasterNodesTo(r);
-            }
-        },
-        error: function(r) {
-            console.error('失败: ' + r.responseText);
-        }
-    });
-});
-
 function fillMasterNodesTo(cluster, select) {
     $('#select-master').html('').append(cluster.map(function(e) {
-        return $('<option>').text([e.host, ':', e.port].join('')).data({host: e.host, port: e.port});
-    }));
+        return $('<option>').text([e.host, ':', e.port].join('')).val(JSON.stringify({host: e.host, port: e.port}));
+    })).enableLabelSelect();
 }
 
 $('#join-cluster-confirm').click(function() {
@@ -471,8 +475,8 @@ $('#join-cluster-confirm').click(function() {
 });
 
 $('#replicate-confirm').click(function() {
-    var opt = $('#select-master :selected');
-    if (!opt || !opt.data('host')) {
+    var opt = JSON.parse($('#select-master').val());
+    if (!(opt && opt.host)) {
         return;
     }
     $('#join-cluster button').attr('disabled', 'disabled');
@@ -482,8 +486,8 @@ $('#replicate-confirm').click(function() {
         url: '/cluster/replicate',
         type: 'POST',
         data: {
-            master_host: opt.data('host'),
-            master_port: opt.data('port'),
+            master_host: opt.host,
+            master_port: opt.port,
             slave_host: {{ node.host|tojson }},
             slave_port: {{ node.port|tojson }}
         },

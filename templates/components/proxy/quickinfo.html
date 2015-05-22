@@ -7,7 +7,7 @@
     <tr>
         <td class='label-cell'>状态</td>
         <td>
-            <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
+            <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
             <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
                 <span class='check-group-label'>关闭报警</span>
             </button>
