@@ -13,8 +13,7 @@
     没有找到合适的镜像版本
     {% else %}
     <div>
-        选择镜像版本
-        <select id='image-version'>
+        <select id='image-version' data-default-text='选择镜像版本' data-select-style='select-default'>
             {% for v in image_versions %}
             <option value='{{ v.sha|e }}'>{{ v.sha[:8]|e }} : {{ v.created|e }}</option>
             {% endfor %}
@@ -23,6 +22,7 @@
         <button class='btn btn-primary' onclick='requestEruNode(this)'>申请一个 ERU 节点</button>
         <span style='display: none' id='error' class='label label-important'></span>
     </div>
+    <script>$('#image-version').enableLabelSelect({width: 400});</script>
     {% endif %}
 </div>
 
