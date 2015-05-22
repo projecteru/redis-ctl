@@ -77,9 +77,9 @@ def _migrate_slots(command, src_host, src_port, dst_host, dst_port, slots,
         start += 1
         if (datetime.now() - begin).seconds >= config.POLL_INTERVAL:
             command.args['start'] = start
-            db.session.add(command)
+            command.save()
             db.session.commit()
-            return False
+            return start == len(slots)
     return True
 
 

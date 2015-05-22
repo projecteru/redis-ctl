@@ -18,8 +18,9 @@ def _get_series(result_set):
             for i in result_set.items()[0][1]]
 
 
-def get_stats_by_node(node, field, aggf, span, end):
+def get_stats_by_node(node, field, aggf, span, end, interval):
     ql = ('''SELECT %s(%s) AS value FROM "%s" '''
-          '''WHERE time > '%s' AND time <= '%s' GROUP BY time(2m)'''
-          % (aggf, field, node, _fmt_time(end - span), _fmt_time(end)))
+          '''WHERE time > '%s' AND time <= '%s' GROUP BY time(%dm)'''
+          % (aggf, field, node, _fmt_time(end - span), _fmt_time(end),
+             interval))
     return _get_series(client.query(ql))

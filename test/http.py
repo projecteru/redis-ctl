@@ -41,12 +41,15 @@ class HttpRequest(base.TestCase):
             comm.start_cluster('127.0.0.1', 7100)
             r = client.get('/cluster/autodiscover?host=127.0.0.1&port=7100')
             self.assertReqStatus(200, r)
-            nodes = json.loads(r.data)
+            result = json.loads(r.data)
+            self.assertTrue(result['cluster_discovered'])
+            nodes = result['nodes']
             self.assertEqual(1, len(nodes))
             self.assertEqual({
                 'host': '127.0.0.1',
                 'port': 7100,
                 'role': 'master',
+                'known': False,
             }, nodes[0])
 
             r = client.post('nodes/add', data={

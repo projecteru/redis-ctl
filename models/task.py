@@ -40,7 +40,9 @@ class ClusterTask(Base):
     def fail(self, exec_error):
         self.completion = datetime.now()
         self.exec_error = 'Step fails'
-        db.session.delete(self.acquired_lock())
+        lock = self.acquired_lock()
+        if lock is not None:
+            db.session.delete(lock)
         db.session.add(self)
 
     def add_step(self, command, **kwargs):
@@ -142,6 +144,10 @@ class TaskStep(Base):
     def completed(self):
         return self.completion is not None
 
+    def save(self):
+        self.args_json = json.dumps(self.args)
+        db.session.add(self)
+
     def complete(self, exec_error):
         self.exec_error = exec_error
         self.completion = datetime.now()
@@ -149,9 +155,10 @@ class TaskStep(Base):
         db.session.commit()
 
     def execute(self):
-        self.start_time = datetime.now()
-        db.session.add(self)
-        db.session.commit()
+        if self.start_time is None:
+            self.start_time = datetime.now()
+            db.session.add(self)
+            db.session.commit()
 
         try:
             if TASK_MAP[self.command](self, **self.args):

@@ -19,7 +19,7 @@
             <td colspan='2'>
                 <div card-detailto='cluster-proxy'>
                     {% for proxy in cluster.proxies %}
-                    <div class='proxy-in-card alert-status-root'>
+                    <div class='proxy-in-card alert-status-root {{ '' if proxy.suppress_alert else 'alert-enabled' }}'>
                         <div>
                             <span class='label-cell'>代理</span>
                             <span>{{ proxy|render_proxy('label') }}</span>
@@ -32,13 +32,13 @@
                             <span class='label-cell'>SLA</span>
                             <span>
                                 {{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%
-                                <span class='card-previewonly alert-status {{ '' if proxy.suppress_alert else 'alert-enabled' }}'
+                                <span class='card-previewonly alert-status'
                                     ><span class='label label-warning'><i class='fa fa-bell-slash'></i></span></span>
                             </span>
                         </div>
                         <div class='card-detailonly'>
                             <span style='text-align: center'>
-                                <a href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史</a>
+                                <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
                                 <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
                                     <span class='check-group-label'>关闭报警</span>
                                 </button>
