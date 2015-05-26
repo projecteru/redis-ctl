@@ -82,16 +82,6 @@ $('.deleter').click(function() {
     });
 });
 
-$('.reconnect-btn').click(function() {
-    var btn = $(this);
-    $.post('/nodes/reconnect', {
-        host: btn.data('host'),
-        port: btn.data('port')
-    }, function() {
-        window.location.reload();
-    });
-});
-
 $('.fix-migrating-btn').click(function() {
     var btn = $(this);
     $.post('/nodes/fixmigrating', {

@@ -5,7 +5,6 @@ from redistrib.clusternode import Talker
 import file_ipc
 import utils
 import base
-import models.recover
 import models.node
 import models.proxy
 import models.task
@@ -41,12 +40,6 @@ def del_node(request):
     models.node.delete_free_instance(
         request.form['host'], int(request.form['port']))
     file_ipc.write_nodes_proxies_from_db()
-
-
-@base.post_async('/nodes/reconnect')
-def reconnect_node(request):
-    models.recover.recover_by_addr(
-        request.form['host'], int(request.form['port']))
 
 
 @base.post_async('/nodes/fixmigrating')

@@ -171,12 +171,6 @@
         <hr>
         {% endif %}
         <div style='clear: both; text-align: center'>
-            {% if node.node_id %}
-                {% if not node.stat %}
-                    <button class='btn btn-primary reconnect-btn' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>重连</button>
-                {% endif %}
-            {% endif %}
-
             {% if not cluster %}
                 <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
             {% endif %}
