@@ -448,7 +448,7 @@ $('#join-cluster-btn').click(function() {
 function fillMasterNodesTo(cluster, select) {
     $('#select-master').html('').append(cluster.map(function(e) {
         return $('<option>').text([e.host, ':', e.port].join('')).val(JSON.stringify({host: e.host, port: e.port}));
-    })).enableLabelSelect();
+    })).enableLabelSelect({itemWidth: 220});
 }
 
 $('#join-cluster-confirm').click(function() {
