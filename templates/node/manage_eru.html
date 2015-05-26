@@ -4,29 +4,102 @@
 
 {% block body %}
 
-{% if not eru %}
+{% if not eru_client %}
 <span class='label label-danger'>没有设定 ERU 地址</span>
 {% else %}
 <div>
     ERU 地址: {{ eru|e }}
-    {% if image_versions|length == 0 %}
-    没有找到合适的镜像版本
+    {% set pods = eru_client.list_pods() %}
+
+    {% if pods|length == 0 %}
+    |
+    ERU 没有可用的机房
     {% else %}
     <div>
-        <select id='image-version' data-default-text='选择镜像版本' data-select-style='select-default'>
-            {% for v in image_versions %}
-            <option value='{{ v.sha|e }}'>{{ v.sha[:8]|e }} : {{ v.created|e }}</option>
+        <select id='pod-list' data-select-style='select-default'>
+            <option value=''>选择机房</option>
+            {% for p in pods %}
+            <option value='{{ p.name|e }}'>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
             {% endfor %}
         </select>
-        <button id='aofEnable' class='check-group check-group-info'> 启用 AOF</button>
-        <button class='btn btn-primary' onclick='requestEruNode(this)'>申请一个 ERU 节点</button>
-        <span style='display: none' id='error' class='label label-important'></span>
     </div>
-    <script>$('#image-version').enableLabelSelect({width: 400});</script>
+    <div id='node-create-panel' style='margin-left: 20px; margin-top: 0.5em; display: none'>
+        <table class='table'>
+            <tr>
+                {% set node_image_versions = eru_client.get_versions('redis').versions %}
+                {% if node_image_versions|length == 0 %}
+                ERU 没有找到合适的节点镜像版本
+                {% else %}
+                <td>创建节点:</td>
+                <td>
+                    <select id='node-image-version' data-select-style='select-default'>
+                        {% for v in node_image_versions %}
+                        <option value='{{ v.sha|e }}'>{{ v.sha[:8]|e }} : {{ v.created|e }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td><button id='aofEnable' class='check-group check-group-info'> 启用 AOF</button></td>
+                <td>
+                    <button class='btn btn-primary' onclick='requestEruNode(this)'>申请 ERU 节点</button>
+                    <span style='display: none' id='node-error' class='label label-danger'></span>
+                </td>
+                {% endif %}
+            </tr>
+            <tr>
+                {% set proxy_image_versions = eru_client.get_versions('cerberus').versions %}
+                {% if proxy_image_versions|length == 0 %}
+                ERU 没有找到合适的代理镜像版本
+                {% else %}
+                <td>创建代理:</td>
+                <td>
+                    <select id='proxy-image-version' data-select-style='select-default'>
+                        {% for v in proxy_image_versions %}
+                        <option value='{{ v.sha|e }}'>{{ v.sha[:8]|e }} : {{ v.created|e }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select id='cluster-select' data-select-style='select-default'>
+                        <option value=''>选择集群</option>
+                        {% for c in clusters if c.nodes|length > 0 %}
+                        <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} 个节点</option>
+                        {% endfor %}
+                    </select>
+                    <div style='margin: 0.5em'>
+                    <select id='threads-select' data-select-style='select-default'>
+                        <option value=''>线程数</option>
+                        <option value='8'>8 线程</option>
+                        <option value='16'>16 线程</option>
+                        <option value='24'>24 线程</option>
+                    </select>
+                    <button id='read-slave' class='check-group check-group-info'>只读</button>
+                </td>
+                <td>
+                    <button class='btn btn-primary' onclick='requestEruProxy(this)'>申请 ERU 代理</button>
+                    <span style='display: none' id='proxy-error' class='label label-danger'></span>
+                </td>
+                {% endif %}
+            </tr>
+        </table>
+    </div>
+
+    <script>
+    $('#pod-list').enableLabelSelect({
+        width: 240,
+        onChange: function() {
+            $('#node-create-panel').show();
+        }
+    });
+    $('#node-image-version').enableLabelSelect({width: 280});
+    $('#proxy-image-version').enableLabelSelect({width: 280});
+    $('#cluster-select').enableLabelSelect({width: 280});
+    $('#threads-select').enableLabelSelect({width: 180});
+    </script>
     {% endif %}
 </div>
 
 <table class='table' style='text-align: center'>
+    <caption>已有节点</caption>
     <thead>
         <tr>
             <th>容器 ID</th>
@@ -48,8 +121,33 @@
                 集群在役中
                 {% else %}
                 <button class='btn toggle-next'>下线容器</button>
-                <button class='btn btn-danger' onclick='delContainer(this, {{ n.eru_container_id|tojson }})'>确定</button>
+                <button class='btn btn-danger' onclick='delContainer(this, "node", {{ n.eru_container_id|tojson }})'>确定</button>
                 {% endif %}
+            </td>
+        <tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<table class='table' style='text-align: center'>
+    <caption>已有代理</caption>
+    <thead>
+        <tr>
+            <th>容器 ID</th>
+            <th>镜像版本</th>
+            <th>地址</th>
+            <th>下线容器</th>
+        </tr>
+    </thead>
+    <tbody id='eru-proxies'>
+    {% for n in eru_proxies %}
+        <tr id='proxy-{{ n.host|e }}'>
+            <td>{{ n.eru_container_id[:16]|e }}</td>
+            <td>{{ n.eru_image_sha[:16]|e }}</td>
+            <td><a href='/clusterp/{{ n.cluster.id }}'>{{ n.host|e }}</a></td>
+            <td>
+                <button class='btn toggle-next'>下线容器</button>
+                <button class='btn btn-danger' onclick='delContainer(this, "proxy", {{ n.eru_container_id|tojson }})'>确定</button>
             </td>
         <tr>
     {% endfor %}
@@ -59,23 +157,24 @@
 <script>
 $('.check-group').enableLabelCheck();
 
-function requestEruNode(btn) {
-    function deleteButton(containerId) {
-        var toggleNext = $('<button>').addClass('btn').text('下线容器').click(
-                function() {$(this).next().toggle();});
-        var offline = $('<button>').addClass('btn').addClass('btn-danger').hide().text('确定');
-        offline.click(function() {
-            delContainer(this, containerId);
-        });
-        return [toggleNext, offline];
-    }
+function deleteButton(containerId, type) {
+    var toggleNext = $('<button>').addClass('btn').text('下线容器').click(
+            function() {$(this).next().toggle();});
+    var offline = $('<button>').addClass('btn').addClass('btn-danger').hide().text('确定');
+    offline.click(function() {
+        delContainer(this, type, containerId);
+    });
+    return [toggleNext, offline];
+}
 
+function requestEruNode(btn) {
     $(btn).attr('disabled', 'disabled');
-    var version = $('#image-version').val();
+    var version = $('#node-image-version').val();
     $.ajax({
-        url: '/nodes/create/eru',
+        url: '/nodes/create/eru_node',
         type: 'POST',
         data: {
+            pod: $('#pod-list').val(),
             version: version,
             aof: $('#aofEnable').prop('checked') ? 'y' : 'n'
         },
@@ -86,22 +185,60 @@ function requestEruNode(btn) {
                     ).append($('<td>').text(version.slice(0, 16))
                     ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.host + '/6379').text(r.host))
                     ).append($('<td>').text((r.max_mem / 1000 / 1000) + 'MB')
-                    ).append($('<td>').append(deleteButton(r.container_id))
+                    ).append($('<td>').append(deleteButton(r.container_id, 'node'))
                     ));
         },
         error: function(e) {
-            $('#error').show().text('有错误发生: ' + e.responseText);
+            $('#node-error').show().text('有错误发生: ' + e.responseText);
         }
     });
 }
 
-function delContainer(btn, id) {
+function requestEruProxy(btn) {
+    var clusterId = $('#cluster-select').val();
+    if (!clusterId) {
+        return;
+    }
+    var threads = $('#threads-select').val();
+    if (!threads) {
+        return;
+    }
+
+    $(btn).attr('disabled', 'disabled');
+    var version = $('#proxy-image-version').val();
+    $.ajax({
+        url: '/nodes/create/eru_proxy',
+        type: 'POST',
+        data: {
+            pod: $('#pod-list').val(),
+            version: version,
+            cluster_id: clusterId,
+            threads: threads,
+            read_slave: $('#read-slave').prop('checked') ? 'rs' : ''
+        },
+        success: function(r) {
+            $(btn).removeAttr('disabled');
+            $('#eru-proxies').append($('<tr>'
+                    ).append($('<td>').text(r.container_id.slice(0, 16))
+                    ).append($('<td>').text(version.slice(0, 16))
+                    ).append($('<td>').append($('<a>').attr('href', '/clusterp/' + clusterId).text(r.host))
+                    ).append($('<td>').append(deleteButton(r.container_id, 'proxy'))
+                    ));
+        },
+        error: function(e) {
+            $('#proxy-error').show().text('有错误发生: ' + e.responseText);
+        }
+    });
+}
+
+function delContainer(btn, type, id) {
     var self = $(btn).attr('disabled', 'disabled');
     $.ajax({
         url: '/nodes/delete/eru',
         method: 'POST',
         data: {
-            id: id
+            id: id,
+            type: type
         },
         success: function() {
             window.location.reload();

@@ -129,11 +129,38 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 <hr>
 
 <h1>代理设置</h1>
-<div>
-{% for p in cluster.proxies %}
-    {{ p|render_proxy('quickinfo', showdelbtn=True) }}
-{% endfor %}
-</div>
+<table class='table'>
+    <thead>
+        <tr>
+            <th>地址</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody style='text-align: center'>
+        {% for proxy in cluster.proxies %}
+        <tr>
+            <td>
+                {{ proxy.host|e }}:{{ proxy.port }}
+                {% if proxy.eru_deployed %}
+                <i class='fa fa-cube'></i>
+                {% endif %}
+            </td>
+            <td>
+                <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
+                <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
+                    <span class='check-group-label'>关闭报警</span>
+                </button>
+                <button class='btn' data-toggle='modal' data-target='#commandConsole' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>直接发送指令</button>
+                {% if proxy.eru_deployed %}
+                <a href='/nodes/manage/eru#proxy-{{ proxy.host|e }}' class='btn'>去删除此代理并下线容器</a>
+                {% else %}
+                <button class='btn btn-danger delete-proxy-btn' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port }}'>从监视面板移除此代理</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 <div style='clear: both'>
     <table style='margin: 1em; border-collapse: separate; border-spacing: 1em'>

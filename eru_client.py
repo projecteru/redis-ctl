@@ -236,3 +236,6 @@ class EruClient(object):
 
     def get_versions(self, app):
         return self.get('/api/app/%s/versions/' % app)
+
+    def list_pods(self):
+        return self.get('/api/pod/list/')
