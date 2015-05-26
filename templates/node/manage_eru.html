@@ -26,38 +26,15 @@
     <div id='node-create-panel' style='margin-left: 20px; margin-top: 0.5em; display: none'>
         <table class='table'>
             <tr>
-                {% set node_image_versions = eru_client.get_versions('redis').versions %}
-                {% if node_image_versions|length == 0 %}
-                ERU 没有找到合适的节点镜像版本
-                {% else %}
                 <td>创建节点:</td>
-                <td>
-                    <select id='node-image-version' data-select-style='select-default'>
-                        {% for v in node_image_versions %}
-                        <option value='{{ v.sha|e }}'>{{ v.sha[:8]|e }} : {{ v.created|e }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
                 <td><button id='aofEnable' class='check-group check-group-info'> 启用 AOF</button></td>
                 <td>
                     <button class='btn btn-primary' onclick='requestEruNode(this)'>申请 ERU 节点</button>
                     <span style='display: none' id='node-error' class='label label-danger'></span>
                 </td>
-                {% endif %}
             </tr>
             <tr>
-                {% set proxy_image_versions = eru_client.get_versions('cerberus').versions %}
-                {% if proxy_image_versions|length == 0 %}
-                ERU 没有找到合适的代理镜像版本
-                {% else %}
                 <td>创建代理:</td>
-                <td>
-                    <select id='proxy-image-version' data-select-style='select-default'>
-                        {% for v in proxy_image_versions %}
-                        <option value='{{ v.sha|e }}'>{{ v.sha[:8]|e }} : {{ v.created|e }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
                 <td>
                     <select id='cluster-select' data-select-style='select-default'>
                         <option value=''>选择集群</option>
@@ -65,7 +42,6 @@
                         <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} 个节点</option>
                         {% endfor %}
                     </select>
-                    <div style='margin: 0.5em'>
                     <select id='threads-select' data-select-style='select-default'>
                         <option value=''>线程数</option>
                         <option value='8'>8 线程</option>
@@ -78,7 +54,6 @@
                     <button class='btn btn-primary' onclick='requestEruProxy(this)'>申请 ERU 代理</button>
                     <span style='display: none' id='proxy-error' class='label label-danger'></span>
                 </td>
-                {% endif %}
             </tr>
         </table>
     </div>
@@ -90,8 +65,6 @@
             $('#node-create-panel').show();
         }
     });
-    $('#node-image-version').enableLabelSelect({width: 280});
-    $('#proxy-image-version').enableLabelSelect({width: 280});
     $('#cluster-select').enableLabelSelect({width: 280});
     $('#threads-select').enableLabelSelect({width: 180});
     </script>
@@ -169,20 +142,18 @@ function deleteButton(containerId, type) {
 
 function requestEruNode(btn) {
     $(btn).attr('disabled', 'disabled');
-    var version = $('#node-image-version').val();
     $.ajax({
         url: '/nodes/create/eru_node',
         type: 'POST',
         data: {
             pod: $('#pod-list').val(),
-            version: version,
             aof: $('#aofEnable').prop('checked') ? 'y' : 'n'
         },
         success: function(r) {
             $(btn).removeAttr('disabled');
             $('#eru-nodes').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
-                    ).append($('<td>').text(version.slice(0, 16))
+                    ).append($('<td>').text(r.version.slice(0, 16))
                     ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.host + '/6379').text(r.host))
                     ).append($('<td>').text((r.max_mem / 1000 / 1000) + 'MB')
                     ).append($('<td>').append(deleteButton(r.container_id, 'node'))
@@ -205,13 +176,11 @@ function requestEruProxy(btn) {
     }
 
     $(btn).attr('disabled', 'disabled');
-    var version = $('#proxy-image-version').val();
     $.ajax({
         url: '/nodes/create/eru_proxy',
         type: 'POST',
         data: {
             pod: $('#pod-list').val(),
-            version: version,
             cluster_id: clusterId,
             threads: threads,
             read_slave: $('#read-slave').prop('checked') ? 'rs' : ''
@@ -220,7 +189,7 @@ function requestEruProxy(btn) {
             $(btn).removeAttr('disabled');
             $('#eru-proxies').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
-                    ).append($('<td>').text(version.slice(0, 16))
+                    ).append($('<td>').text(r.version.slice(0, 16))
                     ).append($('<td>').append($('<a>').attr('href', '/clusterp/' + clusterId).text(r.host))
                     ).append($('<td>').append(deleteButton(r.container_id, 'proxy'))
                     ));

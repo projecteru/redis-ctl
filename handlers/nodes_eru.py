@@ -26,12 +26,18 @@ if config.ERU_URL is not None:
             raise ValueError('task not finished')
         return r['props']['container_ids'][0]
 
+    def _lastest_version_sha(what):
+        try:
+            return _eru_client.get_versions(what)['versions'][0]['sha']
+        except LookupError:
+            raise ValueError('eru fail to give version SHA of ' + what)
+
     @base.post_async('/nodes/create/eru_node')
     def create_eru_node(request):
         try:
             network = _eru_client.get_network_by_name('net')
-            version_sha = request.form['version']
             pod = request.form['pod']
+            version_sha = _lastest_version_sha('redis')
             r = _eru_client.deploy_private(
                 'group', pod, 'redis', 1, 1, version_sha,
                 'aof' if request.form['aof'] == 'y' else 'rdb',
@@ -39,7 +45,7 @@ if config.ERU_URL is not None:
             try:
                 task_id = r['tasks'][0]
             except LookupError:
-                raise ValueError('eru fail to create a task')
+                raise ValueError('eru fail to create a task ' + str(r))
 
             cid = _poll_task_for_container_id(task_id)
             try:
@@ -53,6 +59,7 @@ if config.ERU_URL is not None:
                 'host': host,
                 'container_id': cid,
                 'max_mem': DEFAULT_MAX_MEM,
+                'version': version_sha,
             })
         except BaseException as exc:
             logging.exception(exc)
@@ -66,8 +73,8 @@ if config.ERU_URL is not None:
             if cluster is None or len(cluster.nodes) == 0:
                 raise ValueError('no such cluster')
             ncore = int(request.form['threads'])
-            version_sha = request.form['version']
             pod = request.form['pod']
+            version_sha = _lastest_version_sha('cerberus')
             r = _eru_client.deploy_private(
                 'group', pod, 'cerberus', ncore, 1, version_sha,
                 'th' + str(ncore) + request.form.get('read_slave', ''),
@@ -75,7 +82,7 @@ if config.ERU_URL is not None:
             try:
                 task_id = r['tasks'][0]
             except LookupError:
-                raise ValueError('eru fail to create a task')
+                raise ValueError('eru fail to create a task ' + str(r))
 
             container_id = _poll_task_for_container_id(task_id)
             try:
@@ -94,6 +101,7 @@ if config.ERU_URL is not None:
             return base.json_result({
                 'host': host,
                 'container_id': container_id,
+                'version': version_sha,
             })
         except BaseException as exc:
             logging.exception(exc)
