@@ -1,6 +1,7 @@
 from socket import error as SocketError
 import logging
 import redistrib.command
+from redistrib.clusternode import Talker
 
 import utils
 import base
@@ -198,6 +199,22 @@ def suppress_all_nodes_alert(request):
     for n in c.nodes:
         n.suppress_alert = suppress
         db.session.add(n)
+
+
+@base.post_async('/cluster/proxy_sync_remotes')
+def proxy_sync_remote(request):
+    p = models.proxy.get_by_host_port(
+        request.form['host'], int(request.form['port']))
+    if p is None or p.cluster is None:
+        raise ValueError('no such proxy')
+    cmd = ['setremotes']
+    for n in p.cluster.nodes:
+        cmd.extend([n.host, str(n.port)])
+    t = Talker(p.host, p.port)
+    try:
+        t.talk(*cmd)
+    finally:
+        t.close()
 
 
 @base.get_async('/cluster/autodiscover')
