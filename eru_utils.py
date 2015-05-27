@@ -1,5 +1,10 @@
 from retrying import retry
 
+import config
+
+DEFAULT_MAX_MEM = 1024 * 1000 * 1000 # 1GB
+ERU_MAX_MEM_LIMIT = (64 * 1000 * 1000, config.ERU_NODE_MAX_MEM)
+
 
 @retry(stop_max_attempt_number=64, wait_fixed=500)
 def poll_task_for_container_id(eru_client, task_id):

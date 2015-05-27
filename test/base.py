@@ -1,5 +1,6 @@
 import os
 import errno
+import hashlib
 import tempfile
 
 import config
@@ -72,3 +73,44 @@ class TestCase(unittest.TestCase):
                 '    actual:   %d' % r.status_code,
                 '  response data: %s' % r.data,
             ]))
+
+
+class FakeEruClientBase(object):
+    def __init__(self):
+        self.next_container_id = 0
+        self.deployed = {}
+
+    def get_task(self, task_id):
+        return {
+            'result': 1,
+            'props': {'container_ids': [-task_id]}
+        }
+
+    def get_versions(self, what):
+        return {'versions': [{'sha': hashlib.sha1(what).hexdigest()}]}
+
+    def get_network_by_name(self, what):
+        return {'id': 'network:%s' % what}
+
+    def deploy_private(self, group, pod, what, ncont, ncore, version_sha,
+                       entrypoint, env, network):
+        self.next_container_id += 1
+        self.deployed[self.next_container_id] = {
+            'group': group,
+            'pod': pod,
+            'what': what,
+            'ncontainers': ncont,
+            'ncores': ncore,
+            'version': version_sha,
+            'entrypoint': entrypoint,
+            'env': env,
+            'network': network,
+        }
+        return {'tasks': [-self.next_container_id]}
+
+    def container_info(self, cid):
+        return {'networks': [{'address': '10.0.0.%d' % cid}]}
+
+    def rm_containers(self, cids):
+        for i in cids:
+            del self.deployed[i]

@@ -4,15 +4,13 @@ from redistrib.clusternode import Talker
 import base
 import config
 import file_ipc
-import eru_utils
 import models.node
 import models.proxy
 import models.cluster
 from models.base import db
+from eru_utils import DEFAULT_MAX_MEM, ERU_MAX_MEM_LIMIT, deploy_with_network
 from eru_client import EruClient
 
-DEFAULT_MAX_MEM = 1024 * 1000 * 1000 # 1GB
-ERU_MAX_MEM_LIMIT = (64 * 1000 * 1000, config.ERU_NODE_MAX_MEM)
 _eru_client = None
 
 
@@ -22,7 +20,7 @@ if config.ERU_URL is not None:
     @base.post_async('/nodes/create/eru_node')
     def create_eru_node(request):
         try:
-            task_id, cid, version_sha, host = eru_utils.deploy_with_network(
+            task_id, cid, version_sha, host = deploy_with_network(
                 _eru_client, 'redis', request.form['pod'],
                 'aof' if request.form['aof'] == 'y' else 'rdb')
             models.node.create_eru_instance(host, DEFAULT_MAX_MEM, cid,
@@ -44,7 +42,7 @@ if config.ERU_URL is not None:
             if cluster is None or len(cluster.nodes) == 0:
                 raise ValueError('no such cluster')
             ncore = int(request.form['threads'])
-            task_id, cid, version_sha, host = eru_utils.deploy_with_network(
+            task_id, cid, version_sha, host = deploy_with_network(
                 _eru_client, 'cerberus', request.form['pod'],
                 'th' + str(ncore) + request.form.get('read_slave', ''), ncore)
             models.proxy.create_eru_instance(host, cluster.id, cid,

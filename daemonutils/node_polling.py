@@ -6,12 +6,21 @@ from retrying import retry
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 
 from models.base import db, Base
+from eru_client import EruClient
 import stats.db
 
 
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 CMD_PROXY = '+PROXY\r\n'
+
+eru_client = None
+
+
+def init(eru_url):
+    global eru_client
+    if eru_url is not None:
+        eru_client = EruClient(eru_url)
 
 
 def _info_slots(t):
@@ -119,9 +128,14 @@ class NodeBase(Base):
             logging.exception(e)
             self.set_unavailable()
             self.send_alarm(alarm_func)
+        else:
+            self._check_capacity()
 
     def _collect_stats(self):
         raise NotImplementedError()
+
+    def _check_capacity(self):
+        pass
 
     def send_alarm(self, alarm_func):
         if self.suppress_alert != 1:
@@ -200,6 +214,27 @@ class RedisNodeStatus(NodeBase):
             self.set_available(node_info['response_time'])
         finally:
             t.close()
+
+    def _check_capacity(self):
+        import auto_balance
+
+        if (eru_client is None
+                or self.balance_plan is None
+                or not self.details['stat']
+                or len(self.details['slots']) > 1
+                or self.details['slots_migrating']):
+            return
+        maxmem = self.details['mem'].get('maxmemory')
+        if maxmem is None:
+            return
+        if self.details['mem']['used_memory'] >= maxmem * 9 / 10:
+            host, port = self.addr.split(':')
+            logging.info('Attempt to deploy node for %s due to memory drained;'
+                         ' used memory %d / %d max memory', self.addr,
+                         self.details['mem']['used_memory'], maxmem)
+            auto_balance.add_node_to_balance_for(
+                eru_client, host, int(port), self.balance_plan,
+                self.details['slots'])
 
     def _send_alarm(self, alarm_func):
         alarm_func('Redis Failed %s:%d' % (

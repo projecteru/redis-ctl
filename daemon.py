@@ -72,6 +72,7 @@ def run(interval, algalon_client, app):
     from daemonutils import node_polling
     from daemonutils.cluster_task import TaskPoller
 
+    node_polling.init(config.ERU_URL)
     TaskPoller(app, interval).start()
 
     NODES_EACH_THREAD = 20
