@@ -13,9 +13,9 @@ from algalon_cli import AlgalonClient
 
 import config
 import file_ipc
+import handlers.base
+import models.base
 import stats.db
-from daemonutils import node_polling
-from daemonutils.cluster_task import TaskPoller
 
 
 CACHING_NODES = {}
@@ -32,6 +32,7 @@ def _load_from(cls, nodes):
         loaded_node = cls.get_by(n['host'], n['port'])
         CACHING_NODES[(n['host'], n['port'])] = loaded_node
         loaded_node.suppress_alert = n.get('suppress_alert')
+        loaded_node.balance_plan = n.get('balance_plan')
         r.append(loaded_node)
     return r
 
@@ -46,11 +47,15 @@ class Poller(threading.Thread):
         self.algalon_client = algalon_client
 
     def run(self):
-        for node in self.nodes:
-            logging.debug('Poller %x collect for %s:%d',
-                          id(self), node['host'], node['port'])
-            node.collect_stats(self._emit_data, self._send_alarm)
-            node.add_to_db()
+        with handlers.base.app.app_context():
+            for node in self.nodes:
+                node = node.reattach()
+                logging.debug('Poller %x collect for %s:%d',
+                              id(self), node['host'], node['port'])
+                node.collect_stats(self._emit_data, self._send_alarm)
+                node.add_to_db()
+
+            models.base.db.session.commit()
 
     def _send_alarm(self, message, trace):
         if self.algalon_client is not None:
@@ -64,41 +69,43 @@ class Poller(threading.Thread):
 
 
 def run(interval, algalon_client, app):
+    from daemonutils import node_polling
+    from daemonutils.cluster_task import TaskPoller
+
     TaskPoller(app, interval).start()
 
     NODES_EACH_THREAD = 20
-    while True:
-        poll = file_ipc.read_poll()
-        nodes = _load_from(node_polling.RedisNode, poll['nodes'])
-        proxies = _load_from(node_polling.Proxy, poll['proxies'])
+    with handlers.base.app.app_context():
+        while True:
+            poll = file_ipc.read_poll()
+            nodes = _load_from(node_polling.RedisNodeStatus, poll['nodes'])
+            proxies = _load_from(node_polling.ProxyStatus, poll['proxies'])
 
-        all_nodes = nodes + proxies
-        random.shuffle(all_nodes)
-        pollers = [Poller(all_nodes[i: i + NODES_EACH_THREAD], algalon_client)
-                   for i in xrange(0, len(all_nodes), NODES_EACH_THREAD)]
-        for p in pollers:
-            p.start()
+            all_nodes = nodes + proxies
+            random.shuffle(all_nodes)
+            pollers = [
+                Poller(all_nodes[i: i + NODES_EACH_THREAD], algalon_client)
+                for i in xrange(0, len(all_nodes), NODES_EACH_THREAD)]
+            for p in pollers:
+                p.start()
+            time.sleep(interval)
 
-        time.sleep(interval)
+            for p in pollers:
+                p.join()
 
-        for p in pollers:
-            p.join()
+            logging.info('Total %d nodes, %d proxies', len(nodes),
+                         len(proxies))
 
-        logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
-        node_polling.flush_to_db()
-        try:
-            file_ipc.write([n.details for n in nodes],
-                           [p.details for p in proxies])
-        except StandardError, e:
-            logging.exception(e)
+            try:
+                file_ipc.write([n.details for n in nodes],
+                               [p.details for p in proxies])
+            except StandardError, e:
+                logging.exception(e)
 
 
 def main():
     config.init_logging()
-    node_polling.init(config.SQLALCHEMY_DATABASE_URI)
 
-    import handlers.base
-    import models.base
     app = handlers.base.app
     app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
     models.base.init_db(app)
