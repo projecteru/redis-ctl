@@ -174,7 +174,7 @@ class RedisNode(NodeBase):
             },
         }])
 
-    @retry(stop_max_attempt_number=3, wait_fixed=200)
+    @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
         t = Talker(self.details['host'], self.details['port'])
         try:
@@ -230,7 +230,7 @@ class Proxy(NodeBase):
             },
         }])
 
-    @retry(stop_max_attempt_number=3, wait_fixed=200)
+    @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
         t = Talker(self.details['host'], self.details['port'])
         try:
