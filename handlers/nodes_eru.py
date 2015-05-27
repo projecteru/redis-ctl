@@ -1,10 +1,10 @@
 import logging
-from retrying import retry
 from redistrib.clusternode import Talker
 
 import base
 import config
 import file_ipc
+import eru_utils
 import models.node
 import models.proxy
 import models.cluster
@@ -19,40 +19,12 @@ _eru_client = None
 if config.ERU_URL is not None:
     _eru_client = EruClient(config.ERU_URL)
 
-    @retry(stop_max_attempt_number=64, wait_fixed=500)
-    def _poll_task_for_container_id(task_id):
-        r = _eru_client.get_task(task_id)
-        if r['result'] != 1:
-            raise ValueError('task not finished')
-        return r['props']['container_ids'][0]
-
-    def _lastest_version_sha(what):
-        try:
-            return _eru_client.get_versions(what)['versions'][0]['sha']
-        except LookupError:
-            raise ValueError('eru fail to give version SHA of ' + what)
-
     @base.post_async('/nodes/create/eru_node')
     def create_eru_node(request):
         try:
-            network = _eru_client.get_network_by_name('net')
-            pod = request.form['pod']
-            version_sha = _lastest_version_sha('redis')
-            r = _eru_client.deploy_private(
-                'group', pod, 'redis', 1, 1, version_sha,
-                'aof' if request.form['aof'] == 'y' else 'rdb',
-                'prod', [network['id']])
-            try:
-                task_id = r['tasks'][0]
-            except LookupError:
-                raise ValueError('eru fail to create a task ' + str(r))
-
-            cid = _poll_task_for_container_id(task_id)
-            try:
-                host = _eru_client.container_info(
-                    cid)['networks'][0]['address']
-            except LookupError:
-                raise ValueError('eru gives incorrent container info')
+            task_id, cid, version_sha, host = eru_utils.deploy_with_network(
+                _eru_client, 'redis', request.form['pod'],
+                'aof' if request.form['aof'] == 'y' else 'rdb')
             models.node.create_eru_instance(host, DEFAULT_MAX_MEM, cid,
                                             version_sha)
             return base.json_result({
@@ -68,29 +40,14 @@ if config.ERU_URL is not None:
     @base.post_async('/nodes/create/eru_proxy')
     def create_eru_proxy(request):
         try:
-            network = _eru_client.get_network_by_name('net')
             cluster = models.cluster.get_by_id(int(request.form['cluster_id']))
             if cluster is None or len(cluster.nodes) == 0:
                 raise ValueError('no such cluster')
             ncore = int(request.form['threads'])
-            pod = request.form['pod']
-            version_sha = _lastest_version_sha('cerberus')
-            r = _eru_client.deploy_private(
-                'group', pod, 'cerberus', ncore, 1, version_sha,
-                'th' + str(ncore) + request.form.get('read_slave', ''),
-                'prod', [network['id']])
-            try:
-                task_id = r['tasks'][0]
-            except LookupError:
-                raise ValueError('eru fail to create a task ' + str(r))
-
-            container_id = _poll_task_for_container_id(task_id)
-            try:
-                host = _eru_client.container_info(
-                    container_id)['networks'][0]['address']
-            except LookupError:
-                raise ValueError('eru gives incorrent container info')
-            models.proxy.create_eru_instance(host, cluster.id, container_id,
+            task_id, cid, version_sha, host = eru_utils.deploy_with_network(
+                _eru_client, 'cerberus', request.form['pod'],
+                'th' + str(ncore) + request.form.get('read_slave', ''), ncore)
+            models.proxy.create_eru_instance(host, cluster.id, cid,
                                              version_sha)
             t = Talker(host, 8889)
             try:
@@ -100,7 +57,7 @@ if config.ERU_URL is not None:
                 t.close()
             return base.json_result({
                 'host': host,
-                'container_id': container_id,
+                'container_id': cid,
                 'version': version_sha,
             })
         except BaseException as exc:
