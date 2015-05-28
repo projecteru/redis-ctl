@@ -44,12 +44,23 @@ def read_poll():
 
 
 def write_nodes(nodes, proxies):
-    write_poll(
-        [{
+    clusters = {}
+    poll_nodes = []
+    for n in nodes:
+        i = {
             'host': n.host,
             'port': n.port,
             'suppress_alert': n.suppress_alert,
-        } for n in nodes],
+        }
+        if n.assignee_id is not None:
+            if n.assignee_id not in clusters:
+                clusters[n.assignee_id] = n.assignee
+            plan = clusters[n.assignee_id].balance_plan_detail
+            if plan is not None and plan.get('entrypoint') is not None:
+                i['balance_plan'] = plan
+        poll_nodes.append(i)
+    write_poll(
+        poll_nodes,
         [{
             'host': p.host,
             'port': p.port,

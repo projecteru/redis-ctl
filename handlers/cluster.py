@@ -275,3 +275,33 @@ def cluster_auto_join(request):
         return str(cluster_id)
     finally:
         models.cluster.remove_empty_cluster(cluster_id)
+
+
+@base.post_async('/cluster/set_balance_plan')
+def cluster_set_balance_plan(request):
+    cluster = models.cluster.get_by_id(int(request.form['cluster']))
+    if cluster is None:
+        raise ValueError('no such cluster')
+    plan = cluster.get_or_create_balance_plan()
+    plan.balance_plan['pod'] = request.form['pod']
+    plan.balance_plan['entrypoint'] = request.form['entrypoint']
+    plan.balance_plan['host'] = request.form.get('master_host')
+
+    slave_count = int(request.form['slave_count'])
+    slaves_host = filter(None, request.form['slaves'].split(','))
+
+    if 0 >= slave_count or slave_count < len(slaves_host):
+        raise ValueError('invalid slaves')
+
+    plan.balance_plan['slaves'] = [{} for _ in xrange(slave_count)]
+    for i, h in enumerate(slaves_host):
+        plan.balance_plan['slaves'][i]['host'] = h
+    plan.save()
+
+
+@base.post_async('/cluster/del_balance_plan')
+def cluster_del_balance_plan(request):
+    cluster = models.cluster.get_by_id(int(request.form['cluster']))
+    if cluster is None:
+        raise ValueError('no such cluster')
+    cluster.del_balance_plan()

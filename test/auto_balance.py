@@ -1,7 +1,9 @@
+import json
 import hashlib
 
 from daemonutils.auto_balance import add_node_to_balance_for
 import base
+import file_ipc
 import models.node
 import models.cluster
 import models.task
@@ -295,3 +297,40 @@ class AutoBalance(base.TestCase):
                 }, {'slots': [2, 3, 5, 7, 11, 13, 17]})
 
             self.assertEqual(0, len(eru_client.deployed))
+
+    def test_write_file_ipc(self):
+        with self.app.test_client() as client:
+            n = models.node.create_instance('127.0.0.1', 6301, 64000000)
+            c = models.cluster.create_cluster('the quick brown fox')
+            c.nodes.append(n)
+            self.db.session.add(c)
+            self.db.session.commit()
+            cluster_id = c.id
+
+        with self.app.test_client() as client:
+            r = client.post('/cluster/set_balance_plan', data={
+                'cluster': cluster_id,
+                'pod': 'ppp',
+                'entrypoint': 'eee',
+                'master_host': '10.0.0.100',
+                'slave_count': '2',
+                'slaves': '10.0.0.101,',
+            })
+            self.assertReqStatus(200, r)
+
+        with open(file_ipc.POLL_FILE, 'r') as fin:
+            r = json.loads(fin.read())
+            self.assertDictEqual({
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 6301,
+                    'suppress_alert': 1,
+                    'balance_plan': {
+                        'entrypoint': 'eee',
+                        'host': '10.0.0.100',
+                        'pod': 'ppp',
+                        'slaves': [{'host': u'10.0.0.101'}, {}],
+                    },
+                }],
+                'proxies': [],
+            }, r)

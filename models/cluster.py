@@ -32,6 +32,32 @@ class Cluster(Base):
             ClusterTask.cluster_id == self.id).order_by(
                 ClusterTask.id.desc()).offset(skip).limit(limit).all()
 
+    def get_or_create_balance_plan(self):
+        from cluster_plan import ClusterBalancePlan
+        p = db.session.query(ClusterBalancePlan).filter(
+            ClusterBalancePlan.cluster_id == self.id).first()
+        if p is None:
+            p = ClusterBalancePlan(cluster_id=self.id)
+            p.balance_plan = {
+                'pod': None,
+                'entrypoint': None,
+                'slaves': [],
+            }
+            p.save()
+        return p
+
+    @cached_property
+    def balance_plan_detail(self):
+        from cluster_plan import ClusterBalancePlan
+        p = db.session.query(ClusterBalancePlan).filter(
+            ClusterBalancePlan.cluster_id == self.id).first()
+        return None if p is None else p.balance_plan
+
+    def del_balance_plan(self):
+        from cluster_plan import ClusterBalancePlan
+        db.session.query(ClusterBalancePlan).filter(
+            ClusterBalancePlan.cluster_id == self.id).delete()
+
 
 def get_by_id(cluster_id):
     return db.session.query(Cluster).filter(Cluster.id == cluster_id).first()
