@@ -1,4 +1,5 @@
 import logging
+from eruhttp import EruClient
 from redistrib.clusternode import Talker
 
 import base
@@ -9,7 +10,6 @@ import models.node
 import models.proxy
 import models.cluster
 from models.base import db
-from eru_client import EruClient
 
 DEFAULT_MAX_MEM = 1024 * 1000 * 1000 # 1GB
 ERU_MAX_MEM_LIMIT = (64 * 1000 * 1000, config.ERU_NODE_MAX_MEM)
@@ -19,12 +19,20 @@ _eru_client = None
 if config.ERU_URL is not None:
     _eru_client = EruClient(config.ERU_URL)
 
+    @base.get_async('/eru/list_hosts/<pod>')
+    def eru_list_pod_hosts(request, pod):
+        return base.json_result([{
+            'name': r['name'],
+            'addr': r['addr'],
+        } for r in _eru_client.list_pod_hosts(pod) if r['is_alive']])
+
     @base.post_async('/nodes/create/eru_node')
     def create_eru_node(request):
         try:
             task_id, cid, version_sha, host = eru_utils.deploy_with_network(
                 _eru_client, 'redis', request.form['pod'],
-                'aof' if request.form['aof'] == 'y' else 'rdb')
+                'aof' if request.form['aof'] == 'y' else 'rdb',
+                host=request.form.get('host'))
             models.node.create_eru_instance(host, DEFAULT_MAX_MEM, cid,
                                             version_sha)
             return base.json_result({
@@ -46,7 +54,8 @@ if config.ERU_URL is not None:
             ncore = int(request.form['threads'])
             task_id, cid, version_sha, host = eru_utils.deploy_with_network(
                 _eru_client, 'cerberus', request.form['pod'],
-                'th' + str(ncore) + request.form.get('read_slave', ''), ncore)
+                'th' + str(ncore) + request.form.get('read_slave', ''), ncore,
+                host=request.form.get('host'))
             models.proxy.create_eru_instance(host, cluster.id, cid,
                                              version_sha)
             t = Talker(host, 8889)
@@ -72,7 +81,7 @@ if config.ERU_URL is not None:
         else:
             models.proxy.delete_eru_instance(eru_container_id)
         file_ipc.write_nodes_proxies_from_db()
-        _eru_client.rm_containers([eru_container_id])
+        _eru_client.remove_containers([eru_container_id])
 
 
 @base.get('/nodes/manage/eru')
