@@ -109,7 +109,7 @@ class FakeEruClientBase(object):
         }
         return {'msg': 'ok', 'tasks': [-self.next_container_id]}
 
-    def container_info(self, cid):
+    def get_container(self, cid):
         return {'networks': [{'address': '10.0.0.%d' % cid}]}
 
     def rm_containers(self, cids):

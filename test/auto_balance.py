@@ -24,7 +24,7 @@ class AutoBalance(base.TestCase):
             add_node_to_balance_for(eru_client, '127.0.0.1', 6301, {
                 'pod': 'std',
                 'entrypoint': 'ep0',
-                'slave_count': 0,
+                'slaves': [],
             }, {'slots': [2, 3, 5, 7]})
             self.assertTrue(1 in eru_client.deployed)
             self.assertDictEqual({
@@ -85,7 +85,7 @@ class AutoBalance(base.TestCase):
             add_node_to_balance_for(eru_client, '127.0.0.1', 6301, {
                 'pod': 'std',
                 'entrypoint': 'ep0',
-                'slave_count': 2,
+                'slaves': [{}, {}],
             }, {'slots': [2, 3, 5, 7, 11, 13, 17]})
             self.assertTrue(1 in eru_client.deployed)
             self.assertDictEqual({
@@ -156,6 +156,114 @@ class AutoBalance(base.TestCase):
                 'slots': [2, 3, 5],
             }, s.args)
 
+    def test_specify_host(self):
+        with self.app.test_client() as client:
+            n = models.node.create_instance('127.0.0.1', 6301, 64000000)
+            c = models.cluster.create_cluster('the quick brown fox')
+            c.nodes.append(n)
+            self.db.session.add(c)
+            self.db.session.commit()
+
+            cluster_id = c.id
+
+            eru_client = base.FakeEruClientBase()
+            add_node_to_balance_for(eru_client, '127.0.0.1', 6301, {
+                'pod': 'std',
+                'entrypoint': 'ep0',
+                'host': '10.0.1.173',
+                'slaves': [{}, {'host': '10.0.1.174'}],
+            }, {'slots': [2, 3, 5, 7, 11, 13, 17, 19]})
+            self.assertTrue(1 in eru_client.deployed)
+            self.assertDictEqual({
+                'what': 'redis',
+                'pod': 'std',
+                'version': REDIS_SHA,
+                'entrypoint': 'ep0',
+                'env': 'prod',
+                'group': 'group',
+                'ncontainers': 1,
+                'ncores': 1,
+                'network': ['network:net'],
+                'host_name': '10.0.1.173',
+            }, eru_client.deployed[1])
+            self.assertTrue(2 in eru_client.deployed)
+            self.assertEqual({
+                'what': 'redis',
+                'pod': 'std',
+                'version': REDIS_SHA,
+                'entrypoint': 'ep0',
+                'env': 'prod',
+                'group': 'group',
+                'ncontainers': 1,
+                'ncores': 1,
+                'network': ['network:net'],
+                'host_name': None,
+            }, eru_client.deployed[2])
+            self.assertTrue(3 in eru_client.deployed)
+            self.assertEqual({
+                'what': 'redis',
+                'pod': 'std',
+                'version': REDIS_SHA,
+                'entrypoint': 'ep0',
+                'env': 'prod',
+                'group': 'group',
+                'ncontainers': 1,
+                'ncores': 1,
+                'network': ['network:net'],
+                'host_name': '10.0.1.174',
+            }, eru_client.deployed[3])
+
+            tasks = models.task.undone_tasks()
+            self.assertEqual(1, len(tasks))
+            t = tasks[0]
+
+            self.assertEqual(cluster_id, t.cluster_id)
+            self.assertEqual(models.task.TASK_TYPE_AUTO_BALANCE, t.task_type)
+            self.assertIsNotNone(t.acquired_lock())
+
+            steps = list(t.all_steps)
+            self.assertEqual(4, len(steps))
+
+            s = steps[0]
+            self.assertEqual('join', s.command)
+            self.assertDictEqual({
+                'cluster_id': 1,
+                'cluster_host': '127.0.0.1',
+                'cluster_port': 6301,
+                'newin_host': '10.0.0.1',
+                'newin_port': 6379,
+            }, s.args)
+
+            s = steps[1]
+            self.assertEqual('replicate', s.command)
+            self.assertDictEqual({
+                'cluster_id': 1,
+                'master_host': '10.0.0.1',
+                'master_port': 6379,
+                'slave_host': '10.0.0.2',
+                'slave_port': 6379,
+            }, s.args)
+
+            s = steps[2]
+            self.assertEqual('replicate', s.command)
+            self.assertDictEqual({
+                'cluster_id': 1,
+                'master_host': '10.0.0.1',
+                'master_port': 6379,
+                'slave_host': '10.0.0.3',
+                'slave_port': 6379,
+            }, s.args)
+
+            s = steps[3]
+            self.assertEqual('migrate', s.command)
+            self.assertDictEqual({
+                'src_host': '127.0.0.1',
+                'src_port': 6301,
+                'dst_host': '10.0.0.1',
+                'dst_port': 6379,
+                'slots': [2, 3, 5, 7],
+            }, s.args)
+
     def test_interrupted_after_deploy_some(self):
         class EruClientLimited(base.FakeEruClientBase):
             def __init__(self, limit):
@@ -183,7 +291,7 @@ class AutoBalance(base.TestCase):
                 '127.0.0.1', 6301, {
                     'pod': 'std',
                     'entrypoint': 'ep0',
-                    'slave_count': 2,
+                    'slaves': [{}, {}],
                 }, {'slots': [2, 3, 5, 7, 11, 13, 17]})
 
             self.assertEqual(0, len(eru_client.deployed))

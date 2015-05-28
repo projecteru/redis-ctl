@@ -7,14 +7,15 @@ import models.node
 import models.task
 
 
-def _deploy_node(eru_client, pod, entrypoint):
-    _, cid, vsha, h = deploy_with_network(eru_client, 'redis', pod, entrypoint)
+def _deploy_node(eru_client, pod, entrypoint, host):
+    _, cid, vsha, h = deploy_with_network(eru_client, 'redis', pod, entrypoint,
+                                          host=host)
     models.node.create_eru_instance(h, DEFAULT_MAX_MEM, cid, vsha)
     return cid, h
 
 
-def _prepare_master_node(eru_client, node, pod, entrypoint):
-    cid, new_node_host = _deploy_node(eru_client, pod, entrypoint)
+def _prepare_master_node(eru_client, node, pod, entrypoint, host):
+    cid, new_node_host = _deploy_node(eru_client, pod, entrypoint, host)
     try:
         logging.info(
             'Node deployed: container id=%s host=%s; joining cluster %d',
@@ -39,8 +40,9 @@ def _add_slaves(eru_client, slaves, task, cluster_id, master_host, pod,
                 entrypoint):
     cids = []
     try:
-        for _ in xrange(slaves):
-            cid, new_host = _deploy_node(eru_client, pod, entrypoint)
+        for s in slaves:
+            cid, new_host = _deploy_node(eru_client, pod, entrypoint,
+                                         s.get('host'))
             cids.append(cid)
             task.add_step('replicate', cluster_id=cluster_id,
                           master_host=master_host, master_port=6379,
@@ -68,11 +70,12 @@ def add_node_to_balance_for(eru_client, host, port, balance_plan, details):
         return
 
     task, cid, new_host = _prepare_master_node(
-        eru_client, node, balance_plan['pod'], balance_plan['entrypoint'])
+        eru_client, node, balance_plan['pod'], balance_plan['entrypoint'],
+        balance_plan.get('host'))
     cids = [cid]
     try:
         cids.extend(_add_slaves(
-            eru_client, balance_plan['slave_count'], task, node.assignee_id,
+            eru_client, balance_plan['slaves'], task, node.assignee_id,
             new_host, balance_plan['pod'], balance_plan['entrypoint']))
 
         migrating_slots = details['slots'][: len(details['slots']) / 2]
