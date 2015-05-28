@@ -80,6 +80,7 @@ def run(interval, algalon_client, app):
             poll = file_ipc.read_poll()
             nodes = _load_from(node_polling.RedisNodeStatus, poll['nodes'])
             proxies = _load_from(node_polling.ProxyStatus, poll['proxies'])
+            models.base.db.session.commit()
 
             all_nodes = nodes + proxies
             random.shuffle(all_nodes)
