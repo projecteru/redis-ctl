@@ -37,6 +37,7 @@ class AutoBalance(base.TestCase):
                 'ncontainers': 1,
                 'ncores': 1,
                 'network': ['network:net'],
+                'host_name': None,
             }, eru_client.deployed[1])
 
             tasks = models.task.undone_tasks()
@@ -97,6 +98,7 @@ class AutoBalance(base.TestCase):
                 'ncontainers': 1,
                 'ncores': 1,
                 'network': ['network:net'],
+                'host_name': None,
             }, eru_client.deployed[1])
             self.assertTrue(2 in eru_client.deployed)
             self.assertEqual(eru_client.deployed[1], eru_client.deployed[2])
@@ -160,10 +162,11 @@ class AutoBalance(base.TestCase):
                 base.FakeEruClientBase.__init__(self)
                 self.limit = limit
 
-            def deploy_private(self, *args):
+            def deploy_private(self, *args, **kwargs):
                 if len(self.deployed) == self.limit:
                     raise ValueError('v')
-                return base.FakeEruClientBase.deploy_private(self, *args)
+                return base.FakeEruClientBase.deploy_private(
+                    self, *args, **kwargs)
 
         with self.app.test_client() as client:
             n = models.node.create_instance('127.0.0.1', 6301, 64000000)

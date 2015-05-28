@@ -1,3 +1,4 @@
+import logging
 from retrying import retry
 
 import config
@@ -11,28 +12,37 @@ def poll_task_for_container_id(eru_client, task_id):
     r = eru_client.get_task(task_id)
     if r['result'] != 1:
         raise ValueError('task not finished')
-    return r['props']['container_ids'][0]
+    try:
+        return r['props']['container_ids'][0]
+    except LookupError:
+        logging.error('Eru returns invalid container info task<%d>: %s',
+                      task_id, r)
+        return None
 
 
 def lastest_version_sha(eru_client, what):
     try:
-        return eru_client.get_versions(what)['versions'][0]['sha']
+        return eru_client.list_app_versions(what)['versions'][0]['sha']
     except LookupError:
         raise ValueError('eru fail to give version SHA of ' + what)
 
 
-def deploy_with_network(eru_client, what, pod, entrypoint, ncore=1):
-    network = eru_client.get_network_by_name('net')
+def deploy_with_network(eru_client, what, pod, entrypoint, ncore=1, host=None):
+    network = eru_client.get_network('net')
     version_sha = lastest_version_sha(eru_client, what)
     r = eru_client.deploy_private(
         'group', pod, 'redis', 1, ncore, version_sha,
-        entrypoint, 'prod', [network['id']])
+        entrypoint, 'prod', [network['id']], host_name=host)
+    if r['msg'] == 'Not enough core resources':
+        raise ValueError('Host drained')
     try:
         task_id = r['tasks'][0]
     except LookupError:
         raise ValueError('eru fail to create a task ' + str(r))
 
     cid = poll_task_for_container_id(eru_client, task_id)
+    if cid is None:
+        raise ValueError('eru returns invalid container info')
     try:
         host = eru_client.container_info(cid)['networks'][0]['address']
     except LookupError:

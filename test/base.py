@@ -86,14 +86,14 @@ class FakeEruClientBase(object):
             'props': {'container_ids': [-task_id]}
         }
 
-    def get_versions(self, what):
+    def list_app_versions(self, what):
         return {'versions': [{'sha': hashlib.sha1(what).hexdigest()}]}
 
-    def get_network_by_name(self, what):
+    def get_network(self, what):
         return {'id': 'network:%s' % what}
 
     def deploy_private(self, group, pod, what, ncont, ncore, version_sha,
-                       entrypoint, env, network):
+                       entrypoint, env, network, host_name=None):
         self.next_container_id += 1
         self.deployed[self.next_container_id] = {
             'group': group,
@@ -105,8 +105,9 @@ class FakeEruClientBase(object):
             'entrypoint': entrypoint,
             'env': env,
             'network': network,
+            'host_name': host_name or None,
         }
-        return {'tasks': [-self.next_container_id]}
+        return {'msg': 'ok', 'tasks': [-self.next_container_id]}
 
     def container_info(self, cid):
         return {'networks': [{'address': '10.0.0.%d' % cid}]}
