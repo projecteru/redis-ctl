@@ -11,23 +11,22 @@ def index(request):
     nodes = nm.list_all_nodes()
     clusters = cl.list_all()
 
-    poll_result = file_ipc.read()
-    node_details = {(n['host'], n['port']): n for n in poll_result['nodes']}
-    proxy_details = {(p['host'], p['port']): p for p in poll_result['proxies']}
+    poll_result = file_ipc.read_details()
+    node_details = poll_result['nodes']
+    proxy_details = poll_result['proxies']
 
     proxies = []
     for c in clusters:
         for p in c.proxies:
-            p.detail = proxy_details.get((p.host, p.port), {})
+            p.detail = proxy_details.get('%s:%d' % (p.host, p.port), {})
             p.stat = p.detail.get('stat', True)
         proxies.extend(c.proxies)
 
     for n in nodes:
-        detail = node_details.get((n.host, n.port), {})
+        detail = node_details.get('%s:%d' % (n.host, n.port), {})
         n.node_id = detail.get('node_id')
         n.detail = detail
         n.stat = detail.get('stat', True)
-    file_ipc.write_nodes(nodes, proxies)
     return request.render(
         'index.html', nodes=nodes, clusters=clusters,
         stats_enabled=stats.db.client is not None)

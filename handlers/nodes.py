@@ -19,10 +19,8 @@ def node_panel(request, host, port):
         return base.not_found()
     detail = {}
     try:
-        for n in file_ipc.read()['nodes']:
-            if n['host'] == host and n['port'] == port:
-                detail = n
-                break
+        detail = file_ipc.read_details()['nodes'][
+            '%s:%d' % (node.host, node.port)]
     except (IOError, ValueError, KeyError):
         pass
     return request.render('node/panel.html', node=node, detail=detail,
@@ -34,14 +32,12 @@ def add_node(request):
     models.node.create_instance(
         request.form['host'], int(request.form['port']),
         int(request.form['mem']))
-    file_ipc.write_nodes_proxies_from_db()
 
 
 @base.post_async('/nodes/del')
 def del_node(request):
     models.node.delete_free_instance(
         request.form['host'], int(request.form['port']))
-    file_ipc.write_nodes_proxies_from_db()
 
 
 @base.post_async('/nodes/fixmigrating')
@@ -62,7 +58,6 @@ def _set_alert_status(n, request):
     n.suppress_alert = int(request.form['suppress'])
     db.session.add(n)
     db.session.flush()
-    file_ipc.write_nodes_proxies_from_db()
 
 
 @base.post_async('/set_alert_status/redis')

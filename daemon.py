@@ -99,8 +99,8 @@ def run(interval, algalon_client, app):
                          len(proxies))
 
             try:
-                file_ipc.write([n.details for n in nodes],
-                               [p.details for p in proxies])
+                file_ipc.write_details({n.addr: n.details for n in nodes},
+                                       {p.addr: p.details for p in proxies})
             except StandardError, e:
                 logging.exception(e)
 
