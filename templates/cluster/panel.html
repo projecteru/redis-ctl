@@ -128,6 +128,119 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 
 <hr>
 
+<h1>节点</h1>
+
+<table class='table'>
+    <thead>
+        <tr>
+            <th>地址</th>
+            <th>节点 ID</th>
+            <th>内存</th>
+            <th>角色</th>
+            <th>槽位数量</th>
+        </tr>
+    </thead>
+    <tbody id='cluster-nodes' style='text-align: center'></tbody>
+</table>
+
+<script>
+-function() {
+    var tbody = $('#cluster-nodes');
+    function nodeSortKey(a, b) {
+        if (a.host == b.host) {
+            return a.port - b.port;
+        }
+        return a.host < b.host ? -1 : 1;
+    }
+
+    var mastersWithoutId = [];
+    var masters = {};
+    var allMasters = [];
+    var slaves = [];
+
+    $.each({{ nodes|tojson }}, function(i, n) {
+        if (n.slave) {
+            return slaves.push(n);
+        }
+        allMasters.push(n);
+        n.slaves = [];
+        if (n.node_id) {
+            return masters[n.node_id] = n;
+        }
+    });
+
+    $.each(slaves, function(i, n) {
+        if (masters[n.master_id]) {
+            return masters[n.master_id].slaves.push(n);
+        }
+        allMasters.push(n);
+    });
+
+    allMasters.sort(nodeSortKey);
+
+    $.each(allMasters, function(i, e) {
+        function makeNoStatRow(n) {
+            return [
+                $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
+                $('<td>').attr('colspan', 4).text('尚未获取节点详细信息')
+            ];
+        }
+
+        function memCell(n) {
+            if (!(n.mem && n.mem.used_memory)) {
+                return $('<td>').text('? / ' + n.max_mem);
+            }
+            var memRate = n.mem.used_memory / n.max_mem * 100;
+            var memLabelClass = memRate < 70 ? 'label-success' : (memRate < 90 ? 'label-warning' : 'label-danger');
+            return $('<td>').text(n.mem.used_memory + ' / ' + n.max_mem + ' ').append($('<span>').addClass('label').addClass(memLabelClass).text(memRate.toFixed(2) + '%'));
+        }
+
+        function makeBaseRow(n) {
+            return [
+                $('<td>').text(n.node_id),
+                $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
+                memCell(n)
+            ];
+        }
+
+        function makeMasterRow(n) {
+            var row = makeBaseRow(n);
+            row.push($('<td>').text('主').css('color', '#004'));
+            row.push($('<td>').text(n.slots ? n.slots.length : 0));
+            return row;
+        }
+
+        function makeSlaveRow(n) {
+            var row = makeBaseRow(n);
+            row.push($('<td>').text('从').css('color', '#044'));
+            row.push($('<td>').text('-'));
+            return row;
+        }
+
+        function makeRow(n) {
+            if (!n.stat) {
+                return makeNoStatRow(n);
+            }
+            return n.slave ? makeSlaveRow(n) : makeMasterRow(n);
+        }
+
+        var row = $('<tr>').append(makeRow(e));
+        if (e.node_id) {
+            row.attr('id', 'node-' + e.node_id);
+        }
+        tbody.append(row);
+        if (e.slaves && e.slaves.length) {
+            e.slaves.sort(nodeSortKey);
+            $.each(e.slaves, function(i, e) {
+                var row = makeSlaveRow(e);
+                row[3].append($('<a>').attr('href', '#node-' + e.master_id).text('^'));
+                tbody.append($('<tr>').append(row));
+            });
+        }
+    });
+}();
+</script>
+
 <h1>代理设置</h1>
 <table class='table'>
     <thead>
@@ -234,36 +347,5 @@ $('#new-proxy-btn').click(function() {
 {{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
 
 <a href='/cluster/tasks/list/{{ cluster.id }}'>查看更多任务</a>
-
-<h1>节点</h1>
-
-<table class='table'>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>地址</th>
-            <th>内存</th>
-            <th>角色</th>
-            <th>槽位数量</th>
-        </tr>
-    </thead>
-    <tbody style='text-align: center'>
-    {% for n in cluster.nodes %}
-        {% set detail = node_details.get('%s:%d' % (n.host, n.port), {}) %}
-        <tr>
-            <td>#{{ n.id }}</td>
-            <td><a href='/nodep/{{ n.host|e }}/{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
-            <td>
-                {% if detail.mem %}
-                {{ detail.mem.used_memory_human }} /
-                {% endif %}
-                {{ n.max_mem|filesizeformat }}
-            </td>
-            <td>{{ '从' if detail.slave else '主' }}</td>
-            <td>{{ detail.slots|length }}</td>
-        </tr>
-    {% endfor %}
-    </tbody>
-</table>
 
 {% endblock %}
