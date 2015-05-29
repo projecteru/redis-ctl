@@ -11,7 +11,6 @@ from cgi import parse_qs
 
 import template
 import file_ipc
-import models.errors
 import models.base
 
 app = flask.Flask('RedisControl')
@@ -124,8 +123,6 @@ def route_async(uri, method, commit_db):
                 r = dict(reason='invalid input encoding')
             except ValueError, e:
                 r = dict(reason=e.message)
-            except models.errors.AppMutexError:
-                r = {'reason': 'cluster or node occupying'}
             except StandardError, e:
                 logging.error('UNEXPECTED ERROR')
                 logging.exception(e)

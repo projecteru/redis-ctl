@@ -19,8 +19,8 @@ def cluster_panel(request, cluster_id):
     c = models.cluster.get_by_id(cluster_id)
     if c is None:
         return base.not_found()
-    return request.render('cluster/panel.html', cluster=c, node_details={
-        (n['host'], n['port']): n for n in file_ipc.read()['nodes']})
+    return request.render('cluster/panel.html', cluster=c,
+                          node_details=file_ipc.read_details()['nodes'])
 
 
 @base.paged('/cluster/tasks/list/<int:cluster_id>')
