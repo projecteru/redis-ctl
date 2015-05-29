@@ -14,11 +14,6 @@ class Cluster(Base):
     nodes = db.relationship('RedisNode', backref='assignee')
     proxies = db.relationship('Proxy', backref='cluster')
 
-    @staticmethod
-    def lock_by_id(cluster_id):
-        return db.session.query(Cluster).filter(
-            Cluster.id == cluster_id).with_for_update().one()
-
     @cached_property
     def current_task(self):
         from task import TaskLock

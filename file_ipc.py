@@ -3,23 +3,23 @@ import config
 import logging
 import json
 
-INSTANCE_FILE = os.path.join(config.PERMDIR, 'instances.json')
-INSTANCE_INTERMEDIA_FILE = os.path.join(config.PERMDIR, 'instances.tmp.json')
+INSTANCE_FILE = os.path.join(config.PERMDIR, 'details.json')
+INSTANCE_INTERMEDIA_FILE = os.path.join(config.PERMDIR, 'details.tmp.json')
 
 
-def write(nodes, proxies):
+def write_details(nodes, proxies):
     with open(INSTANCE_INTERMEDIA_FILE, 'w') as f:
         f.write(json.dumps({'nodes': nodes, 'proxies': proxies}))
     os.rename(INSTANCE_INTERMEDIA_FILE, INSTANCE_FILE)
 
 
-def read():
+def read_details():
     try:
         with open(INSTANCE_FILE, 'r') as f:
             return json.loads(f.read())
     except IOError, e:
         logging.exception(e)
-        return {'nodes': [], 'proxies': []}
+        return {'nodes': {}, 'proxies': {}}
 
 POLL_FILE = os.path.join(config.PERMDIR, 'poll.json')
 POLL_INTERMEDIA_FILE = os.path.join(config.PERMDIR, 'poll.tmp.json')

@@ -2,7 +2,6 @@ import logging
 
 from base import db, Base
 from cluster import Cluster
-import errors
 
 STATUS_ONLINE = 0
 STATUS_MISSING = -1
@@ -51,10 +50,11 @@ def delete_free_instance(host, port):
 
 def pick_and_launch(host, port, cluster_id, start_cluster):
     logging.info('Launching cluster for [ %d ]', cluster_id)
-    node = get_by_host_port(host, port)
-    if node.assignee is not None:
-        raise errors.AppMutexError()
-    cluster = Cluster.lock_by_id(cluster_id)
+    node = db.session.query(RedisNode).filter(
+        RedisNode.host == host, RedisNode.port == port,
+        RedisNode.assignee_id == None).first()
+    if node is None:
+        raise ValueError('no such node')
     start_cluster(node.host, node.port)
-    node.assignee = cluster
+    node.assignee_id = cluster_id
     db.session.add(node)
