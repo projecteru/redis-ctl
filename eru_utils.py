@@ -1,9 +1,16 @@
 import logging
 from retrying import retry
+from eruhttp import EruClient
+
+import config
+
+eru_client = None
+if config.ERU_URL is not None:
+    eru_client = EruClient(config.ERU_URL)
 
 
 @retry(stop_max_attempt_number=64, wait_fixed=500)
-def poll_task_for_container_id(eru_client, task_id):
+def poll_task_for_container_id(task_id):
     r = eru_client.get_task(task_id)
     if r['result'] != 1:
         raise ValueError('task not finished')
@@ -15,16 +22,16 @@ def poll_task_for_container_id(eru_client, task_id):
         return None
 
 
-def lastest_version_sha(eru_client, what):
+def lastest_version_sha(what):
     try:
         return eru_client.list_app_versions(what)['versions'][0]['sha']
     except LookupError:
         raise ValueError('eru fail to give version SHA of ' + what)
 
 
-def deploy_with_network(eru_client, what, pod, entrypoint, ncore=1, host=None):
+def deploy_with_network(what, pod, entrypoint, ncore=1, host=None):
     network = eru_client.get_network('net')
-    version_sha = lastest_version_sha(eru_client, what)
+    version_sha = lastest_version_sha(what)
     r = eru_client.deploy_private(
         'group', pod, what, 1, ncore, version_sha,
         entrypoint, 'prod', [network['id']], host_name=host)
@@ -35,7 +42,7 @@ def deploy_with_network(eru_client, what, pod, entrypoint, ncore=1, host=None):
     except LookupError:
         raise ValueError('eru fail to create a task ' + str(r))
 
-    cid = poll_task_for_container_id(eru_client, task_id)
+    cid = poll_task_for_container_id(task_id)
     if cid is None:
         raise ValueError('eru returns invalid container info')
     try:

@@ -1,5 +1,4 @@
 import logging
-from eruhttp import EruClient
 from redistrib.clusternode import Talker
 
 import base
@@ -13,24 +12,21 @@ from models.base import db
 
 DEFAULT_MAX_MEM = 1024 * 1000 * 1000 # 1GB
 ERU_MAX_MEM_LIMIT = (64 * 1000 * 1000, config.ERU_NODE_MAX_MEM)
-_eru_client = None
 
 
-if config.ERU_URL is not None:
-    _eru_client = EruClient(config.ERU_URL)
-
+if eru_utils.eru_client is not None:
     @base.get_async('/eru/list_hosts/<pod>')
     def eru_list_pod_hosts(request, pod):
         return base.json_result([{
             'name': r['name'],
             'addr': r['addr'],
-        } for r in _eru_client.list_pod_hosts(pod) if r['is_alive']])
+        } for r in eru_utils.eru_client.list_pod_hosts(pod) if r['is_alive']])
 
     @base.post_async('/nodes/create/eru_node')
     def create_eru_node(request):
         try:
             task_id, cid, version_sha, host = eru_utils.deploy_with_network(
-                _eru_client, 'redis', request.form['pod'],
+                'redis', request.form['pod'],
                 'aof' if request.form['aof'] == 'y' else 'rdb',
                 host=request.form.get('host'))
             models.node.create_eru_instance(host, DEFAULT_MAX_MEM, cid,
@@ -53,7 +49,7 @@ if config.ERU_URL is not None:
                 raise ValueError('no such cluster')
             ncore = int(request.form['threads'])
             task_id, cid, version_sha, host = eru_utils.deploy_with_network(
-                _eru_client, 'cerberus', request.form['pod'],
+                'cerberus', request.form['pod'],
                 'th' + str(ncore) + request.form.get('read_slave', ''), ncore,
                 host=request.form.get('host'))
             models.proxy.create_eru_instance(host, cluster.id, cid,
@@ -81,7 +77,7 @@ if config.ERU_URL is not None:
         else:
             models.proxy.delete_eru_instance(eru_container_id)
         file_ipc.write_nodes_proxies_from_db()
-        _eru_client.remove_containers([eru_container_id])
+        eru_utils.eru_client.remove_containers([eru_container_id])
 
 
 @base.get('/nodes/manage/eru')
@@ -90,7 +86,7 @@ def nodes_manage_page_eru(request):
         'node/manage_eru.html', eru=config.ERU_URL,
         eru_nodes=models.node.list_all_eru_nodes(),
         eru_proxies=models.proxy.list_all_eru_proxies(),
-        eru_client=_eru_client, clusters=models.cluster.list_all())
+        eru_client=eru_utils.eru_client, clusters=models.cluster.list_all())
 
 
 @base.post_async('/nodes/set_max_mem/eru')
