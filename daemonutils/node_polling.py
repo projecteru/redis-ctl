@@ -5,22 +5,14 @@ from hiredis import ReplyError
 from retrying import retry
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 
+from eru_utils import eru_client
 from models.base import db, Base
-from eru_client import EruClient
 import stats.db
 
 
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 CMD_PROXY = '+PROXY\r\n'
-
-eru_client = None
-
-
-def init(eru_url):
-    global eru_client
-    if eru_url is not None:
-        eru_client = EruClient(eru_url)
 
 
 def _info_slots(t):
@@ -233,8 +225,7 @@ class RedisNodeStatus(NodeBase):
                          ' used memory %d / %d max memory', self.addr,
                          self.details['mem']['used_memory'], maxmem)
             auto_balance.add_node_to_balance_for(
-                eru_client, host, int(port), self.balance_plan,
-                self.details['slots'])
+                host, int(port), self.balance_plan, self.details['slots'])
 
     def _send_alarm(self, alarm_func):
         alarm_func('Redis Failed %s:%d' % (

@@ -1,21 +1,21 @@
 import logging
 
 import file_ipc
+import eru_utils
 from eru_utils import DEFAULT_MAX_MEM, deploy_with_network
 from models.base import db
 import models.node
 import models.task
 
 
-def _deploy_node(eru_client, pod, entrypoint, host):
-    _, cid, vsha, h = deploy_with_network(eru_client, 'redis', pod, entrypoint,
-                                          host=host)
+def _deploy_node(pod, entrypoint, host):
+    _, cid, vsha, h = deploy_with_network('redis', pod, entrypoint, host=host)
     models.node.create_eru_instance(h, DEFAULT_MAX_MEM, cid, vsha)
     return cid, h
 
 
-def _prepare_master_node(eru_client, node, pod, entrypoint, host):
-    cid, new_node_host = _deploy_node(eru_client, pod, entrypoint, host)
+def _prepare_master_node(node, pod, entrypoint, host):
+    cid, new_node_host = _deploy_node(pod, entrypoint, host)
     try:
         logging.info(
             'Node deployed: container id=%s host=%s; joining cluster %d',
@@ -31,32 +31,29 @@ def _prepare_master_node(eru_client, node, pod, entrypoint, host):
     except BaseException as exc:
         logging.exception(exc)
         logging.info('Remove container %s and rollback', cid)
-        eru_client.rm_containers([cid])
+        eru_utils.eru_client.remove_containers([cid])
         db.session.rollback()
         raise
 
 
-def _add_slaves(eru_client, slaves, task, cluster_id, master_host, pod,
-                entrypoint):
+def _add_slaves(slaves, task, cluster_id, master_host, pod, entrypoint):
     cids = []
     try:
         for s in slaves:
-            cid, new_host = _deploy_node(eru_client, pod, entrypoint,
-                                         s.get('host'))
+            cid, new_host = _deploy_node(pod, entrypoint, s.get('host'))
             cids.append(cid)
             task.add_step('replicate', cluster_id=cluster_id,
                           master_host=master_host, master_port=6379,
                           slave_host=new_host, slave_port=6379)
         return cids
     except BaseException as exc:
-        logging.exception(exc)
         logging.info('Remove container %s and rollback', cids)
-        eru_client.rm_containers(cids)
+        eru_utils.eru_client.remove_containers(cids)
         db.session.rollback()
         raise
 
 
-def add_node_to_balance_for(eru_client, host, port, balance_plan, details):
+def add_node_to_balance_for(host, port, balance_plan, details):
     node = models.node.get_by_host_port(host, int(port))
     if node is None or node.assignee_id is None:
         logging.info(
@@ -70,12 +67,12 @@ def add_node_to_balance_for(eru_client, host, port, balance_plan, details):
         return
 
     task, cid, new_host = _prepare_master_node(
-        eru_client, node, balance_plan['pod'], balance_plan['entrypoint'],
+        node, balance_plan['pod'], balance_plan['entrypoint'],
         balance_plan.get('host'))
     cids = [cid]
     try:
         cids.extend(_add_slaves(
-            eru_client, balance_plan['slaves'], task, node.assignee_id,
+            balance_plan['slaves'], task, node.assignee_id,
             new_host, balance_plan['pod'], balance_plan['entrypoint']))
 
         migrating_slots = details['slots'][: len(details['slots']) / 2]
@@ -95,10 +92,10 @@ def add_node_to_balance_for(eru_client, host, port, balance_plan, details):
         logging.info('Auto balance task fail to lock,'
                      ' discard auto balance this time.'
                      ' Delete container id=%s', cids)
-        eru_client.rm_containers(cids)
+        eru_utils.eru_client.remove_containers(cids)
     except BaseException as exc:
         logging.exception(exc)
         logging.info('Remove container %s and rollback', cids)
-        eru_client.rm_containers(cids)
+        eru_utils.eru_client.remove_containers(cids)
         db.session.rollback()
         raise

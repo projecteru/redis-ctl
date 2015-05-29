@@ -2,23 +2,25 @@ import os
 import errno
 import hashlib
 import tempfile
+import logging
+import unittest
 
 import config
 
 config.PERMDIR = os.path.join(tempfile.gettempdir(), 'redistribpytestpermdir')
 config.POLL_INTERVAL = 0
+config.ERU_URL = None
 try:
     os.makedirs(config.PERMDIR)
 except OSError as exc:
     if exc.errno == errno.EEXIST and os.path.isdir(config.PERMDIR):
         pass
 
-import logging
-import unittest
-
 import daemonutils.cluster_task
+import daemonutils.auto_balance
 import handlers.base
 import models.base
+import eru_utils
 
 app = handlers.base.app
 app.debug = True
@@ -43,9 +45,16 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
         self.app = app
         self.db = models.base.db
+        self.eru_client = eru_utils.eru_client = None
 
     def setUp(self):
         reset_db()
+
+    def replace_eru_client(self, client=None):
+        if client is None:
+            client = FakeEruClientBase()
+        self.eru_client = eru_utils.eru_client = client
+        return client
 
     def run(self, result=None):
         if not (result and (result.failures or result.errors)):
@@ -112,6 +121,6 @@ class FakeEruClientBase(object):
     def get_container(self, cid):
         return {'networks': [{'address': '10.0.0.%d' % cid}]}
 
-    def rm_containers(self, cids):
+    def remove_containers(self, cids):
         for i in cids:
             del self.deployed[i]
