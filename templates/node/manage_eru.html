@@ -8,7 +8,7 @@
 <span class='label label-danger'>没有设定 ERU 地址</span>
 {% else %}
 <div>
-    ERU 地址: {{ eru|e }}
+    ERU 地址: {{ eru_client.url|e }}
     {% set pods = eru_client.list_pods() %}
 
     {% if pods|length == 0 %}
