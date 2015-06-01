@@ -8,8 +8,8 @@
             var self = $(this);
             var fa = $('<i>').addClass('fa');
             self.prepend(fa);
-
-            if (self.hasClass('check-group-checked')) {
+            self.prop('checked', self.hasClass('check-group-checked'));
+            if (self.prop('checked')) {
                 self.prepend(fa.addClass(checkedClass));
             } else {
                 self.prepend(fa.addClass(uncheckedClass));

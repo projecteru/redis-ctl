@@ -7,6 +7,7 @@ import utils
 import base
 import file_ipc
 import template
+import eru_utils
 import models.cluster
 import models.task
 import models.proxy
@@ -29,7 +30,8 @@ def cluster_panel(request, cluster_id):
         else:
             detail['max_mem'] = n.max_mem
             nodes.append(detail)
-    return request.render('cluster/panel.html', cluster=c, nodes=nodes)
+    return request.render('cluster/panel.html', cluster=c, nodes=nodes,
+                          eru_client=eru_utils.eru_client, plan_max_slaves=3)
 
 
 @base.paged('/cluster/tasks/list/<int:cluster_id>')
@@ -288,6 +290,7 @@ def cluster_auto_join(request):
 
 @base.post_async('/cluster/set_balance_plan')
 def cluster_set_balance_plan(request):
+    print request.form
     cluster = models.cluster.get_by_id(int(request.form['cluster']))
     if cluster is None:
         raise ValueError('no such cluster')
@@ -297,9 +300,9 @@ def cluster_set_balance_plan(request):
     plan.balance_plan['host'] = request.form.get('master_host')
 
     slave_count = int(request.form['slave_count'])
-    slaves_host = filter(None, request.form['slaves'].split(','))
+    slaves_host = filter(None, request.form.get('slaves', '').split(','))
 
-    if 0 >= slave_count or slave_count < len(slaves_host):
+    if 0 > slave_count or slave_count < len(slaves_host):
         raise ValueError('invalid slaves')
 
     plan.balance_plan['slaves'] = [{} for _ in xrange(slave_count)]
