@@ -2,6 +2,7 @@
     {% set proxy = cluster.proxies[0] if cluster.proxies else none %}
     <span class='card-title' id='cluster-{{ cluster.id }}'>
         集群 #{{ cluster.id }}
+        {% if cluster.balance_plan_detail %}<i class='fa fa-sitemap'></i>{% endif %}
         {% if cluster.current_task %}<i class='fa fa-wrench'></i>{% endif %}
     </span>
     <a href='/clusterp/{{ cluster.id }}' style='float: right; margin-top: -9px' class='btn btn-info card-detailonly'>集群控制面板</a>

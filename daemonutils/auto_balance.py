@@ -17,12 +17,15 @@ def _deploy_node(pod, entrypoint, host):
 def _prepare_master_node(node, pod, entrypoint, host):
     cid, new_node_host = _deploy_node(pod, entrypoint, host)
     try:
-        logging.info(
-            'Node deployed: container id=%s host=%s; joining cluster %d',
-            cid, new_node_host, node.assignee_id)
         task = models.task.ClusterTask(
             cluster_id=node.assignee_id,
             task_type=models.task.TASK_TYPE_AUTO_BALANCE)
+        db.session.add(task)
+        db.session.flush()
+        logging.info(
+            'Node deployed: container id=%s host=%s; joining cluster %d'
+            ' [create task %d] use host %s',
+            cid, new_node_host, node.assignee_id, task.id, host)
         task.add_step(
             'join', cluster_id=node.assignee_id,
             cluster_host=node.host, cluster_port=node.port,
@@ -40,6 +43,8 @@ def _add_slaves(slaves, task, cluster_id, master_host, pod, entrypoint):
     cids = []
     try:
         for s in slaves:
+            logging.info('Auto deploy slave for master %s [task %d],'
+                         ' use host %s', master_host, task.id, s.get('host'))
             cid, new_host = _deploy_node(pod, entrypoint, s.get('host'))
             cids.append(cid)
             task.add_step('replicate', cluster_id=cluster_id,
@@ -53,7 +58,7 @@ def _add_slaves(slaves, task, cluster_id, master_host, pod, entrypoint):
         raise
 
 
-def add_node_to_balance_for(host, port, balance_plan, details):
+def add_node_to_balance_for(host, port, balance_plan, slots):
     node = models.node.get_by_host_port(host, int(port))
     if node is None or node.assignee_id is None:
         logging.info(
@@ -75,7 +80,7 @@ def add_node_to_balance_for(host, port, balance_plan, details):
             balance_plan['slaves'], task, node.assignee_id,
             new_host, balance_plan['pod'], balance_plan['entrypoint']))
 
-        migrating_slots = details['slots'][: len(details['slots']) / 2]
+        migrating_slots = slots[: len(slots) / 2]
         task.add_step(
             'migrate', src_host=node.host, src_port=node.port,
             dst_host=new_host, dst_port=6379, slots=migrating_slots)

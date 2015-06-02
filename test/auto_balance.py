@@ -27,7 +27,7 @@ class AutoBalance(base.TestCase):
                 'pod': 'std',
                 'entrypoint': 'ep0',
                 'slaves': [],
-            }, {'slots': [2, 3, 5, 7]})
+            }, [2, 3, 5, 7])
             self.assertTrue(1 in self.eru_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
@@ -88,7 +88,7 @@ class AutoBalance(base.TestCase):
                 'pod': 'std',
                 'entrypoint': 'ep0',
                 'slaves': [{}, {}],
-            }, {'slots': [2, 3, 5, 7, 11, 13, 17]})
+            }, [2, 3, 5, 7, 11, 13, 17])
             self.assertTrue(1 in self.eru_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
@@ -176,7 +176,7 @@ class AutoBalance(base.TestCase):
                 'entrypoint': 'ep0',
                 'host': '10.0.1.173',
                 'slaves': [{}, {'host': '10.0.1.174'}],
-            }, {'slots': [2, 3, 5, 7, 11, 13, 17, 19]})
+            }, [2, 3, 5, 7, 11, 13, 17, 19])
             self.assertTrue(1 in self.eru_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
@@ -296,7 +296,7 @@ class AutoBalance(base.TestCase):
                     'pod': 'std',
                     'entrypoint': 'ep0',
                     'slaves': [{}, {}],
-                }, {'slots': [2, 3, 5, 7, 11, 13, 17]})
+                }, [2, 3, 5, 7, 11, 13, 17])
 
             self.assertEqual(0, len(self.eru_client.deployed))
 

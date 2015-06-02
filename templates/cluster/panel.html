@@ -436,6 +436,8 @@ $('#new-proxy-btn').click(function() {
 
     {% if plan.pod %}
     listHostsForPod({{ plan.pod|tojson }}, {{ ([{'host': plan.host}] + plan.slaves)|tojson }});
+    {% else %}
+    listHostsForPod({{ pods[0].name|tojson }}, []);
     {% endif %}
 
     $('#slave-count').slider({

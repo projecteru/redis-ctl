@@ -22,17 +22,20 @@ CACHING_NODES = {}
 
 
 def _load_from(cls, nodes):
+    def update_node_settings(node, file_settings):
+        node.suppress_alert = file_settings.get('suppress_alert')
+        node.balance_plan = file_settings.get('balance_plan')
+
     r = []
     for n in nodes:
         if (n['host'], n['port']) in CACHING_NODES:
             cache_node = CACHING_NODES[(n['host'], n['port'])]
             r.append(cache_node)
-            cache_node.suppress_alert = n.get('suppress_alert')
+            update_node_settings(cache_node, n)
             continue
         loaded_node = cls.get_by(n['host'], n['port'])
         CACHING_NODES[(n['host'], n['port'])] = loaded_node
-        loaded_node.suppress_alert = n.get('suppress_alert')
-        loaded_node.balance_plan = n.get('balance_plan')
+        update_node_settings(loaded_node, n)
         r.append(loaded_node)
     return r
 

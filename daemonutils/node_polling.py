@@ -213,7 +213,7 @@ class RedisNodeStatus(NodeBase):
         if (eru_client is None
                 or self.balance_plan is None
                 or not self.details['stat']
-                or len(self.details['slots']) > 1
+                or len(self.details['slots']) == 0
                 or self.details['slots_migrating']):
             return
         maxmem = self.details['mem'].get('maxmemory')

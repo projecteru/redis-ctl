@@ -290,7 +290,6 @@ def cluster_auto_join(request):
 
 @base.post_async('/cluster/set_balance_plan')
 def cluster_set_balance_plan(request):
-    print request.form
     cluster = models.cluster.get_by_id(int(request.form['cluster']))
     if cluster is None:
         raise ValueError('no such cluster')
