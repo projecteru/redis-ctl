@@ -19,8 +19,17 @@ def cluster_panel(request, cluster_id):
     c = models.cluster.get_by_id(cluster_id)
     if c is None:
         return base.not_found()
-    return request.render('cluster/panel.html', cluster=c,
-                          node_details=file_ipc.read_details()['nodes'])
+    node_details = file_ipc.read_details()['nodes']
+    nodes = []
+    for n in c.nodes:
+        detail = node_details.get('%s:%d' % (n.host, n.port))
+        if detail is None:
+            nodes.append({'host': n.host, 'port': n.port,
+                          'max_mem': n.max_mem, 'stat': False})
+        else:
+            detail['max_mem'] = n.max_mem
+            nodes.append(detail)
+    return request.render('cluster/panel.html', cluster=c, nodes=nodes)
 
 
 @base.paged('/cluster/tasks/list/<int:cluster_id>')
