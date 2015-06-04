@@ -19,7 +19,8 @@ def cluster_panel(request, cluster_id):
     c = models.cluster.get_by_id(cluster_id)
     if c is None:
         return base.not_found()
-    node_details = file_ipc.read_details()['nodes']
+    all_details = file_ipc.read_details()
+    node_details = all_details['nodes']
     nodes = []
     for n in c.nodes:
         detail = node_details.get('%s:%d' % (n.host, n.port))
@@ -29,6 +30,11 @@ def cluster_panel(request, cluster_id):
         else:
             detail['max_mem'] = n.max_mem
             nodes.append(detail)
+
+    proxy_details = all_details['proxies']
+    for p in c.proxies:
+        p.read_slave = proxy_details.get(
+            '%s:%d' % (p.host, p.port), {}).get('read_slave')
     return request.render('cluster/panel.html', cluster=c, nodes=nodes)
 
 

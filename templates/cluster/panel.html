@@ -6,11 +6,6 @@
 <script src='/static/cluster_task.js'></script>
 <script src='/static/redis_node.js'></script>
 <style>
-.cluster-proxy-quickinfo {
-    float: left;
-    min-width: 360px;
-}
-
 .slave-row .node-addr {
     padding-left: 2em
 }
@@ -269,6 +264,9 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
         <tr>
             <td>
                 {{ proxy.host|e }}:{{ proxy.port }}
+                {% if proxy.read_slave %}
+                <span class='label label-info'>只读</span>
+                {% endif %}
                 {% if proxy.eru_deployed %}
                 <i class='fa fa-cube'></i>
                 {% endif %}
