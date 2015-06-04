@@ -1,4 +1,7 @@
 {{ proxy.host|e }}:{{ proxy.port }}
+{% if proxy.detail.read_slave %}
+    <span class='label label-info'>R</span>
+{% endif %}
 {% if proxy.stat %}
     <span class='label label-success'>OK</span>
 {% else %}

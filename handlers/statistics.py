@@ -12,7 +12,7 @@ RES_FIELDS = ['used_memory', 'used_memory_rss', 'response_time',
 INT_FIELDS = ['evicted_keys', 'expired_keys', 'keyspace_misses',
               'keyspace_hits', 'connected_clients']
 PROXY_FIELDS = ['connected_clients', 'mem_buffer_alloc', 'completed_commands']
-PROXY_RES_FIELDS = ['response_time']
+PROXY_RES_FIELDS = ['command_elapse', 'remote_cost']
 
 
 def init_handlers():

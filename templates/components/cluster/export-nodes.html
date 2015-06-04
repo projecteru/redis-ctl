@@ -1,0 +1,48 @@
+<div class='modal fade bs-example-modal-lg' id='exportNodes' tabindex='-1' role='dialog' aria-labelledby='exportNodesTitle' aria-hidden='true'>
+    <div class='modal-dialog modal-lg'>
+        <div class='modal-content'>
+            <div class='modal-header'>
+                <button type='button' class='close' data-dismiss='modal' aria-label='Close'><span aria-hidden='true'>&times;</span></button>
+                <h4 class='modal-title' id='exportNodesTitle'>集群节点列表</h4>
+            </div>
+            <div class='modal-body'>
+                <button id='expnd-show-masters-only' class='check-group check-group-info'>只显示主节点</button>
+                <button id='expnd-sort' class='btn'>按地址排序</button>
+                <button id='expnd-reverse' class='btn'>倒转顺序</button>
+                <textarea id='expnd-cluster-nodes' style='display: block; width: 100%; min-height: 16em; margin: 8px'></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fillNodes(masterOnly) {
+    var nodes = $('.master-row').map(function() {return $(this).data('host') + ':' + $(this).data('port');}).toArray().join('\n');
+    if (!masterOnly) {
+        nodes += '\n' + $('.slave-row').map(function() {return $(this).data('host') + ':' + $(this).data('port');}).toArray().join('\n');
+    }
+    $('#expnd-cluster-nodes').val(nodes);
+}
+
+$('#expnd-show-masters-only').enableLabelCheck({
+    onClick: function(e) {
+        fillNodes(e.prop('checked'));
+    }
+});
+
+$('#expnd-sort').click(function() {
+    var a = $('#expnd-cluster-nodes').val().split('\n');
+    a.sort();
+    $('#expnd-cluster-nodes').val(a.join('\n'));
+});
+
+$('#expnd-reverse').click(function() {
+    var a = $('#expnd-cluster-nodes').val().split('\n');
+    a.reverse();
+    $('#expnd-cluster-nodes').val(a.join('\n'));
+});
+
+$('#exportNodes').on('show.bs.modal', function(event) {
+    fillNodes($('#expnd-show-masters-only').prop('checked'));
+});
+</script>
