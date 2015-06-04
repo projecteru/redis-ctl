@@ -283,7 +283,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
                 }).show();
             }
             $('.loading-cluster-info').remove();
-            if (r.masters.length <= 1 && $('.node-myself').length === 0 && r.myself.slots === 0) {
+            if (r.masters.length <= 1 && r.myself.slots === 0) {
                 return $('#quit-cluster-force').click(function() {
                     var btn = $(this).attr('disabled', 'disabled');
                     $.ajax({

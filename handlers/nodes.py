@@ -1,4 +1,5 @@
 import json
+from socket import error as SocketError
 from hiredis import ReplyError
 from redistrib.clusternode import Talker
 
@@ -72,15 +73,21 @@ def set_proxy_alert(request):
 
 @base.get_async('/nodes/get_masters')
 def nodes_get_masters_info(request):
-    masters, myself = utils.masters_detail(
-        request.args['host'], int(request.args['port']))
-    return base.json_result({
-        'masters': masters,
-        'myself': {
-            'role': myself.role_in_cluster,
-            'slots': len(myself.assigned_slots),
-        },
-    })
+    try:
+        masters, myself = utils.masters_detail(
+            request.args['host'], int(request.args['port']))
+        return base.json_result({
+            'masters': masters,
+            'myself': {
+                'role': myself.role_in_cluster,
+                'slots': len(myself.assigned_slots),
+            },
+        })
+    except SocketError:
+        return base.json_result({
+            'masters': [],
+            'myself': {'role': 'master', 'slots': 0},
+        })
 
 
 @base.post_async('/exec_command')

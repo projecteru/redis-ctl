@@ -10,6 +10,14 @@
     float: left;
     min-width: 360px;
 }
+
+.slave-row .node-addr {
+    padding-left: 2em
+}
+
+.slave-row {
+    background-color: #eed;
+}
 </style>
 {% endblock %}
 
@@ -183,8 +191,9 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
     $.each(allMasters, function(i, e) {
         function makeNoStatCells(n) {
             return [
+                $('<td>').append('-'),
                 $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
-                $('<td>').attr('colspan', 4).text('尚未获取节点详细信息')
+                $('<td>').attr('colspan', 3).text('尚未获取节点详细信息')
             ];
         }
 
@@ -199,8 +208,8 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 
         function makeBaseCells(n) {
             return [
-                $('<td>').text(n.node_id),
-                $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
+                $('<td>').addClass('node-id').text(n.node_id),
+                $('<td>').addClass('node-addr').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
                 memCell(n)
             ];
         }
@@ -243,7 +252,7 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 }();
 </script>
 
-<button class='btn' data-toggle='modal' data-target='#exportNodes'>导出节点数据</button>
+<button class='btn' data-toggle='modal' data-target='#exportNodes'>节点地址列表</button>
 
 {{ render_template('components/cluster/export-nodes.html') }}
 
