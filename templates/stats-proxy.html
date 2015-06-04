@@ -5,14 +5,15 @@
 <div>
     <div><p>内存状况</p><svg id='usages_mem'></svg></div>
     <div><p>连接</p><svg id='connections'></svg></div>
-    <div><p>响应时间</p><svg id='response_time'></svg></div>
+    <div><p>数据指令执行时间</p><svg id='response_time'></svg></div>
 </div>
 <script>
 statistics({
     mem_buffer_alloc: [],
     connected_clients: [],
     completed_commands: [],
-    response_time: []
+    command_elapse: [],
+    remote_cost: []
 }, '/stats/fetchproxy', {{ host|tojson }}, {{ port|tojson }}, [{
     selector: '#usages_mem',
     fields: [
@@ -31,10 +32,11 @@ statistics({
 }, {
     selector: '#response_time',
     fields: [
-        {keyName: 'response_time', keyDisp: '平均', color: 'black'},
+        {keyName: 'command_elapse', keyDisp: '总共', color: '#45c'},
+        {keyName: 'remote_cost', keyDisp: '远端', color: '#4c5'}
     ],
     yMapF: function(y) {return y * 1000;},
-    title: '响应时间 (ms)'
+    title: '数据指令执行时间 (ms)'
 }]);
 </script>
 {% endblock %}

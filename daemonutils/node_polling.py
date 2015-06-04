@@ -1,18 +1,23 @@
 import time
 import logging
+import random
+import threading
 from socket import error as SocketError
 from hiredis import ReplyError
 from retrying import retry
 from redistrib.clusternode import Talker, pack_command, ClusterNode
+from influxdb.client import InfluxDBClientError
 
+import file_ipc
+import stats.db
 from eru_utils import eru_client
 from models.base import db, Base
-import stats.db
 
 
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 CMD_PROXY = '+PROXY\r\n'
+NODES_EACH_THREAD = 20
 
 
 def _info_slots(t):
@@ -243,7 +248,8 @@ class ProxyStatus(NodeBase):
                 'connected_clients': self['conn']['connected_clients'],
                 'completed_commands': self['conn']['completed_commands'],
                 'total_process_elapse': self['conn']['total_process_elapse'],
-                'response_time': self['response_time'],
+                'command_elapse': self['command_elapse'],
+                'remote_cost': self['remote_cost'],
             },
         }])
 
@@ -253,7 +259,6 @@ class ProxyStatus(NodeBase):
         try:
             now = time.time()
             i = t.talk_raw(CMD_PROXY)
-            elapse = time.time() - now
             lines = i.split('\n')
             st = {}
             for ln in lines:
@@ -262,9 +267,9 @@ class ProxyStatus(NodeBase):
             conns = sum([int(c) for c in st['clients_count'].split(',')])
             mem_buffer_alloc = sum([int(m) for m in
                                     st['mem_buffer_alloc'].split(',')])
+
             self.details.update({
                 'stat': True,
-                'response_time': elapse,
                 'threads': st['threads'],
                 'version': st['version'],
                 'conn': {
@@ -273,11 +278,126 @@ class ProxyStatus(NodeBase):
                     'total_process_elapse': float(st['total_process_elapse']),
                 },
                 'mem': {'mem_buffer_alloc': mem_buffer_alloc},
+                'read_slave': st.get('read_slave') == '1',
             })
-            self.set_available(elapse)
+
+            if 'last_command_elapse' in st:
+                self.details['command_elapse'] = max(
+                    [float(x) for x in st['last_command_elapse'].split(',')])
+            else:
+                self.details['command_elapse'] = 0
+
+            if 'last_remote_cost' in st:
+                self.details['remote_cost'] = max(
+                    [float(x) for x in
+                     st['last_remote_cost'].split(',')])
+            else:
+                self.details['remote_cost'] = 0
+
+            self.set_available(self.details['command_elapse'])
         finally:
             t.close()
 
     def _send_alarm(self, alarm_func):
         alarm_func('Cerberus Failed %s:%d' % (
             self.details['host'], self.details['port']), '')
+
+
+class Poller(threading.Thread):
+    def __init__(self, app, nodes, algalon_client):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.app = app
+        self.nodes = nodes
+        logging.debug('Poller %x distributed %d nodes',
+                      id(self), len(self.nodes))
+        self.algalon_client = algalon_client
+
+    def run(self):
+        with self.app.app_context():
+            for node in self.nodes:
+                node = node.reattach()
+                logging.debug('Poller %x collect for %s:%d',
+                              id(self), node['host'], node['port'])
+                node.collect_stats(self._emit_data, self._send_alarm)
+                node.add_to_db()
+
+            db.session.commit()
+
+    def _send_alarm(self, message, trace):
+        if self.algalon_client is not None:
+            self.algalon_client.send_alarm(message, trace)
+
+    def _emit_data(self, json_body):
+        try:
+            stats.db.client.write_points(json_body)
+        except (SocketError, InfluxDBClientError, StandardError), e:
+            logging.exception(e)
+
+
+CACHING_NODES = {}
+
+
+def _load_from(cls, nodes):
+    def update_node_settings(node, file_settings):
+        node.suppress_alert = file_settings.get('suppress_alert')
+        node.balance_plan = file_settings.get('balance_plan')
+
+    r = []
+    for n in nodes:
+        if (n['host'], n['port']) in CACHING_NODES:
+            cache_node = CACHING_NODES[(n['host'], n['port'])]
+            r.append(cache_node)
+            update_node_settings(cache_node, n)
+            continue
+        loaded_node = cls.get_by(n['host'], n['port'])
+        CACHING_NODES[(n['host'], n['port'])] = loaded_node
+        update_node_settings(loaded_node, n)
+        r.append(loaded_node)
+    return r
+
+
+class NodeStatCollector(threading.Thread):
+    def __init__(self, app, interval, algalon_client):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.app = app
+        self.interval = interval
+        self.algalon_client = algalon_client
+
+    def _shot(self):
+        poll = file_ipc.read_poll()
+        nodes = _load_from(RedisNodeStatus, poll['nodes'])
+        proxies = _load_from(ProxyStatus, poll['proxies'])
+        # commit because `get_by` may create new nodes
+        # to reattach session they must be persisted
+        db.session.commit()
+
+        all_nodes = nodes + proxies
+        random.shuffle(all_nodes)
+        pollers = [Poller(self.app, all_nodes[i: i + NODES_EACH_THREAD],
+                          self.algalon_client)
+                   for i in xrange(0, len(all_nodes), NODES_EACH_THREAD)]
+        for p in pollers:
+            p.start()
+        time.sleep(self.interval)
+
+        for p in pollers:
+            p.join()
+
+        logging.info('Total %d nodes, %d proxies', len(nodes),
+                     len(proxies))
+
+        try:
+            file_ipc.write_details({n.addr: n.details for n in nodes},
+                                   {p.addr: p.details for p in proxies})
+        except StandardError, e:
+            logging.exception(e)
+
+    def run(self):
+        with self.app.app_context():
+            while True:
+                try:
+                    self._shot()
+                except StandardError, e:
+                    logging.exception(e)

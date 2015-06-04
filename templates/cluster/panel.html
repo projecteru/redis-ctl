@@ -6,9 +6,12 @@
 <script src='/static/cluster_task.js'></script>
 <script src='/static/redis_node.js'></script>
 <style>
-.cluster-proxy-quickinfo {
-    float: left;
-    min-width: 360px;
+.slave-row .node-addr {
+    padding-left: 2em
+}
+
+.slave-row {
+    background-color: #eed;
 }
 </style>
 {% endblock %}
@@ -133,8 +136,8 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 <table class='table'>
     <thead>
         <tr>
-            <th>地址</th>
             <th>节点 ID</th>
+            <th>地址</th>
             <th>内存</th>
             <th>角色</th>
             <th>槽位数量</th>
@@ -142,6 +145,8 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
     </thead>
     <tbody id='cluster-nodes' style='text-align: center'></tbody>
 </table>
+
+<button class='btn' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
 
 <script>
 -function() {
@@ -179,10 +184,11 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
     allMasters.sort(nodeSortKey);
 
     $.each(allMasters, function(i, e) {
-        function makeNoStatRow(n) {
+        function makeNoStatCells(n) {
             return [
+                $('<td>').append('-'),
                 $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
-                $('<td>').attr('colspan', 4).text('尚未获取节点详细信息')
+                $('<td>').attr('colspan', 3).text('尚未获取节点详细信息')
             ];
         }
 
@@ -195,36 +201,36 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
             return $('<td>').text(n.mem.used_memory + ' / ' + n.max_mem + ' ').append($('<span>').addClass('label').addClass(memLabelClass).text(memRate.toFixed(2) + '%'));
         }
 
-        function makeBaseRow(n) {
+        function makeBaseCells(n) {
             return [
-                $('<td>').text(n.node_id),
-                $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
+                $('<td>').addClass('node-id').text(n.node_id),
+                $('<td>').addClass('node-addr').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
                 memCell(n)
             ];
         }
 
         function makeMasterRow(n) {
-            var row = makeBaseRow(n);
+            var row = makeBaseCells(n);
             row.push($('<td>').text('主').css('color', '#004'));
             row.push($('<td>').text(n.slots ? n.slots.length : 0));
-            return row;
+            return $('<tr>').addClass('master-row').append(row).data('host', n.host).data('port', n.port);
         }
 
         function makeSlaveRow(n) {
-            var row = makeBaseRow(n);
+            var row = makeBaseCells(n);
             row.push($('<td>').text('从').css('color', '#044'));
             row.push($('<td>').text('-'));
-            return row;
+            return $('<tr>').addClass('slave-row').append(row).data('host', n.host).data('port', n.port);
         }
 
         function makeRow(n) {
             if (!n.stat) {
-                return makeNoStatRow(n);
+                return $('<tr>').append(makeNoStatCells(n));
             }
             return n.slave ? makeSlaveRow(n) : makeMasterRow(n);
         }
 
-        var row = $('<tr>').append(makeRow(e));
+        var row = makeRow(e);
         if (e.node_id) {
             row.attr('id', 'node-' + e.node_id);
         }
@@ -233,13 +239,17 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
             e.slaves.sort(nodeSortKey);
             $.each(e.slaves, function(i, e) {
                 var row = makeSlaveRow(e);
-                row[3].append($('<a>').attr('href', '#node-' + e.master_id).text('^'));
-                tbody.append($('<tr>').append(row));
+                row.find('td').eq(3).append($('<a>').attr('href', '#node-' + e.master_id).text('^'));
+                tbody.append(row);
             });
         }
     });
 }();
 </script>
+
+<button class='btn' data-toggle='modal' data-target='#exportNodes'>节点地址列表</button>
+
+{{ render_template('components/cluster/export-nodes.html') }}
 
 <h1>代理设置</h1>
 <table class='table'>
@@ -254,6 +264,9 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
         <tr>
             <td>
                 {{ proxy.host|e }}:{{ proxy.port }}
+                {% if proxy.read_slave %}
+                <span class='label label-info'>只读</span>
+                {% endif %}
                 {% if proxy.eru_deployed %}
                 <i class='fa fa-cube'></i>
                 {% endif %}
