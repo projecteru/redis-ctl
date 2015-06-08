@@ -10,7 +10,6 @@ class Proxy(Base):
     host = db.Column(db.String(32), nullable=False)
     port = db.Column(db.Integer, nullable=False)
     eru_container_id = db.Column(db.String(64), index=True)
-    eru_image_sha = db.Column(db.String(40))
     cluster_id = db.Column(db.ForeignKey(Cluster.id), index=True)
     suppress_alert = db.Column(db.Integer, nullable=False, default=1)
 
@@ -41,9 +40,9 @@ def get_or_create(host, port, cluster_id=None):
     return p
 
 
-def create_eru_instance(host, cluster_id, eru_container_id, eru_image_sha):
+def create_eru_instance(host, cluster_id, eru_container_id):
     node = Proxy(host=host, port=8889, eru_container_id=eru_container_id,
-                 eru_image_sha=eru_image_sha, cluster_id=cluster_id)
+                 cluster_id=cluster_id)
     db.session.add(node)
     db.session.flush()
     return node

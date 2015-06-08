@@ -51,15 +51,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
             }
             pl.remove();
             var tbody = $('#clusterDiscoverNodes').show().find('tbody');
-            r.nodes.sort(function(a, b) {
-                if (a.host < b.host) {
-                    return -1;
-                }
-                if (b.host < a.host) {
-                    return 1;
-                }
-                return a.port - b.port;
-            });
+            r.nodes.sort(sortNodeByAddr);
             $.each(r.nodes, function(i, e) {
                 var row = $('<tr>'
                     ).append($('<td>').text(e.host + ':' + e.port)

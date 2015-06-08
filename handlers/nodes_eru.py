@@ -27,8 +27,7 @@ if eru_client is not None:
                 'redis', request.form['pod'],
                 'aof' if request.form['aof'] == 'y' else 'rdb',
                 host=request.form.get('host'))
-            models.node.create_eru_instance(host, DEFAULT_MAX_MEM, cid,
-                                            version_sha)
+            models.node.create_eru_instance(host, DEFAULT_MAX_MEM, cid)
             return base.json_result({
                 'host': host,
                 'container_id': cid,
@@ -50,8 +49,7 @@ if eru_client is not None:
                 'cerberus', request.form['pod'],
                 'th' + str(ncore) + request.form.get('read_slave', ''), ncore,
                 host=request.form.get('host'))
-            models.proxy.create_eru_instance(host, cluster.id, cid,
-                                             version_sha)
+            models.proxy.create_eru_instance(host, cluster.id, cid)
             t = Talker(host, 8889)
             try:
                 t.talk('setremotes', cluster.nodes[0].host,

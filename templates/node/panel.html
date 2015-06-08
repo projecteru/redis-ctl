@@ -5,8 +5,19 @@
 {% block head %}
 <style>
 .table { text-align: center; }
+.status-table {
+    max-width: 45%;
+}
+.status-table caption { font-weight: bold; }
+.status-table tr:nth-child(2n+1) { background-color: #f8f8f8; }
+.status-table caption, .status-table tr td {
+    border: 1px solid #cccccc;
+    margin: 0;
+    padding: 6px 13px;
+}
 </style>
 <script src='/static/redis_node.js'></script>
+<script src='/static/sort-nodes.js'></script>
 {% endblock %}
 
 {% block body %}
@@ -26,58 +37,140 @@
         <th>部署</th>
         <td><i class='fa fa-cube'></i> ERU 容器</td>
     </tr>
-    {% if detail and detail.mem %}
-    <tr>
-        <th>内存</th>
-        <td>
-            {{ detail.mem.used_memory_human|e }} /
-            <a href='javascript:void(0)' onclick="$(this).hide(); $('#edit_max_mem').show()">{{ node.max_mem|filesizeformat }}</a>
-            <span id='edit_max_mem' style='display: none'>
-                <input id='max_mem_input' value='{{ node.max_mem }}'>
-                <button onclick='editMaxMem()' class='btn btn-primary'>修改</button>
-                <span class='label label-warning' style='display: none' id='edit-error'>设置的最大内存值超过范围</span>
-            </span>
-            <script>
-            function editMaxMem() {
-                $('#edit-error').hide();
-                var m = parseInt($('#max_mem_input').val());
-                if (isNaN(m) || m < 64 * 1000 * 1000 || m > {{ max_mem_limit|tojson }}) {
-                    $('#edit-error').show();
-                    return $('#edit_max_mem').focus();
-                }
-                $.ajax({
-                    url: '/nodes/set_max_mem/eru',
-                    type: 'POST',
-                    data: {
-                        host: {{ node.host|tojson }},
-                        port: {{ node.port|tojson }},
-                        max_mem: m
-                    },
-                    success: function() {
-                        window.location.reload();
-                    },
-                    error: function(r) {
-                        console.error(r);
+
+        {% if detail and detail.mem %}
+        <tr>
+            <th>内存</th>
+            <td>
+                {{ detail.mem.used_memory_human|e }} /
+                <a href='javascript:void(0)' onclick="$(this).hide(); $('#edit_max_mem').show()">{{ node.max_mem|filesizeformat }}</a>
+                <span id='edit_max_mem' style='display: none'>
+                    <input id='max_mem_input' value='{{ node.max_mem }}'>
+                    <button onclick='editMaxMem()' class='btn btn-primary'>修改</button>
+                    <span class='label label-warning' style='display: none' id='edit-error'>设置的最大内存值超过范围</span>
+                </span>
+                <script>
+                function editMaxMem() {
+                    $('#edit-error').hide();
+                    var m = parseInt($('#max_mem_input').val());
+                    if (isNaN(m) || m < 64 * 1000 * 1000 || m > {{ max_mem_limit|tojson }}) {
+                        $('#edit-error').show();
+                        return $('#edit_max_mem').focus();
                     }
-                });
-            }
-            </script>
+                    $.ajax({
+                        url: '/nodes/set_max_mem/eru',
+                        type: 'POST',
+                        data: {
+                            host: {{ node.host|tojson }},
+                            port: {{ node.port|tojson }},
+                            max_mem: m
+                        },
+                        success: function() {
+                            window.location.reload();
+                        },
+                        error: function(r) {
+                            console.error(r);
+                        }
+                    });
+                }
+                </script>
+            </td>
+        </tr>
+        {% endif %}
+
+        {% if node.eru_info %}
+        <tr>
+            <td>ERU 容器 ID</td>
+            <td>{{ node.eru_container_id|e }}</td>
+        </tr>
+        <tr>
+            <td>ERU 容器创建时间</td>
+            <td>{{ node.eru_info.created|e }}</td>
+        </tr>
+        <tr>
+            <td>ERU 宿主机地址</td>
+            <td>{{ node.eru_info.host|e }}</td>
+        </tr>
+        {% endif %}
+    {% endif %}
+    <tr>
+        <th>统计</th>
+        <td>
+            {% if not node.stat or not detail %}
+            等待轮询采集数据
+            {% else %}
+            <table class='table status-table'>
+                <caption>CPU</caption>
+                <tr>
+                    <td>用户态累计</td>
+                    <td>{{ detail.cpu.used_cpu_user }}</td>
+                </tr>
+                <tr>
+                    <td>内核态累计</td>
+                    <td>{{ detail.cpu.used_cpu_sys }}</td>
+                </tr>
+                <tr>
+                    <td>总运行时间</td>
+                    <td>{{ detail.cpu.uptime_in_seconds }}</td>
+                </tr>
+                <tr>
+                    <td>平均 CPU 占用率</td>
+                    <td>{{ ((detail.cpu.used_cpu_user + detail.cpu.used_cpu_sys) / detail.cpu.uptime_in_seconds * 100)|round(2) }}%</td>
+                </tr>
+            </table>
+            <table class='table status-table'>
+                <caption>存储</caption>
+                <tr>
+                    <td>Keyspace hits</td>
+                    <td>{{ detail.storage.keyspace_hits }}</td>
+                </tr>
+                <tr>
+                    <td>Keyspace misses</td>
+                    <td>{{ detail.storage.keyspace_misses }}</td>
+                </tr>
+                <tr>
+                    <td>Expired keys</td>
+                    <td>{{ detail.storage.expired_keys }}</td>
+                </tr>
+                <tr>
+                    <td>Evicted keys</td>
+                    <td>{{ detail.storage.evicted_keys }}</td>
+                </tr>
+            </table>
+            <table class='table status-table'>
+                <caption>内存</caption>
+                <tr>
+                    <td>已使用内存</td>
+                    <td>{{ detail.mem.used_memory_human }}</td>
+                </tr>
+                <tr>
+                    <td>常驻集</td>
+                    <td>{{ detail.mem.used_memory_rss|filesizeformat }}</td>
+                </tr>
+            </table>
+            {% endif %}
         </td>
     </tr>
-    {% endif %}
     <tr>
-        <td>ERU 容器 ID</td>
-        <td>{{ node.eru_container_id|e }}</td>
+        <th>节点操作</th>
+        <td>
+            {% if node.assignee is none and not node.eru_deployed %}
+            <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
+            {% endif %}
+
+            {% if stats_enabled %}
+            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
+            {% endif %}
+
+            <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
+                关闭报警
+            </button>
+
+            {% if detail.slots_migrating %}
+            <button class='btn btn-warning fix-migrating-btn' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>修复迁移状态</button>
+            {% endif %}
+        </td>
     </tr>
-    <tr>
-        <td>ERU 容器创建时间</td>
-        <td>{{ eru_info.created|e }}</td>
-    </tr>
-    <tr>
-        <td>ERU 宿主机地址</td>
-        <td>{{ eru_info.host|e }}</td>
-    </tr>
-    {% endif %}
 </table>
 
 {% if node.assignee %}
@@ -372,15 +465,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
                 }).show();
             }
             local.clusterNodes = r.masters;
-            local.clusterNodes.sort(function(a, b) {
-                if (a.host < b.host) {
-                    return -1;
-                }
-                if (b.host < a.host) {
-                    return 1;
-                }
-                return a.port - b.port;
-            });
+            local.clusterNodes.sort(sortNodeByAddr);
             addNodesToTable($('#quit-cluster tbody'), local.clusterNodes);
             addNodesToTable($('#migrating-slots tbody'), local.clusterNodes);
             $('#quit-cluster .table').show();
@@ -495,6 +580,7 @@ $('#join-cluster-btn').click(function() {
                             id: clusterId
                         },
                         success: function(r) {
+                            r.sort(sortNodeByAddr);
                             local.clusterMasters[clusterId] = r;
                             if (select.val() === clusterId) {
                                 fillMasterNodesTo(r);
@@ -513,7 +599,7 @@ $('#join-cluster-btn').click(function() {
     });
 });
 
-function fillMasterNodesTo(cluster, select) {
+function fillMasterNodesTo(cluster) {
     $('#select-master').html('').append(cluster.map(function(e) {
         return $('<option>').text([e.host, ':', e.port].join('')).val(JSON.stringify({host: e.host, port: e.port}));
     })).enableLabelSelect({itemWidth: 220});

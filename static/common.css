@@ -113,14 +113,14 @@ th {
     visibility: hidden;
 }
 
-.noalert-only .card-root.alert-enabled {
+.noalert-only .alert-enabled {
     display: none;
 }
 
-.error-only .card-root.node-healthy {
+.error-only .node-healthy {
     display: none;
 }
 
-.migrating-only .card-root.node-stable {
+.migrating-only .node-stable {
     display: none;
 }

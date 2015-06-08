@@ -36,7 +36,7 @@ def deploy_with_network(what, pod, entrypoint, ncore=1, host=None):
     network = eru_client.get_network('net')
     version_sha = lastest_version_sha(what)
     r = eru_client.deploy_private(
-        'group', pod, what, 1, ncore, version_sha,
+        'group', pod, what, ncore, 1, version_sha,
         entrypoint, 'prod', [network['id']], host_name=host)
     if r['msg'] == 'Not enough core resources':
         raise ValueError('Host drained')
