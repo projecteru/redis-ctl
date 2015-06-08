@@ -35,7 +35,7 @@
     <tr>
         <th>统计</th>
         <td>
-            {% if node.stat and not detail %}
+            {% if not node.stat or not detail %}
             等待轮询采集数据
             {% else %}
             <table class='table status-table'>
