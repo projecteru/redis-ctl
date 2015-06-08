@@ -70,7 +70,7 @@ def f_strftime(dt, fmt='%Y-%m-%d %H:%M:%S'):
 
 
 @_filter
-def f_render_node(node, level='card', **kwargs):
+def f_render_node(node, level, **kwargs):
     return render('components/node/%s.html' % level, node=node, **kwargs)
 
 
