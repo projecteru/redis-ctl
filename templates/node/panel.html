@@ -7,6 +7,7 @@
 .table { text-align: center; }
 </style>
 <script src='/static/redis_node.js'></script>
+<script src='/static/sort-nodes.js'></script>
 {% endblock %}
 
 {% block body %}
@@ -372,15 +373,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
                 }).show();
             }
             local.clusterNodes = r.masters;
-            local.clusterNodes.sort(function(a, b) {
-                if (a.host < b.host) {
-                    return -1;
-                }
-                if (b.host < a.host) {
-                    return 1;
-                }
-                return a.port - b.port;
-            });
+            local.clusterNodes.sort(sortNodeByAddr);
             addNodesToTable($('#quit-cluster tbody'), local.clusterNodes);
             addNodesToTable($('#migrating-slots tbody'), local.clusterNodes);
             $('#quit-cluster .table').show();
@@ -495,6 +488,7 @@ $('#join-cluster-btn').click(function() {
                             id: clusterId
                         },
                         success: function(r) {
+                            r.sort(sortNodeByAddr);
                             local.clusterMasters[clusterId] = r;
                             if (select.val() === clusterId) {
                                 fillMasterNodesTo(r);
@@ -513,7 +507,7 @@ $('#join-cluster-btn').click(function() {
     });
 });
 
-function fillMasterNodesTo(cluster, select) {
+function fillMasterNodesTo(cluster) {
     $('#select-master').html('').append(cluster.map(function(e) {
         return $('<option>').text([e.host, ':', e.port].join('')).val(JSON.stringify({host: e.host, port: e.port}));
     })).enableLabelSelect({itemWidth: 220});
