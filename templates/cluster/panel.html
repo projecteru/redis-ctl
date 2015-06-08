@@ -5,6 +5,7 @@
 {% block head %}
 <script src='/static/cluster_task.js'></script>
 <script src='/static/redis_node.js'></script>
+<script src='/static/sort-nodes.js'></script>
 <style>
 .cluster-proxy-quickinfo {
     float: left;
@@ -156,13 +157,6 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 <script>
 -function() {
     var tbody = $('#cluster-nodes');
-    function nodeSortKey(a, b) {
-        if (a.host == b.host) {
-            return a.port - b.port;
-        }
-        return a.host < b.host ? -1 : 1;
-    }
-
     var mastersWithoutId = [];
     var masters = {};
     var allMasters = [];
@@ -186,7 +180,7 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
         allMasters.push(n);
     });
 
-    allMasters.sort(nodeSortKey);
+    allMasters.sort(sortNodeByAddr);
 
     $.each(allMasters, function(i, e) {
         function makeNoStatCells(n) {
@@ -241,7 +235,7 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
         }
         tbody.append(row);
         if (e.slaves && e.slaves.length) {
-            e.slaves.sort(nodeSortKey);
+            e.slaves.sort(sortNodeByAddr);
             $.each(e.slaves, function(i, e) {
                 var row = makeSlaveRow(e);
                 row.find('td').eq(3).append($('<a>').attr('href', '#node-' + e.master_id).text('^'));
