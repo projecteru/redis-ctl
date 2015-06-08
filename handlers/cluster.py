@@ -18,8 +18,8 @@ def cluster_panel(request, cluster_id):
     c = models.cluster.get_by_id(cluster_id)
     if c is None:
         return base.not_found()
-    return request.render('cluster/panel.html', cluster=c, node_details={
-        (n['host'], n['port']): n for n in file_ipc.read()['nodes']})
+    return request.render('cluster/panel.html', cluster=c,
+                          node_details=file_ipc.read_details()['nodes'])
 
 
 @base.paged('/cluster/tasks/list/<int:cluster_id>')
@@ -134,7 +134,7 @@ def migrate_slots(request):
     dst_port = int(request.form['dst_port'])
     slots = [int(s) for s in request.form['slots'].split(',')]
 
-    src = nm.pick_by(src_host, src_port)
+    src = nm.get_by_host_port(src_host, src_port)
 
     task = models.task.ClusterTask(cluster_id=src.assignee_id,
                                    task_type=models.task.TASK_TYPE_MIGRATE)

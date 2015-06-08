@@ -1,7 +1,10 @@
+import json
+from hiredis import ReplyError
+from redistrib.clusternode import Talker
+
 import file_ipc
 import utils
 import base
-import models.recover
 import models.node
 import models.proxy
 import models.task
@@ -15,10 +18,8 @@ def node_panel(request, host, port):
         return base.not_found()
     detail = {}
     try:
-        for n in file_ipc.read()['nodes']:
-            if n['host'] == host and n['port'] == port:
-                detail = n
-                break
+        detail = file_ipc.read_details()['nodes'][
+            '%s:%d' % (node.host, node.port)]
     except (IOError, ValueError, KeyError):
         pass
     return request.render('node/panel.html', node=node, detail=detail)
@@ -29,19 +30,11 @@ def add_node(request):
     models.node.create_instance(
         request.form['host'], int(request.form['port']),
         int(request.form['mem']))
-    file_ipc.write_nodes_proxies_from_db()
 
 
 @base.post_async('/nodes/del')
 def del_node(request):
     models.node.delete_free_instance(
-        request.form['host'], int(request.form['port']))
-    file_ipc.write_nodes_proxies_from_db()
-
-
-@base.post_async('/nodes/reconnect')
-def reconnect_node(request):
-    models.recover.recover_by_addr(
         request.form['host'], int(request.form['port']))
 
 
@@ -63,7 +56,6 @@ def _set_alert_status(n, request):
     n.suppress_alert = int(request.form['suppress'])
     db.session.add(n)
     db.session.flush()
-    file_ipc.write_nodes_proxies_from_db()
 
 
 @base.post_async('/set_alert_status/redis')
@@ -89,3 +81,17 @@ def nodes_get_masters_info(request):
             'slots': len(myself.assigned_slots),
         },
     })
+
+
+@base.post_async('/exec_command')
+def node_exec_command(request):
+    t = Talker(request.form['host'], int(request.form['port']))
+    try:
+        r = t.talk(*json.loads(request.form['cmd']))
+    except ValueError as e:
+        r = None if e.message == 'No reply' else ('-ERROR: ' + e.message)
+    except ReplyError as e:
+        r = '-' + e.message
+    finally:
+        t.close()
+    return base.json_result(r)

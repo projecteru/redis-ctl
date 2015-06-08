@@ -18,22 +18,33 @@
 
 <script>
 var TIME_OFFSET = (new Date()).getTimezoneOffset();
+var globalns = {
+    pollSecs: 180,
+    pointLength: 480,
+    updateCharts: function() {throw 'not ready'},
+    clearCharts: function() {throw 'not ready'},
+    pollingTimer: null
+};
 
 function statistics(gMetricsDatum, uri, host, port, fields) {
-    var POINTS_LENGTH = 1000;
-    var POLL_SECS = 120;
-    var POLL_INTERVAL = POLL_SECS * 1000;
-    var gDatumTimestamp = {};
-
     function timeStrFromUTC(t) {
         t.setMinutes(t.getMinutes() - TIME_OFFSET);
         return t.toTimeString().slice(0, 8);
     }
 
+    var gDatumTimestamp = {};
     for (var k in gMetricsDatum) {
         gDatumTimestamp[k] = {};
     }
-    -function updateCharts(limit) {
+
+    globalns.clearCharts = function() {
+        for (var k in gMetricsDatum) {
+            gMetricsDatum[k].length = 0;
+            gDatumTimestamp[k] = {};
+        }
+    };
+
+    globalns.updateCharts = function(limit) {
         function updateGraph(selector, graphKeys, yMapF, yLabel) {
             nv.addGraph(function() {
               var chart = nv.models.lineChart().options({
@@ -91,7 +102,8 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
             data: {
                 host: host,
                 port: port,
-                limit: limit
+                limit: limit,
+                interval: globalns.pollSecs / 60
             },
             success: function(r) {
                 var i, j, k, timestampGroup, timestamp;
@@ -109,7 +121,7 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
 
                         gMetricsDatum[i].push({x: timestamp, y: r[i][j][1]});
                     }
-                    for (k = gMetricsDatum[i].length - POINTS_LENGTH; 0 < k; --k) {
+                    for (k = gMetricsDatum[i].length - globalns.pointLength; 0 < k; --k) {
                         gMetricsDatum[i].shift();
                     }
                 }
@@ -117,13 +129,44 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
                     var f = fields[i];
                     updateGraph(f.selector, f.fields, f.yMapF, f.title);
                 }
-                setTimeout(function() {updateCharts(1);}, POLL_INTERVAL);
+                globalns.pollingTimer = setTimeout(function() {globalns.updateCharts(1);}, globalns.pollSecs * 1000);
             },
             error: function(r) {
-                console.log(r);
+                console.error(r);
             }
         });
-    }(POINTS_LENGTH);
+    };
+    globalns.updateCharts(globalns.pointLength);
 };
 </script>
+{% endblock %}
+
+{% block body %}
+<select id='select-interval' data-select-style='select-info'>
+    <option value='1:4'>最近 4 小时的数据</option>
+    <option value='2:12'>最近 12 小时的数据</option>
+    <option value='3:24' selected='selected'>最近 1 天的数据</option>
+    <option value='8:48'>最近 2 天的数据</option>
+    <option value='15:72'>最近 3 天的数据</option>
+</select>
+<script>
+$('#select-interval').enableLabelSelect({
+    width: '15em',
+    onChange: function(value) {
+        var interval, hours, split = value.split(':');
+        interval = parseInt(split[0]) * 60;
+        if (interval === globalns.pollSecs) {
+            return;
+        }
+        clearTimeout(globalns.pollingTimer);
+        globalns.pollSecs = interval;
+        hours = parseInt(split[1]);
+        globalns.pointLength = hours * 60 * 60 / interval + 1;
+        globalns.clearCharts();
+        globalns.updateCharts(globalns.pointLength);
+    }
+});
+</script>
+<hr>
+{% block graph %}{% endblock %}
 {% endblock %}

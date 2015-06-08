@@ -3,33 +3,15 @@ import logging
 from socket import error as SocketError
 from hiredis import ReplyError
 from retrying import retry
-import sqlalchemy as db
-from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 from redistrib.clusternode import Talker, pack_command, ClusterNode
 
+from models.base import db, Base
 import stats.db
 
-
-session = None
-Base = declarative_base()
 
 CMD_INFO = pack_command('info')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 CMD_PROXY = '+PROXY\r\n'
-
-
-def init(sqlalchemy_database_uri):
-    global session
-
-    engine = db.create_engine(sqlalchemy_database_uri)
-    Base.metadata.bind = engine
-    Base.metadata.create_all()
-    session = scoped_session(sessionmaker(bind=engine))()
-
-
-def flush_to_db():
-    session.commit()
 
 
 def _info_slots(t):
@@ -73,7 +55,6 @@ def _info_detail(t):
 class NodeBase(Base):
     __abstract__ = True
 
-    id = db.Column('id', db.Integer, primary_key=True, autoincrement=True)
     addr = db.Column('addr', db.String(32), unique=True, nullable=False)
     poll_count = db.Column('poll_count', db.Integer, nullable=False)
     avail_count = db.Column('avail_count', db.Integer, nullable=False)
@@ -84,16 +65,17 @@ class NodeBase(Base):
         Base.__init__(self, *args, **kwargs)
         self.suppress_alert = 1
         self.details = {}
+        self.balance_plan = None
 
     @classmethod
     def get_by(cls, host, port):
         addr = '%s:%d' % (host, port)
-        n = session.query(cls).filter(cls.addr == addr).first()
+        n = db.session.query(cls).filter(cls.addr == addr).first()
         if n is None:
             n = cls(addr=addr, poll_count=0, avail_count=0, rsp_1ms=0,
                     rsp_5ms=0)
-            session.add(n)
-            session.flush()
+            db.session.add(n)
+            db.session.flush()
         n.details = {'host': host, 'port': port}
         return n
 
@@ -148,11 +130,18 @@ class NodeBase(Base):
     def _send_alarm(self, alarm_func):
         raise NotImplementedError()
 
+    def reattach(self):
+        n = db.session.query(self.__class__).get(self.id)
+        n.suppress_alert = self.suppress_alert
+        n.details = self.details
+        n.balance_plan = self.balance_plan
+        return n
+
     def add_to_db(self):
-        session.add(self)
+        db.session.add(self)
 
 
-class RedisNode(NodeBase):
+class RedisNodeStatus(NodeBase):
     __tablename__ = 'redis_node_status'
 
     def send_to_influxdb(self, emit_func):
@@ -174,7 +163,7 @@ class RedisNode(NodeBase):
             },
         }])
 
-    @retry(stop_max_attempt_number=3, wait_fixed=200)
+    @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
         t = Talker(self.details['host'], self.details['port'])
         try:
@@ -185,6 +174,8 @@ class RedisNode(NodeBase):
                 'used_memory_rss': int(details['used_memory_rss']),
                 'used_memory_human': details['used_memory_human'],
             }
+            if 'maxmemory' in details:
+                node_info['mem']['maxmemory'] = int(details['maxmemory'])
             node_info['cpu'] = {
                 'used_cpu_sys': float(details['used_cpu_sys']),
                 'used_cpu_user': float(details['used_cpu_user']),
@@ -215,7 +206,7 @@ class RedisNode(NodeBase):
             self.details['host'], self.details['port']), '')
 
 
-class Proxy(NodeBase):
+class ProxyStatus(NodeBase):
     __tablename__ = 'proxy_status'
 
     def send_to_influxdb(self, emit_func):
@@ -230,7 +221,7 @@ class Proxy(NodeBase):
             },
         }])
 
-    @retry(stop_max_attempt_number=3, wait_fixed=200)
+    @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
         t = Talker(self.details['host'], self.details['port'])
         try:

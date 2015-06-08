@@ -189,6 +189,7 @@ $('#new-proxy-btn').click(function() {
 });
 </script>
 
+{{ render_template('components/command_console.html') }}
 <h1>后台任务</h1>
 
 {{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
@@ -209,7 +210,7 @@ $('#new-proxy-btn').click(function() {
     </thead>
     <tbody style='text-align: center'>
     {% for n in cluster.nodes %}
-        {% set detail = node_details.get((n.host, n.port), {}) %}
+        {% set detail = node_details.get('%s:%d' % (n.host, n.port), {}) %}
         <tr>
             <td>#{{ n.id }}</td>
             <td><a href='/nodep/{{ n.host|e }}/{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>

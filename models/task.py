@@ -155,9 +155,10 @@ class TaskStep(Base):
         db.session.commit()
 
     def execute(self):
-        self.start_time = datetime.now()
-        db.session.add(self)
-        db.session.commit()
+        if self.start_time is None:
+            self.start_time = datetime.now()
+            db.session.add(self)
+            db.session.commit()
 
         try:
             if TASK_MAP[self.command](self, **self.args):
