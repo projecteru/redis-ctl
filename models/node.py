@@ -16,7 +16,6 @@ class RedisNode(Base):
     port = db.Column(db.Integer, nullable=False)
     max_mem = db.Column(db.Integer, nullable=False)
     eru_container_id = db.Column(db.String(64), index=True)
-    eru_image_sha = db.Column(db.String(40))
     assignee_id = db.Column(db.ForeignKey(Cluster.id), index=True)
     suppress_alert = db.Column(db.Integer, nullable=False, default=1)
 
@@ -28,6 +27,13 @@ class RedisNode(Base):
     @cached_property
     def eru_deployed(self):
         return self.eru_container_id is not None
+
+    @cached_property
+    def eru_info(self):
+        import eru_utils
+        if eru_utils.eru_client is None or not self.eru_deployed:
+            return None
+        return eru_utils.eru_client.get_container(self.eru_container_id)
 
 
 def get_by_host_port(host, port):
@@ -51,10 +57,9 @@ def create_instance(host, port, max_mem):
     return node
 
 
-def create_eru_instance(host, max_mem, eru_container_id, eru_image_sha):
+def create_eru_instance(host, max_mem, eru_container_id):
     node = RedisNode(host=host, port=6379, max_mem=max_mem,
-                     eru_container_id=eru_container_id,
-                     eru_image_sha=eru_image_sha)
+                     eru_container_id=eru_container_id)
     db.session.add(node)
     db.session.flush()
     return node
