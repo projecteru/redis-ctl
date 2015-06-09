@@ -35,7 +35,7 @@
     <tr>
         <th>统计</th>
         <td>
-            {% if not node.stat or not detail %}
+            {% if not (detail and detail.stat) %}
             等待轮询采集数据
             {% else %}
             <table class='table status-table'>
@@ -94,7 +94,7 @@
         <th>节点操作</th>
         <td>
             {% if node.assignee is none %}
-            <button class='btn btn-danger deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
+            <button class='btn btn-danger node-deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
             {% endif %}
 
             {% if stats_enabled %}

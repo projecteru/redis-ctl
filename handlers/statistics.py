@@ -2,8 +2,7 @@ import re
 from datetime import datetime, timedelta
 
 import base
-import stats.db
-from stats.query import get_stats_by_node
+import stats
 
 PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
 
@@ -39,15 +38,15 @@ def init_handlers():
     def fetch_proxy_stats(request):
         host, port, limit, interval, span = _parse_args(request.args)
         now = datetime.utcnow()
-        node = '%s:%d:p' % (host, port)
+        node = '%s:%d' % (host, port)
         result = {}
 
         for field in PROXY_FIELDS:
-            result[field] = get_stats_by_node(node, field, 'max', span, now,
-                                              interval)
+            result[field] = stats.client.query(
+                node, field, 'max', span, now, interval)
         for field in PROXY_RES_FIELDS:
-            result[field] = get_stats_by_node(node, field, 'mean', span, now,
-                                              interval)
+            result[field] = stats.client.query(
+                node, field, 'mean', span, now, interval)
 
         return base.json_result(result)
 
@@ -59,13 +58,13 @@ def init_handlers():
         result = {}
 
         for field in RES_FIELDS:
-            result[field] = get_stats_by_node(node, field, 'mean', span, now,
-                                              interval)
+            result[field] = stats.client.query(
+                node, field, 'mean', span, now, interval)
         for field in INT_FIELDS:
-            result[field] = get_stats_by_node(node, field, 'max', span, now,
-                                              interval)
+            result[field] = stats.client.query(
+                node, field, 'max', span, now, interval)
 
         return base.json_result(result)
 
-if stats.db.client is not None:
+if stats.client is not None:
     init_handlers()

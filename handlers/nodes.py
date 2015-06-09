@@ -9,7 +9,7 @@ import base
 import models.node
 import models.proxy
 import models.task
-import stats.db
+import stats
 from models.base import db
 
 
@@ -25,7 +25,7 @@ def node_panel(request, host, port):
     except (IOError, ValueError, KeyError):
         pass
     return request.render('node/panel.html', node=node, detail=detail,
-                          stats_enabled=stats.db.client is not None)
+                          stats_enabled=stats.client is not None)
 
 
 @base.post_async('/nodes/add')

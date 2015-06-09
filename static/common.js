@@ -1,6 +1,4 @@
 $(document).ready(function() {
-    $('.card').attachCardExpand();
-
     $('.check-suppress-alert').enableLabelCheck({
         onClick: function(self) {
             var root = self.parent();

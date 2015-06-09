@@ -8,7 +8,7 @@ from algalon_cli import AlgalonClient
 import config
 import handlers.base
 import models.base
-import stats.db
+import stats
 
 
 def run(interval, algalon_client, app):
@@ -33,7 +33,7 @@ def main():
     models.base.init_db(app)
 
     if config.INFLUXDB and config.INFLUXDB['host']:
-        stats.db.init(**config.INFLUXDB)
+        stats.init(**config.INFLUXDB)
     algalon_client = (AlgalonClient(**config.ALGALON)
                       if config.ALGALON and config.ALGALON['dsn'] else None)
     run(config.POLL_INTERVAL, algalon_client, app)
