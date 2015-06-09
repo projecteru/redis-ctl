@@ -59,3 +59,7 @@
         self.addClass('card').removeClass('card-active');
     }
 }();
+
+$(document).ready(function() {
+    $('.card').attachCardExpand();
+});

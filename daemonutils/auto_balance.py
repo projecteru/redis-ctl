@@ -10,7 +10,7 @@ import models.task
 
 def _deploy_node(pod, entrypoint, host):
     _, cid, vsha, h = deploy_with_network('redis', pod, entrypoint, host=host)
-    models.node.create_eru_instance(h, DEFAULT_MAX_MEM, cid, vsha)
+    models.node.create_eru_instance(h, DEFAULT_MAX_MEM, cid)
     return cid, h
 
 

@@ -11,7 +11,7 @@ import eru_utils
 import models.node
 import models.proxy
 import models.task
-import stats.db
+import stats
 from models.base import db
 
 
@@ -29,7 +29,7 @@ def node_panel(request, host, port):
     return request.render(
         'node/panel.html', node=node, detail=detail,
         max_mem_limit=config.ERU_NODE_MAX_MEM,
-        stats_enabled=stats.db.client is not None)
+        stats_enabled=stats.client is not None)
 
 
 @base.post_async('/nodes/add')
