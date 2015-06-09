@@ -9,7 +9,7 @@ from redistrib.clusternode import Talker, pack_command, ClusterNode
 from influxdb.client import InfluxDBClientError
 
 import file_ipc
-import stats.db
+import stats
 from models.base import db, Base
 
 
@@ -116,8 +116,8 @@ class NodeBase(Base):
     def collect_stats(self, emit_func, alarm_func):
         try:
             self._collect_stats()
-            if stats.db.client is not None:
-                self.send_to_influxdb(emit_func)
+            if stats.client is not None:
+                self.send_to_influxdb(lambda p: emit_func(self.addr, p))
         except (ReplyError, SocketError, StandardError), e:
             logging.error('Fail to retrieve info of %s:%d',
                           self.details['host'], self.details['port'])
@@ -150,23 +150,20 @@ class RedisNodeStatus(NodeBase):
     __tablename__ = 'redis_node_status'
 
     def send_to_influxdb(self, emit_func):
-        emit_func([{
-            'name': self.addr,
-            'fields': {
-                'used_memory': self['mem']['used_memory'],
-                'used_memory_rss': self['mem']['used_memory_rss'],
-                'connected_clients': self['conn']['connected_clients'],
-                'total_commands_processed': self['conn'][
-                    'total_commands_processed'],
-                'expired_keys': self['storage']['expired_keys'],
-                'evicted_keys': self['storage']['evicted_keys'],
-                'keyspace_hits': self['storage']['keyspace_hits'],
-                'keyspace_misses': self['storage']['keyspace_misses'],
-                'used_cpu_sys': self['cpu']['used_cpu_sys'],
-                'used_cpu_user': self['cpu']['used_cpu_user'],
-                'response_time': self['response_time'],
-            },
-        }])
+        emit_func({
+            'used_memory': self['mem']['used_memory'],
+            'used_memory_rss': self['mem']['used_memory_rss'],
+            'connected_clients': self['conn']['connected_clients'],
+            'total_commands_processed': self['conn'][
+                'total_commands_processed'],
+            'expired_keys': self['storage']['expired_keys'],
+            'evicted_keys': self['storage']['evicted_keys'],
+            'keyspace_hits': self['storage']['keyspace_hits'],
+            'keyspace_misses': self['storage']['keyspace_misses'],
+            'used_cpu_sys': self['cpu']['used_cpu_sys'],
+            'used_cpu_user': self['cpu']['used_cpu_user'],
+            'response_time': self['response_time'],
+        })
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
@@ -215,17 +212,14 @@ class ProxyStatus(NodeBase):
     __tablename__ = 'proxy_status'
 
     def send_to_influxdb(self, emit_func):
-        emit_func([{
-            'name': self.addr + ':p',
-            'fields': {
-                'mem_buffer_alloc': self['mem']['mem_buffer_alloc'],
-                'connected_clients': self['conn']['connected_clients'],
-                'completed_commands': self['conn']['completed_commands'],
-                'total_process_elapse': self['conn']['total_process_elapse'],
-                'command_elapse': self['command_elapse'],
-                'remote_cost': self['remote_cost'],
-            },
-        }])
+        emit_func({
+            'mem_buffer_alloc': self['mem']['mem_buffer_alloc'],
+            'connected_clients': self['conn']['connected_clients'],
+            'completed_commands': self['conn']['completed_commands'],
+            'total_process_elapse': self['conn']['total_process_elapse'],
+            'command_elapse': self['command_elapse'],
+            'remote_cost': self['remote_cost'],
+        })
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
@@ -302,9 +296,9 @@ class Poller(threading.Thread):
         if self.algalon_client is not None:
             self.algalon_client.send_alarm(message, trace)
 
-    def _emit_data(self, json_body):
+    def _emit_data(self, addr, points):
         try:
-            stats.db.client.write_points(json_body)
+            stats.client.write_points(addr, points)
         except (SocketError, InfluxDBClientError, StandardError), e:
             logging.exception(e)
 

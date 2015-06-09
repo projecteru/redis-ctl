@@ -1,13 +1,13 @@
 import config
 import models.base
-import stats.db
+import stats
 
 
 def main():
     config.init_logging()
 
     if config.INFLUXDB and config.INFLUXDB['host']:
-        stats.db.init(**config.INFLUXDB)
+        stats.init(**config.INFLUXDB)
 
     import handlers
     app = handlers.base.app

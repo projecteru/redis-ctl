@@ -1,6 +1,6 @@
 import base
 import file_ipc
-import stats.db
+import stats
 
 import models.node as nm
 import models.cluster as cl
@@ -29,4 +29,4 @@ def index(request):
         n.stat = detail.get('stat', True)
     return request.render(
         'index.html', nodes=nodes, clusters=clusters,
-        stats_enabled=stats.db.client is not None)
+        stats_enabled=stats.client is not None)
