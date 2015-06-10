@@ -2,26 +2,31 @@
 {% block title %}Redis 监视器{% endblock %}
 
 {% block head %}
-<link rel='stylesheet' type='text/css' href='/static/card.css'>
 <style>
-.card-active .proxy-in-card {
-    float: left;
-    min-width: 320px;
-    margin: 20px;
-}
-#nodes-area { text-align: center; }
+.primary-tbl { text-align: center; }
+.primary-tbl > tbody > tr:nth-child(2n+1) { background-color: #f0f0f0; }
+.primary-tbl .table { background-color: inherit; }
 </style>
-<script src='/static/card.js'></script>
 <script src='/static/redis_node.js'></script>
 {% endblock %}
 
 {% block body %}
 <h1>集群信息</h1>
-{% for cluster in clusters if cluster.nodes %}
-    {{ cluster|render_cluster }}
-{% endfor %}
-
-<hr>
+<table class='table primary-tbl'>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th style='width: 400px'>描述</th>
+            <th>节点数</th>
+            <th>代理</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for cluster in clusters if cluster.nodes %}
+        {{ cluster|render_cluster('row') }}
+    {% endfor %}
+    </tbody>
+</table>
 
 <h1 style='float: left'>节点信息</h1>
 <span style='float: right; margin: 2em'>
@@ -67,8 +72,8 @@
     }();
     </script>
 </span>
-<hr style='clear: both'>
-<table id='nodes-area' class='table'>
+
+<table class='table primary-tbl'>
     <thead>
         <tr>
             <th>节点</th>
@@ -83,8 +88,6 @@
     {% endfor %}
     </tbody>
 </table>
-
-<hr>
 
 <h1>注册节点</h1>
 <table>
