@@ -3,12 +3,12 @@ import gevent.monkey
 
 gevent.monkey.patch_all()
 
-from algalon_cli import AlgalonClient
-
 import config
 import handlers.base
 import models.base
 import stats
+from daemonutils import stats_models as _
+from algalon_cli import AlgalonClient
 
 
 def run(interval, algalon_client, app):
