@@ -17,7 +17,6 @@
 </style>
 
 <script>
-var TIME_OFFSET = (new Date()).getTimezoneOffset();
 var globalns = {
     pollSecs: 180,
     pointLength: 480,
@@ -28,7 +27,6 @@ var globalns = {
 
 function statistics(gMetricsDatum, uri, host, port, fields) {
     function timeStrFromUTC(t) {
-        t.setMinutes(t.getMinutes() - TIME_OFFSET);
         return t.toTimeString().slice(0, 8);
     }
 

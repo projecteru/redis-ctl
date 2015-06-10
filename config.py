@@ -10,12 +10,13 @@ MYSQL_USERNAME = os.getenv('MYSQL_USERNAME', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
 MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'redis-ctl')
 
-INFLUXDB = {
-    'host': os.getenv('INFLUXDB_HOST', ''),
-    'port': int(os.getenv('INFLUXDB_PORT', 0)),
-    'username': os.getenv('INFLUXDB_USERNAME', ''),
-    'password': os.getenv('INFLUXDB_PASSWORD', ''),
-    'db': os.getenv('INFLUXDB_DATABASE', ''),
+OPEN_FALCON = {
+    'host': os.getenv('OPEN_FALCON_HOST', ''),
+    'port_query': int(os.getenv('OPEN_FALCON_PORT_QUERY', 9966)),
+    'port_write': int(os.getenv('OPEN_FALCON_PORT_WRITE', 8433)),
+    'username': os.getenv('OPEN_FALCON_USERNAME', ''),
+    'password': os.getenv('OPEN_FALCON_PASSWORD', ''),
+    'db': os.getenv('OPEN_FALCON_DATABASE', 'redisctlstats'),
 }
 
 ALGALON = {

@@ -9,7 +9,7 @@ MYSQL_USERNAME = 'root'
 MYSQL_PASSWORD = '123456'
 MYSQL_DATABASE = 'redisctl'
 
-INFLUXDB = None
+OPEN_FALCON = None
 ALGALON = None
 
 LOG_LEVEL = logging.DEBUG

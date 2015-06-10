@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+import time
 
 import base
 import stats
@@ -32,37 +32,37 @@ def init_handlers():
         port = int(args['port'])
         limit = min(int(args.get('limit', 100)), 500)
         interval = max(int(args.get('interval', 2)), 1)
-        return host, port, limit, interval, timedelta(minutes=limit * interval)
+        return host, port, limit, interval, limit * interval * 60
 
     @base.get_async('/stats/fetchproxy')
     def fetch_proxy_stats(request):
         host, port, limit, interval, span = _parse_args(request.args)
-        now = datetime.utcnow()
+        now = int(time.time())
         node = '%s:%d' % (host, port)
         result = {}
 
         for field in PROXY_FIELDS:
             result[field] = stats.client.query(
-                node, field, 'max', span, now, interval)
+                node, field, 'MAX', span, now, interval)
         for field in PROXY_RES_FIELDS:
             result[field] = stats.client.query(
-                node, field, 'mean', span, now, interval)
+                node, field, 'AVERAGE', span, now, interval)
 
         return base.json_result(result)
 
     @base.get_async('/stats/fetchredis')
     def fetch_stats(request):
         host, port, limit, interval, span = _parse_args(request.args)
-        now = datetime.utcnow()
+        now = int(time.time())
         node = '%s:%d' % (host, port)
         result = {}
 
         for field in RES_FIELDS:
             result[field] = stats.client.query(
-                node, field, 'mean', span, now, interval)
+                node, field, 'AVERAGE', span, now, interval)
         for field in INT_FIELDS:
             result[field] = stats.client.query(
-                node, field, 'max', span, now, interval)
+                node, field, 'MAX', span, now, interval)
 
         return base.json_result(result)
 
