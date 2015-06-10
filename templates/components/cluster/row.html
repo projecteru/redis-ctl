@@ -1,0 +1,38 @@
+<tr>
+    <td><a href='/clusterp/{{ cluster.id }}'>{{ cluster.id }}</a></td>
+    <td>{{ cluster.description|e }}</td>
+    <td>{{ cluster.nodes|length }}</td>
+    <td>
+        {% if cluster.proxies %}
+        <table class='table'>
+            <thead>
+                <tr>
+                    <th>地址</th>
+                    <th>版本</th>
+                    <th>SLA</th>
+                    <th>查看</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for proxy in cluster.proxies %}
+            <tr class='alert-status-root'>
+                <td>
+                    {{ proxy|render_proxy('label') }}
+                    {% if proxy.suppress_alert %}
+                    <span class='label label-warning'><i class='fa fa-bell-slash'></i></span>
+                    {% endif %}
+                </td>
+                <td>{{ proxy.detail.version|e }}</td>
+                <td>{{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%</td>
+                <td>
+                    <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}'>状态历史 <i class='fa fa-external-link'></i></a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        没有代理
+        {% endif %}
+    </td>
+</tr>

@@ -1,5 +1,4 @@
 from flask.ext.sqlalchemy import SQLAlchemy
-from sqlalchemy.ext.declarative import declared_attr
 
 db = SQLAlchemy()
 DB_STRING_TYPE = db.Unicode(256)
@@ -16,7 +15,4 @@ class Base(db.Model):
     __abstract__ = True
     __table_args__ = {'mysql_charset': 'utf8'}
 
-    @declared_attr
-    def id(cls):
-        return db.Column('id', db.Integer, primary_key=True,
-                         autoincrement=True)
+    id = db.Column('id', db.Integer, primary_key=True, autoincrement=True)
