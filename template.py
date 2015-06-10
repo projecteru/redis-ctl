@@ -75,24 +75,14 @@ def f_render_node(node, level, **kwargs):
 
 
 @_filter
-def f_render_cluster(cluster, level='card', **kwargs):
+def f_render_cluster(cluster, level, **kwargs):
     return render('components/cluster/%s.html' % level, cluster=cluster,
                   **kwargs)
 
 
 @_filter
-def f_render_proxy(proxy, level='card', **kwargs):
+def f_render_proxy(proxy, level, **kwargs):
     return render('components/proxy/%s.html' % level, proxy=proxy, **kwargs)
-
-
-@_filter
-def f_iter(x):
-    if isinstance(x, dict):
-        return x.iteritems()
-    try:
-        return iter(x)
-    except TypeError:
-        return []
 
 
 def render(filename, **kwargs):
