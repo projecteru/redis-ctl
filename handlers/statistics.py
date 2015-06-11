@@ -6,12 +6,15 @@ import stats
 
 PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
 
-RES_FIELDS = ['used_memory', 'used_memory_rss', 'response_time',
-              'used_cpu_sys', 'used_cpu_user', 'total_commands_processed']
-INT_FIELDS = ['evicted_keys', 'expired_keys', 'keyspace_misses',
-              'keyspace_hits', 'connected_clients']
-PROXY_FIELDS = ['connected_clients', 'mem_buffer_alloc', 'completed_commands']
-PROXY_RES_FIELDS = ['command_elapse', 'remote_cost']
+REDIS_MAX_FIELDS = [
+    'used_cpu_sys', 'used_cpu_user', 'connected_clients',
+    'total_commands_processed', 'evicted_keys', 'expired_keys',
+    'keyspace_misses', 'keyspace_hits',
+]
+REDIS_AVG_FIELDS = ['used_memory', 'used_memory_rss', 'response_time']
+PROXY_MAX_FIELDS = ['connected_clients', 'mem_buffer_alloc',
+                    'completed_commands']
+PROXY_AVG_FIELDS = ['command_elapse', 'remote_cost']
 
 
 def init_handlers():
@@ -41,10 +44,10 @@ def init_handlers():
         node = '%s:%d' % (host, port)
         result = {}
 
-        for field in PROXY_FIELDS:
+        for field in PROXY_MAX_FIELDS:
             result[field] = stats.client.query(
                 node, field, 'MAX', span, now, interval)
-        for field in PROXY_RES_FIELDS:
+        for field in PROXY_AVG_FIELDS:
             result[field] = stats.client.query(
                 node, field, 'AVERAGE', span, now, interval)
 
@@ -57,10 +60,10 @@ def init_handlers():
         node = '%s:%d' % (host, port)
         result = {}
 
-        for field in RES_FIELDS:
+        for field in REDIS_AVG_FIELDS:
             result[field] = stats.client.query(
                 node, field, 'AVERAGE', span, now, interval)
-        for field in INT_FIELDS:
+        for field in REDIS_MAX_FIELDS:
             result[field] = stats.client.query(
                 node, field, 'MAX', span, now, interval)
 

@@ -1,0 +1,31 @@
+{% set info_rows = cluster.proxies|length + 1 %}
+{% set row_cls = 'class="row-odd"' if odd_row else '' %}
+<tr {{ row_cls }}>
+    <td rowspan='{{ info_rows }}'><a href='/clusterp/{{ cluster.id }}'>{{ cluster.id }}</a></td>
+    <td rowspan='{{ info_rows }}'>{{ cluster.description|e }}</td>
+    <td rowspan='{{ info_rows }}'>{{ cluster.nodes|length }}</td>
+{% if cluster.proxies %}
+    {% for proxy in cluster.proxies %}
+    <td class='proxy-tab'>{{ proxy.host|e }}:{{ proxy.port }}</td>
+    <td>{% if proxy.detail.read_slave %}<span class='label label-info'>R</span>{% endif %}</td>
+    <td>
+    {% if proxy.stat %}
+        <span class='label label-success'>OK</span>
+    {% else %}
+        <span class='label label-danger'>E</span>
+    {% endif %}
+    </td>
+    <td>{% if proxy.suppress_alert %}<span class='label label-warning'><i class='fa fa-bell-slash'></i></span>{% endif %}</td>
+    <td>{{ proxy.detail.version|e }}</td>
+    <td>{{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%</td>
+    <td>
+    {% if stats_enabled %}
+        <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}'>状态历史 <i class='fa fa-external-link'></i></a>
+    {% endif %}
+    </td>
+    </tr><tr {{ row_cls }}>
+    {% endfor %}
+{% else %}
+<td colspan='7'>没有代理</td>
+{% endif %}
+</tr>
