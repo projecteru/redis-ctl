@@ -109,6 +109,7 @@ def main():
 
     app = handlers.base.app
     app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
+    import daemonutils.node_polling
     models.base.init_db(app)
 
     if config.INFLUXDB and config.INFLUXDB['host']:
