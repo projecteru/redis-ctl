@@ -40,6 +40,7 @@ class Client(object):
             'step': 30,
             'value': val,
             'counterType': 'GAUGE',
+            'tags': 'service=redisctl',
         } for metric, val in fields.iteritems()])
 
     def _write(self, lines):
@@ -77,7 +78,7 @@ class Client(object):
             'cf': aggf,
             'endpoint_counters': [{
                 'endpoint': '%s-%s' % (self.prefix, node),
-                'counter': field,
+                'counter': field + '/service=redisctl',
             }],
         })).json()[0]['Values']
         if len(r) > POINT_LIMIT:
