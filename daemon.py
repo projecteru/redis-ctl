@@ -32,7 +32,7 @@ def main():
     app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
     models.base.init_db(app)
 
-    if config.OPEN_FALCON and config.OPEN_FALCON['host']:
+    if config.OPEN_FALCON and config.OPEN_FALCON['host_query']:
         stats.init(**config.OPEN_FALCON)
     algalon_client = (AlgalonClient(**config.ALGALON)
                       if config.ALGALON and config.ALGALON['dsn'] else None)

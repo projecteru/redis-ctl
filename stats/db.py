@@ -9,13 +9,13 @@ POINT_LIMIT = 400
 
 
 class Client(object):
-    def __init__(self, host, port_query, port_write, username, password, db):
+    def __init__(self, host_query, host_write, port_query, port_write, db):
         self.query_uri = urlparse.urlunparse(urlparse.ParseResult(
-            'http', '%s:%d' % (host, port_query), 'graph/history', None, None,
-            None))
+            'http', '%s:%d' % (host_query, port_query), 'graph/history',
+            None, None, None))
         self.prefix = db
 
-        self.socket = socket.create_connection((host, port_write))
+        self.socket = socket.create_connection((host_write, port_write))
         self.stream = self.socket.makefile()
         self.id_counter = itertools.count()
         self.buf_size = 1 << 16

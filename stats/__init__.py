@@ -4,9 +4,9 @@ StatisticError = IOError
 client = None
 
 
-def init(host, port_query, port_write, username, password, db):
+def init(**kwargs):
     global client
-    client = Client(host, port_query, port_write, username, password, db)
+    client = Client(**kwargs)
 
 
 __all__ = ['init', 'client', 'StatisticError']

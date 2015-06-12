@@ -11,11 +11,10 @@ MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
 MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'redis-ctl')
 
 OPEN_FALCON = {
-    'host': os.getenv('OPEN_FALCON_HOST', ''),
+    'host_query': os.getenv('OPEN_FALCON_HOST_QUERY', ''),
+    'host_write': os.getenv('OPEN_FALCON_HOST_WRITE', ''),
     'port_query': int(os.getenv('OPEN_FALCON_PORT_QUERY', 9966)),
     'port_write': int(os.getenv('OPEN_FALCON_PORT_WRITE', 8433)),
-    'username': os.getenv('OPEN_FALCON_USERNAME', ''),
-    'password': os.getenv('OPEN_FALCON_PASSWORD', ''),
     'db': os.getenv('OPEN_FALCON_DATABASE', 'redisctlstats'),
 }
 
