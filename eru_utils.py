@@ -46,7 +46,17 @@ def deploy_with_network(what, pod, entrypoint, ncore=1, host=None):
     if cid is None:
         raise ValueError('eru returns invalid container info')
     try:
-        host = eru_client.get_container(cid)['networks'][0]['address']
-    except LookupError:
-        raise ValueError('eru gives incorrent container info')
-    return task_id, cid, version_sha, host
+        container_info = eru_client.get_container(cid)
+        addr = container_info['networks'][0]['address']
+        host = container_info['host']
+        created = container_info['created']
+    except LookupError, e:
+        raise ValueError('eru gives incorrent container info: %d missing %s'
+                         % (cid, e.message))
+    return {
+        'version': version_sha,
+        'container_id': cid,
+        'address': addr,
+        'host': host,
+        'created': created,
+    }

@@ -25,17 +25,15 @@ if eru_utils.eru_client is not None:
     @base.post_async('/nodes/create/eru_node')
     def create_eru_node(request):
         try:
-            task_id, cid, version_sha, host = eru_utils.deploy_with_network(
+            container_info = eru_utils.deploy_with_network(
                 'redis', request.form['pod'],
                 'aof' if request.form['aof'] == 'y' else 'rdb',
                 host=request.form.get('host'))
-            models.node.create_eru_instance(host, DEFAULT_MAX_MEM, cid)
-            return base.json_result({
-                'host': host,
-                'container_id': cid,
-                'max_mem': DEFAULT_MAX_MEM,
-                'version': version_sha,
-            })
+            container_info['max_mem'] = DEFAULT_MAX_MEM
+            models.node.create_eru_instance(
+                container_info['address'], DEFAULT_MAX_MEM,
+                container_info['container_id'])
+            return base.json_result(container_info)
         except BaseException as exc:
             logging.exception(exc)
             raise
@@ -47,22 +45,20 @@ if eru_utils.eru_client is not None:
             if cluster is None or len(cluster.nodes) == 0:
                 raise ValueError('no such cluster')
             ncore = int(request.form['threads'])
-            task_id, cid, version_sha, host = eru_utils.deploy_with_network(
+            container_info = eru_utils.deploy_with_network(
                 'cerberus', request.form['pod'],
                 'th' + str(ncore) + request.form.get('read_slave', ''), ncore,
                 host=request.form.get('host'))
-            models.proxy.create_eru_instance(host, cluster.id, cid)
-            t = Talker(host, 8889)
+            models.proxy.create_eru_instance(
+                container_info['address'], cluster.id,
+                container_info['container_id'])
+            t = Talker(container_info['address'], 8889)
             try:
                 t.talk('setremotes', cluster.nodes[0].host,
                        cluster.nodes[0].port)
             finally:
                 t.close()
-            return base.json_result({
-                'host': host,
-                'container_id': cid,
-                'version': version_sha,
-            })
+            return base.json_result(container_info)
         except BaseException as exc:
             logging.exception(exc)
             raise

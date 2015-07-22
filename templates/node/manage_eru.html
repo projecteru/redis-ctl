@@ -58,7 +58,7 @@
         <table class='table'>
             <tr>
                 <td>创建节点:</td>
-                <td><button id='aof-enable' class='check-opt check-group check-group-info'> 启用 AOF</button></td>
+                <td><button id='aof-enable' class='check-opt check-group check-group-info'>启用 AOF</button></td>
                 <td>
                     <button class='btn btn-primary' onclick='requestEruNode(this)'>申请 ERU 节点</button>
                     <span style='display: none' id='node-error' class='label label-danger'></span>
@@ -205,8 +205,10 @@ function requestEruNode(btn) {
             $(btn).removeAttr('disabled');
             $('#eru-nodes').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
-                    ).append($('<td>').text(r.version.slice(0, 16))
-                    ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.host + '/6379').text(r.host))
+                    ).append($('<td>').text(r.version.slice(0, 7))
+                    ).append($('<td>').text(r.host)
+                    ).append($('<td>').text(r.created)
+                    ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.address + '/6379').text(r.address))
                     ).append($('<td>').text((r.max_mem / 1000 / 1000) + 'MB')
                     ).append($('<td>').append(deleteButton(r.container_id, 'node'))
                     ));
@@ -243,7 +245,9 @@ function requestEruProxy(btn) {
             $(btn).removeAttr('disabled');
             $('#eru-proxies').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
-                    ).append($('<td>').text(r.version.slice(0, 16))
+                    ).append($('<td>').text(r.version.slice(0, 7))
+                    ).append($('<td>').text(r.host)
+                    ).append($('<td>').text(r.created)
                     ).append($('<td>').append($('<a>').attr('href', '/clusterp/' + clusterId).text(r.host))
                     ).append($('<td>').append(deleteButton(r.container_id, 'proxy'))
                     ));
