@@ -26,10 +26,8 @@ def cluster_panel(request, cluster_id):
     for n in c.nodes:
         detail = node_details.get('%s:%d' % (n.host, n.port))
         if detail is None:
-            nodes.append({'host': n.host, 'port': n.port,
-                          'max_mem': n.max_mem, 'stat': False})
+            nodes.append({'host': n.host, 'port': n.port, 'stat': False})
         else:
-            detail['max_mem'] = n.max_mem
             nodes.append(detail)
 
     proxy_details = all_details['proxies']

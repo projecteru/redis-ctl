@@ -51,7 +51,7 @@
     </tr>
 </table>
 
-{{ render_template('components/node/autodiscover.html', host=cluster.nodes[0].host, port=cluster.nodes[0].port, max_mem=cluster.nodes[0].max_mem) }}
+{{ render_template('components/node/autodiscover.html', host=cluster.nodes[0].host, port=cluster.nodes[0].port) }}
 
 <script>
 $('#cluster-set-descr').click(function() {
@@ -188,11 +188,14 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 
         function memCell(n) {
             if (!(n.mem && n.mem.used_memory)) {
-                return $('<td>').text('? / ' + n.max_mem);
+                return $('<td>').text('?');
             }
-            var memRate = n.mem.used_memory / n.max_mem * 100;
+            if (!n.mem.maxmemory) {
+                return $('<td>').text(n.mem.used_memory);
+            }
+            var memRate = n.mem.used_memory / n.mem.maxmemory * 100;
             var memLabelClass = memRate < 70 ? 'label-success' : (memRate < 90 ? 'label-warning' : 'label-danger');
-            return $('<td>').text(n.mem.used_memory + ' / ' + n.max_mem + ' ').append($('<span>').addClass('label').addClass(memLabelClass).text(memRate.toFixed(2) + '%'));
+            return $('<td>').text(n.mem.used_memory + ' / ' + n.mem.maxmemory + ' ').append($('<span>').addClass('label').addClass(memLabelClass).text(memRate.toFixed(2) + '%'));
         }
 
         function makeBaseCells(n) {
