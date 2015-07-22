@@ -13,6 +13,8 @@ import models.task
 import stats
 from models.base import db
 
+MAX_MEM_LIMIT = (64 * 1000 * 1000, config.NODE_MAX_MEM)
+
 
 @base.get('/nodep/<host>/<int:port>')
 def node_panel(request, host, port):
@@ -34,8 +36,7 @@ def node_panel(request, host, port):
 @base.post_async('/nodes/add')
 def add_node(request):
     models.node.create_instance(
-        request.form['host'], int(request.form['port']),
-        int(request.form['mem']))
+        request.form['host'], int(request.form['port']))
 
 
 @base.post_async('/nodes/del')
@@ -107,3 +108,22 @@ def node_exec_command(request):
     finally:
         t.close()
     return base.json_result(r)
+
+
+@base.post_async('/nodes/set_max_mem')
+def node_set_max_mem(request):
+    max_mem = int(request.form['max_mem'])
+    if not ERU_MAX_MEM_LIMIT[0] <= max_mem <= ERU_MAX_MEM_LIMIT[1]:
+        raise ValueError('invalid max_mem size')
+    t = None
+    try:
+        t = Talker(request.form['host'], int(request.form['port']))
+        m = t.talk('config', 'set', 'maxmemory', str(max_mem))
+        if 'ok' != m.lower():
+            raise ValueError('CONFIG SET maxmemroy redis %s:%d returns %s' % (
+                node.host, node.port, m))
+    except BaseException as exc:
+        logging.exception(exc)
+        raise
+    finally:
+        t.close()

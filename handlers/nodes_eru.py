@@ -10,9 +10,6 @@ import models.proxy
 import models.cluster
 from models.base import db
 
-DEFAULT_MAX_MEM = 1024 * 1000 * 1000 # 1GB
-ERU_MAX_MEM_LIMIT = (64 * 1000 * 1000, config.ERU_NODE_MAX_MEM)
-
 
 if eru_utils.eru_client is not None:
     @base.get_async('/eru/list_hosts/<pod>')
@@ -29,10 +26,8 @@ if eru_utils.eru_client is not None:
                 'redis', request.form['pod'],
                 'aof' if request.form['aof'] == 'y' else 'rdb',
                 host=request.form.get('host'))
-            container_info['max_mem'] = DEFAULT_MAX_MEM
             models.node.create_eru_instance(
-                container_info['address'], DEFAULT_MAX_MEM,
-                container_info['container_id'])
+                container_info['address'], container_info['container_id'])
             return base.json_result(container_info)
         except BaseException as exc:
             logging.exception(exc)
@@ -81,26 +76,3 @@ def nodes_manage_page_eru(request):
         eru_nodes=models.node.list_all_eru_nodes(),
         eru_proxies=models.proxy.list_all_eru_proxies(),
         eru_client=eru_utils.eru_client, clusters=models.cluster.list_all())
-
-
-@base.post_async('/nodes/set_max_mem/eru')
-def node_set_max_mem_eru(request):
-    max_mem = int(request.form['max_mem'])
-    if not ERU_MAX_MEM_LIMIT[0] <= max_mem <= ERU_MAX_MEM_LIMIT[1]:
-        raise ValueError('invalid max_mem size')
-    node = models.node.get_by_host_port(
-        request.form['host'], int(request.form['port']))
-    if node is None or not node.eru_deployed:
-        raise ValueError('no such eru node')
-    t = None
-    try:
-        t = Talker(node.host, node.port)
-        m = t.talk('config', 'set', 'maxmemory', str(max_mem))
-        if 'ok' != m.lower():
-            raise ValueError('CONFIG SET maxmemroy redis %s:%d returns %s' % (
-                node.host, node.port, m))
-        node.max_mem = max_mem
-        db.session.add(node)
-    except BaseException as exc:
-        logging.exception(exc)
-        raise

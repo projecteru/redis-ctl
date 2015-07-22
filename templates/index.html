@@ -77,6 +77,7 @@
     <thead>
         <tr>
             <th>节点</th>
+            <th>内存</th>
             <th>SLA</th>
             <th>集群信息</th>
             <th>基本操作</th>
@@ -109,32 +110,12 @@
             <input id='add-nodes-port'>
         </td>
     </tr>
-    <tr>
-        <td>
-            最大内存 (byte)
-            <br>
-            <sup>可写为 1024 / 16m / 1G</sup>
-        </td>
-        <td>
-            <input id='add-nodes-mem'>
-            =
-            <span class='mem-parsed'>0</span>
-            <span class='mem-error'></span>
-        </td>
-    </tr>
 </table>
 <button id='add-nodes' class='btn btn-primary'>注册这些节点</button><span id='add-node-info'></span>
 
 <script>
-bindMemoryTrans($('#add-nodes-mem').parent());
-
 $('#add-nodes').click(function() {
-    var mem = $('#add-nodes-mem').data('mem');
     var errorSpan = $('#add-node-info');
-    if (isNaN(mem)) {
-        return $('#add-nodes-mem').focus();
-    }
-
     if ($('#add-nodes-host').val().length == 0) {
         return $('#add-nodes-host').focus();
     }
@@ -153,19 +134,18 @@ $('#add-nodes').click(function() {
         return errorSpan.text('不正确的端口范围格式');
     }
 
-    -function addNode(host, portBegin, portEnd, memory) {
+    -function addNode(host, portBegin, portEnd) {
         if (portBegin == portEnd) {
             return window.location.reload();
         }
         $.post('/nodes/add', {
             host: host,
             port: portBegin,
-            mem: memory
         }, function() {
-            addNode(host, portBegin + 1, portEnd, memory);
+            addNode(host, portBegin + 1, portEnd);
         });
         errorSpan.text('正在注册 :' + portBegin + '...');
-    }($('#add-nodes-host').val(), portBegin, portEnd, mem);
+    }($('#add-nodes-host').val(), portBegin, portEnd);
 });
 </script>
 {% endblock %}

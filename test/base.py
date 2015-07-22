@@ -3,6 +3,12 @@ import errno
 import tempfile
 
 import config
+try:
+    from config import TEST_SQLALCHEMY_DATABASE_URI
+except ImportError:
+    raise ValueError('TEST_SQLALCHEMY_DATABASE_URI should be'
+                     ' specified in (override_)config for unittest')
+
 
 config.PERMDIR = os.path.join(tempfile.gettempdir(), 'redistribpytestpermdir')
 config.POLL_INTERVAL = 0
@@ -21,8 +27,7 @@ import models.base
 
 app = handlers.base.app
 app.debug = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://%s:%s@%s:%d/%s' % (
-    'root', '123456', '127.0.0.1', 3306, 'redisctltest')
+app.config['SQLALCHEMY_DATABASE_URI'] = TEST_SQLALCHEMY_DATABASE_URI
 models.base.init_db(app)
 
 unittest.TestCase.maxDiff = None

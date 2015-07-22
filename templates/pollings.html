@@ -1,0 +1,30 @@
+{% extends './base.html' %}
+
+{% block title %}轮询记录{% endblock %}
+
+{% block body %}
+<table class='table' style='text-align: center'>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>时间</th>
+            <th>正常节点数</th>
+            <th>失败节点数</th>
+            <th>正常代理数</th>
+            <th>失败代理数</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for p in pollings %}
+        <tr>
+            <td>{{ p.id }}</td>
+            <td>{{ p.polling_time|strftime }}</td>
+            <td>{{ p.nodes_ok|length }}</td>
+            <td>{{ p.nodes_fail|length }}</td>
+            <td>{{ p.proxies_ok|length }}</td>
+            <td>{{ p.proxies_fail|length }}</td>
+        <tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
