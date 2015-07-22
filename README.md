@@ -15,7 +15,7 @@ Install dependencies via
 
     pip install -r requirements.txt
 
-Influxdb (optional): influxd >= 0.9; influxdb (python lib) >= 1.0.0
+[OpenFalcon](https://github.com/open-falcon) (optional)
 
 Configure and Run the Server
 ===
