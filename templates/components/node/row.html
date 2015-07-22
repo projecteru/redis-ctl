@@ -8,8 +8,8 @@
         {% endif %}
     </td>
     <td>
-        {% if node.stat %}
         {% set mem = node.detail.mem %}
+        {% if node.stat and mem %}
         {{ mem.used_memory_human }}
             {% if mem.maxmemory %}
             / {{ mem.maxmemory|filesizeformat }}

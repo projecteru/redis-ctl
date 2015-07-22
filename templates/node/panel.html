@@ -37,19 +37,19 @@
         <td>
         {% if detail.mem %}
             {{ detail.mem.used_memory_human|e }} /
-            <a href='javascript:void(0)' onclick="$(this).hide(); $('#edit_max_mem').show()">{{ detail.mem.maxmemory|filesizeformat }}</a>
-            <span id='edit_max_mem' style='display: none'>
-                <input id='max_mem_input' value='{{ detail.mem.maxmemory }}'>
+            <a href='javascript:void(0)' onclick="$(this).hide(); $('#edit_maxmem').show()">{{ detail.mem.maxmemory|filesizeformat }}</a>
+            <span id='edit_maxmem' style='display: none'>
+                <input id='maxmem_input' value='{{ detail.mem.maxmemory }}'>
                 <button onclick='editMaxMem()' class='btn btn-primary'>修改</button>
                 <span class='label label-warning' style='display: none' id='edit-error'>设置的最大内存值超过范围</span>
             </span>
             <script>
             function editMaxMem() {
                 $('#edit-error').hide();
-                var m = parseInt($('#max_mem_input').val());
+                var m = parseInt($('#maxmem_input').val());
                 if (isNaN(m) || m < 64 * 1000 * 1000 || m > {{ max_mem_limit|tojson }}) {
                     $('#edit-error').show();
-                    return $('#edit_max_mem').focus();
+                    return $('#edit_maxmem').focus();
                 }
                 $.ajax({
                     url: '/nodes/set_max_mem',
@@ -496,7 +496,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
     <button class='btn' data-toggle='modal' data-target='#commandConsole' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>直接发送指令</button>
 </div>
 
-{{ render_template('components/node/autodiscover.html', host=node.host, port=node.port, max_mem=detail.mem.maxmemory) }}
+{{ render_template('components/node/autodiscover.html', host=node.host, port=node.port) }}
 
 <div class='panel-div' id='start-cluster'>
     集群描述: <input id='start-cluster-descr'>
