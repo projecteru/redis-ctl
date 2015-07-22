@@ -8,9 +8,6 @@ eru_client = None
 if config.ERU_URL is not None:
     eru_client = EruClient(config.ERU_URL)
 
-DEFAULT_MAX_MEM = 1024 * 1000 * 1000 # 1GB
-ERU_MAX_MEM_LIMIT = (64 * 1000 * 1000, config.ERU_NODE_MAX_MEM)
-
 
 @retry(stop_max_attempt_number=64, wait_fixed=500)
 def poll_task_for_container_id(task_id):
@@ -33,10 +30,10 @@ def lastest_version_sha(what):
 
 
 def deploy_with_network(what, pod, entrypoint, ncore=1, host=None):
-    network = eru_client.get_network('net')
+    network = eru_client.get_network(config.ERU_NETWORK)
     version_sha = lastest_version_sha(what)
     r = eru_client.deploy_private(
-        'group', pod, what, ncore, 1, version_sha,
+        config.ERU_GROUP, pod, what, ncore, 1, version_sha,
         entrypoint, 'prod', [network['id']], host_name=host)
     if r['msg'] == 'Not enough core resources':
         raise ValueError('Host drained')
@@ -49,7 +46,17 @@ def deploy_with_network(what, pod, entrypoint, ncore=1, host=None):
     if cid is None:
         raise ValueError('eru returns invalid container info')
     try:
-        host = eru_client.get_container(cid)['networks'][0]['address']
-    except LookupError:
-        raise ValueError('eru gives incorrent container info')
-    return task_id, cid, version_sha, host
+        container_info = eru_client.get_container(cid)
+        addr = container_info['networks'][0]['address']
+        host = container_info['host']
+        created = container_info['created']
+    except LookupError, e:
+        raise ValueError('eru gives incorrent container info: %d missing %s'
+                         % (cid, e.message))
+    return {
+        'version': version_sha,
+        'container_id': cid,
+        'address': addr,
+        'host': host,
+        'created': created,
+    }

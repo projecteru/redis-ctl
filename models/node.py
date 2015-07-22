@@ -14,7 +14,6 @@ class RedisNode(Base):
 
     host = db.Column(db.String(32), nullable=False)
     port = db.Column(db.Integer, nullable=False)
-    max_mem = db.Column(db.Integer, nullable=False)
     eru_container_id = db.Column(db.String(64), index=True)
     assignee_id = db.Column(db.ForeignKey(Cluster.id), index=True)
     suppress_alert = db.Column(db.Integer, nullable=False, default=1)
@@ -50,16 +49,15 @@ def list_all_nodes():
     return db.session.query(RedisNode).all()
 
 
-def create_instance(host, port, max_mem):
-    node = RedisNode(host=host, port=port, max_mem=max_mem)
+def create_instance(host, port):
+    node = RedisNode(host=host, port=port)
     db.session.add(node)
     db.session.flush()
     return node
 
 
-def create_eru_instance(host, max_mem, eru_container_id):
-    node = RedisNode(host=host, port=6379, max_mem=max_mem,
-                     eru_container_id=eru_container_id)
+def create_eru_instance(host, eru_container_id):
+    node = RedisNode(host=host, port=6379, eru_container_id=eru_container_id)
     db.session.add(node)
     db.session.flush()
     return node

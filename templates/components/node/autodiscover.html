@@ -12,7 +12,6 @@
                         <tr>
                             <th>地址</th>
                             <th>角色</th>
-                            <th>内存设置</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -20,7 +19,6 @@
                     <tfoot>
                         <tr>
                             <td colspan='3' id='clusterDiscoverControls'>
-                                <button class='btn' id='discoverAutoSetMaxMem'>自动设置内存等于当前节点 <small>({{ max_mem|filesizeformat }})</small></button>
                                 <button class='btn btn-primary' id='discoverAutoAddNodes'>注册这些节点并加入集群</button>
                             </td>
                         </tr>
@@ -60,23 +58,10 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
                 if (e.known) {
                     row.append($('<td>').text('已注册'));
                 } else {
-                    row.addClass('row-unknown').append($('<td>').addClass('mem-td'
-                            ).append($('<input>').addClass('input-max-mem')
-                        )).append($('<td>').addClass('mem-disp-td'
-                            ).append($('<span>').text(' = ')
-                            ).append($('<span>').addClass('mem-parsed').text(0)
-                            ).append($('<span>').addClass('mem-error')
-                        ));
+                    row.addClass('row-unknown').append($('<td>').addClass('unknown-td'));
                     row.data('host', e.host).data('port', e.port);
-                    bindMemoryTrans(row);
                 }
                 tbody.append(row)
-            });
-            $('#discoverAutoSetMaxMem').click(function() {
-                tbody.find('.input-max-mem').val({{ max_mem|tojson }});
-                tbody.find('.mem-error').text('');
-                tbody.find('.mem-parsed').text({{ max_mem|tojson }});
-                tbody.find('.input-max-mem').data('mem', {{ max_mem|tojson }});
             });
             $('#discoverAutoAddNodes').click(function() {
                 var btn = $(this);
@@ -100,19 +85,12 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
                         });
                     }
                     var row = $(rows[index]);
-                    var mem = row.find('input').data('mem');
-                    if (isNaN(mem)) {
-                        btn.removeAttr('disabled');
-                        return row.find('input').focus();
-                    }
                     $.post('/nodes/add', {
                         host: row.data('host'),
-                        port: row.data('port'),
-                        mem: mem,
+                        port: row.data('port')
                     }, function() {
                         row.removeClass('row-unknown');
-                        row.find('.mem-td').text('已注册');
-                        row.find('.mem-disp-td').html('');
+                        row.find('.unknown-td').text('已注册');
                         addNode(rows, index + 1);
                     });
                 }($('.row-unknown'), 0);

@@ -8,6 +8,7 @@ import file_ipc
 import stats
 from stats_models import RedisNodeStatus, ProxyStatus
 from models.base import db
+from models.polling_stat import PollingStat
 
 NODES_EACH_THREAD = 20
 
@@ -65,6 +66,28 @@ def _load_from(cls, nodes):
     return r
 
 
+def save_polling_stat(nodes, proxies):
+    nodes_ok = []
+    nodes_fail = []
+    proxies_ok = []
+    proxies_fail = []
+
+    for n in nodes:
+        if n.details['stat']:
+            nodes_ok.append(n.addr)
+        else:
+            nodes_fail.append(n.addr)
+
+    for p in proxies:
+        if p.details['stat']:
+            proxies_ok.append(p.addr)
+        else:
+            proxies_fail.append(p.addr)
+
+    db.session.add(PollingStat(nodes_ok, nodes_fail, proxies_ok, proxies_fail))
+    db.session.commit()
+
+
 class NodeStatCollector(threading.Thread):
     def __init__(self, app, interval, algalon_client):
         threading.Thread.__init__(self)
@@ -93,6 +116,7 @@ class NodeStatCollector(threading.Thread):
         for p in pollers:
             p.join()
 
+        save_polling_stat(nodes, proxies)
         logging.info('Total %d nodes, %d proxies', len(nodes),
                      len(proxies))
 

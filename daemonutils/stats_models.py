@@ -10,6 +10,7 @@ from eru_utils import eru_client
 from models.base import db, Base
 
 CMD_INFO = pack_command('info')
+CMD_GET_MAXMEM = pack_command('config', 'get', 'maxmemory')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
 CMD_PROXY = '+PROXY\r\n'
 
@@ -49,6 +50,8 @@ def _info_detail(t):
             continue
         k, v = r
         details[k.strip()] = v.strip()
+    info = t.talk_raw(CMD_GET_MAXMEM)
+    details['maxmemory'] = info[1]
     return details
 
 
@@ -176,8 +179,7 @@ class RedisNodeStatus(NodeBase):
                 'used_memory_rss': int(details['used_memory_rss']),
                 'used_memory_human': details['used_memory_human'],
             }
-            if 'maxmemory' in details:
-                node_info['mem']['maxmemory'] = int(details['maxmemory'])
+            node_info['mem']['maxmemory'] = int(details['maxmemory'])
             node_info['cpu'] = {
                 'used_cpu_sys': float(details['used_cpu_sys']),
                 'used_cpu_user': float(details['used_cpu_user']),

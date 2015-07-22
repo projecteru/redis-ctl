@@ -2,7 +2,7 @@ import logging
 
 import file_ipc
 import eru_utils
-from eru_utils import DEFAULT_MAX_MEM, deploy_with_network
+from eru_utils import deploy_with_network
 from models.base import db
 import models.node
 import models.task
@@ -10,7 +10,7 @@ import models.task
 
 def _deploy_node(pod, entrypoint, host):
     _, cid, vsha, h = deploy_with_network('redis', pod, entrypoint, host=host)
-    models.node.create_eru_instance(h, DEFAULT_MAX_MEM, cid)
+    models.node.create_eru_instance(h, cid)
     return cid, h
 
 

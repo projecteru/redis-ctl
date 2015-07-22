@@ -24,7 +24,8 @@ ALGALON = {
 }
 
 ERU_URL = os.getenv('ERU_URL', None)
-ERU_NODE_MAX_MEM = int(os.getenv('ERU_NODE_MAM_MEM', 2048 * 1000 * 1000))
+ERU_GROUP = os.getenv('ERU_GROUP', 'group')
+ERU_NETWORK = os.getenv('ERU_NETWORK', 'net')
 
 LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
 LOG_FILE = os.getenv('LOG_FILE', '')
@@ -33,6 +34,7 @@ LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
 DEBUG = int(os.getenv('DEBUG', 0))
 POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', 10))
 PERMDIR = os.getenv('PERMDIR', tempfile.gettempdir())
+NODE_MAX_MEM = int(os.getenv('NODE_MAM_MEM', 2048 * 1000 * 1000))
 
 try:
     from override_config import *
