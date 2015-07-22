@@ -1,5 +1,6 @@
 import config
 import json
+import logging
 from socket import error as SocketError
 from hiredis import ReplyError
 from redistrib.clusternode import Talker
@@ -12,6 +13,8 @@ import models.proxy
 import models.task
 import stats
 from models.base import db
+
+MAX_MEM_LIMIT = (64 * 1000 * 1000, config.NODE_MAX_MEM)
 
 
 @base.get('/nodep/<host>/<int:port>')
@@ -27,15 +30,14 @@ def node_panel(request, host, port):
         pass
     return request.render(
         'node/panel.html', node=node, detail=detail,
-        max_mem_limit=config.ERU_NODE_MAX_MEM,
+        max_mem_limit=config.NODE_MAX_MEM,
         stats_enabled=stats.client is not None)
 
 
 @base.post_async('/nodes/add')
 def add_node(request):
     models.node.create_instance(
-        request.form['host'], int(request.form['port']),
-        int(request.form['mem']))
+        request.form['host'], int(request.form['port']))
 
 
 @base.post_async('/nodes/del')
@@ -107,3 +109,24 @@ def node_exec_command(request):
     finally:
         t.close()
     return base.json_result(r)
+
+
+@base.post_async('/nodes/set_max_mem')
+def node_set_max_mem(request):
+    max_mem = int(request.form['max_mem'])
+    if not MAX_MEM_LIMIT[0] <= max_mem <= MAX_MEM_LIMIT[1]:
+        raise ValueError('invalid max_mem size')
+    host = request.form['host']
+    port = int(request.form['port'])
+    t = None
+    try:
+        t = Talker(host, port)
+        m = t.talk('config', 'set', 'maxmemory', str(max_mem))
+        if 'ok' != m.lower():
+            raise ValueError('CONFIG SET maxmemroy redis %s:%d returns %s' % (
+                host, port, m))
+    except BaseException as exc:
+        logging.exception(exc)
+        raise
+    finally:
+        t.close()
