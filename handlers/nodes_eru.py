@@ -1,4 +1,6 @@
 import logging
+import time
+import threading
 from redistrib.clusternode import Talker
 
 import base
@@ -8,7 +10,6 @@ import eru_utils
 import models.node
 import models.proxy
 import models.cluster
-from models.base import db
 
 
 if eru_utils.eru_client is not None:
@@ -35,6 +36,14 @@ if eru_utils.eru_client is not None:
 
     @base.post_async('/nodes/create/eru_proxy')
     def create_eru_proxy(request):
+        def set_remotes(proxy_addr, redis_host, redis_port):
+            time.sleep(1)
+            t = Talker(proxy_addr, 8889)
+            try:
+                t.talk('setremotes', redis_host, redis_port)
+            finally:
+                t.close()
+
         try:
             cluster = models.cluster.get_by_id(int(request.form['cluster_id']))
             if cluster is None or len(cluster.nodes) == 0:
@@ -47,12 +56,9 @@ if eru_utils.eru_client is not None:
             models.proxy.create_eru_instance(
                 container_info['address'], cluster.id,
                 container_info['container_id'])
-            t = Talker(container_info['address'], 8889)
-            try:
-                t.talk('setremotes', cluster.nodes[0].host,
-                       cluster.nodes[0].port)
-            finally:
-                t.close()
+            threading.Thread(target=set_remotes, args=(
+                container_info['address'], cluster.nodes[0].host,
+                cluster.nodes[0].port)).start()
             return base.json_result(container_info)
         except BaseException as exc:
             logging.exception(exc)
