@@ -6,11 +6,10 @@ from socket import error as SocketError
 
 import file_ipc
 import stats
+from config import NODES_EACH_THREAD
 from stats_models import RedisNodeStatus, ProxyStatus
 from models.base import db
 from models.polling_stat import PollingStat
-
-NODES_EACH_THREAD = 20
 
 
 class Poller(threading.Thread):

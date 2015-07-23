@@ -10,12 +10,12 @@ MYSQL_USERNAME = os.getenv('MYSQL_USERNAME', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
 MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'redis-ctl')
 
-INFLUXDB = {
-    'host': os.getenv('INFLUXDB_HOST', ''),
-    'port': int(os.getenv('INFLUXDB_PORT', 0)),
-    'username': os.getenv('INFLUXDB_USERNAME', ''),
-    'password': os.getenv('INFLUXDB_PASSWORD', ''),
-    'db': os.getenv('INFLUXDB_DATABASE', ''),
+OPEN_FALCON = {
+    'host_query': os.getenv('OPEN_FALCON_HOST_QUERY', ''),
+    'host_write': os.getenv('OPEN_FALCON_HOST_WRITE', ''),
+    'port_query': int(os.getenv('OPEN_FALCON_PORT_QUERY', 9966)),
+    'port_write': int(os.getenv('OPEN_FALCON_PORT_WRITE', 8433)),
+    'db': os.getenv('OPEN_FALCON_DATABASE', 'redisctlstats'),
 }
 
 ALGALON = {
@@ -35,6 +35,8 @@ DEBUG = int(os.getenv('DEBUG', 0))
 POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', 10))
 PERMDIR = os.getenv('PERMDIR', tempfile.gettempdir())
 NODE_MAX_MEM = int(os.getenv('NODE_MAM_MEM', 2048 * 1000 * 1000))
+NODES_EACH_THREAD = int(os.getenv('NODES_EACH_THREAD', 10))
+REDIS_CONNECT_TIMEOUT = int(os.getenv('REDIS_CONNECT_TIMEOUT', 5))
 
 try:
     from override_config import *

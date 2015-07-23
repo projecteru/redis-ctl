@@ -3,27 +3,30 @@
 
 {% block head %}
 <style>
-.primary-tbl { text-align: center; }
-.primary-tbl > tbody > tr:nth-child(2n+1) { background-color: #f0f0f0; }
-.primary-tbl .table { background-color: inherit; }
+.table { text-align: center; }
+#nodes-area > tbody > tr:nth-child(2n+1) { background-color: #f0f0f0; }
+.row-odd { background-color: #f0f0f0; }
+.proxy-tab { border-left: 1px solid #ddd; }
 </style>
 <script src='/static/redis_node.js'></script>
 {% endblock %}
 
 {% block body %}
 <h1>集群信息</h1>
-<table class='table primary-tbl'>
+<table class='table'>
     <thead>
         <tr>
-            <th>#</th>
-            <th style='width: 400px'>描述</th>
-            <th>节点数</th>
-            <th>代理</th>
+            <th rowspan='2'>#</th>
+            <th rowspan='2' style='width: 320px'>描述</th>
+            <th rowspan='2'>节点数</th>
+            <th colspan='5'>代理</th>
+            <th>SLA</th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
     {% for cluster in clusters if cluster.nodes %}
-        {{ cluster|render_cluster('row') }}
+        {{ cluster|render_cluster('row', stats_enabled=stats_enabled, odd_row=loop.index % 2) }}
     {% endfor %}
     </tbody>
 </table>
@@ -73,7 +76,7 @@
     </script>
 </span>
 
-<table class='table primary-tbl'>
+<table id='nodes-area' class='table'>
     <thead>
         <tr>
             <th>节点</th>

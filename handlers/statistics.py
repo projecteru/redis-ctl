@@ -1,5 +1,5 @@
 import re
-from datetime import datetime, timedelta
+import time
 
 import base
 import stats
@@ -7,12 +7,15 @@ from models.polling_stat import PollingStat
 
 PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
 
-RES_FIELDS = ['used_memory', 'used_memory_rss', 'response_time',
-              'used_cpu_sys', 'used_cpu_user', 'total_commands_processed']
-INT_FIELDS = ['evicted_keys', 'expired_keys', 'keyspace_misses',
-              'keyspace_hits', 'connected_clients']
-PROXY_FIELDS = ['connected_clients', 'mem_buffer_alloc', 'completed_commands']
-PROXY_RES_FIELDS = ['command_elapse', 'remote_cost']
+REDIS_MAX_FIELDS = [
+    'used_cpu_sys', 'used_cpu_user', 'connected_clients',
+    'total_commands_processed', 'evicted_keys', 'expired_keys',
+    'keyspace_misses', 'keyspace_hits',
+]
+REDIS_AVG_FIELDS = ['used_memory', 'used_memory_rss', 'response_time']
+PROXY_MAX_FIELDS = ['connected_clients', 'mem_buffer_alloc',
+                    'completed_commands']
+PROXY_AVG_FIELDS = ['command_elapse', 'remote_cost']
 
 
 @base.get('/stats/pollings')
@@ -39,36 +42,36 @@ if stats.client is not None:
         port = int(args['port'])
         limit = min(int(args.get('limit', 100)), 500)
         interval = max(int(args.get('interval', 2)), 1)
-        return host, port, limit, interval, timedelta(minutes=limit * interval)
+        return host, port, limit, interval, limit * interval * 60
 
     @base.get_async('/stats/fetchproxy')
     def fetch_proxy_stats(request):
         host, port, limit, interval, span = _parse_args(request.args)
-        now = datetime.utcnow()
+        now = int(time.time())
         node = '%s:%d' % (host, port)
         result = {}
 
-        for field in PROXY_FIELDS:
+        for field in PROXY_MAX_FIELDS:
             result[field] = stats.client.query(
-                node, field, 'max', span, now, interval)
-        for field in PROXY_RES_FIELDS:
+                node, field, 'MAX', span, now, interval)
+        for field in PROXY_AVG_FIELDS:
             result[field] = stats.client.query(
-                node, field, 'mean', span, now, interval)
+                node, field, 'AVERAGE', span, now, interval)
 
         return base.json_result(result)
 
     @base.get_async('/stats/fetchredis')
     def fetch_stats(request):
         host, port, limit, interval, span = _parse_args(request.args)
-        now = datetime.utcnow()
+        now = int(time.time())
         node = '%s:%d' % (host, port)
         result = {}
 
-        for field in RES_FIELDS:
+        for field in REDIS_AVG_FIELDS:
             result[field] = stats.client.query(
-                node, field, 'mean', span, now, interval)
-        for field in INT_FIELDS:
+                node, field, 'AVERAGE', span, now, interval)
+        for field in REDIS_MAX_FIELDS:
             result[field] = stats.client.query(
-                node, field, 'max', span, now, interval)
+                node, field, 'MAX', span, now, interval)
 
         return base.json_result(result)

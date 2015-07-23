@@ -15,7 +15,7 @@ Install dependencies via
 
     pip install -r requirements.txt
 
-Influxdb (optional): influxd >= 0.9; influxdb (python lib) >= 1.0.0
+[OpenFalcon](https://github.com/open-falcon) (optional)
 
 Configure and Run the Server
 ===
@@ -46,7 +46,7 @@ Also you could use similar ways to configure daemon, just like setup up the main
 IPC
 ===
 
-The server and daemon uses `/tmp/instances.json` and `/tmp/poll.json` as default IPC files. You could change the directory for those temp files by passing the same `PERMDIR` environ to the web application and the daemon.
+The server and daemon uses `/tmp/details.json` and `/tmp/poll.json` as default IPC files. You could change the directory for those temp files by passing the same `PERMDIR` environ to the web application and the daemon.
 
 The programs don't use redis to do the communication, however, because they are the controllers of redis.
 

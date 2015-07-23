@@ -6,8 +6,8 @@ import stats
 def main():
     config.init_logging()
 
-    if config.INFLUXDB and config.INFLUXDB['host']:
-        stats.init(**config.INFLUXDB)
+    if config.OPEN_FALCON and config.OPEN_FALCON['host_query']:
+        stats.init(**config.OPEN_FALCON)
 
     import handlers
     app = handlers.base.app

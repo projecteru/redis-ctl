@@ -1,12 +1,12 @@
 from db import Client
-from influxdb.client import InfluxDBClientError as StatisticError
 
+StatisticError = IOError
 client = None
 
 
-def init(host, port, username, password, db):
+def init(**kwargs):
     global client
-    client = Client(host, port, username, password, db)
+    client = Client(**kwargs)
 
 
 __all__ = ['init', 'client', 'StatisticError']
