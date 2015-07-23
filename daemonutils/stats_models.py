@@ -6,6 +6,7 @@ from socket import error as SocketError
 from hiredis import ReplyError
 
 import stats
+from config import REDIS_CONNECT_TIMEOUT as CONNECT_TIMEOUT
 from models.base import db, Base
 
 CMD_INFO = pack_command('info')
@@ -164,7 +165,7 @@ class RedisNodeStatus(NodeBase):
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
-        t = Talker(self.details['host'], self.details['port'])
+        t = Talker(self.details['host'], self.details['port'], CONNECT_TIMEOUT)
         try:
             node_info = _info_slots(t)
             details = _info_detail(t)
@@ -219,7 +220,7 @@ class ProxyStatus(NodeBase):
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
-        t = Talker(self.details['host'], self.details['port'])
+        t = Talker(self.details['host'], self.details['port'], CONNECT_TIMEOUT)
         try:
             now = time.time()
             i = t.talk_raw(CMD_PROXY)
