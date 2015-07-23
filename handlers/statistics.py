@@ -3,6 +3,7 @@ import time
 
 import base
 import stats
+from models.polling_stat import PollingStat
 
 PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
 
@@ -17,7 +18,13 @@ PROXY_MAX_FIELDS = ['connected_clients', 'mem_buffer_alloc',
 PROXY_AVG_FIELDS = ['command_elapse', 'remote_cost']
 
 
-def init_handlers():
+@base.get('/stats/pollings')
+def pollings(request):
+    return request.render('pollings.html', pollings=PollingStat.query.order_by(
+        PollingStat.id.desc()).limit(120))
+
+
+if stats.client is not None:
     @base.get('/stats/redis')
     def stats_redis_entry_page(request):
         return request.render('stats-redis.html', host=request.args['host'],
@@ -68,6 +75,3 @@ def init_handlers():
                 node, field, 'MAX', span, now, interval)
 
         return base.json_result(result)
-
-if stats.client is not None:
-    init_handlers()

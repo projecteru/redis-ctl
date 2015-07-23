@@ -33,6 +33,69 @@
         <td>{{ detail.version }}</td>
     </tr>
     <tr>
+        <th>内存</th>
+        <td>
+        {% if detail.mem %}
+            {{ detail.mem.used_memory_human|e }} /
+            <a href='javascript:void(0)' onclick="$(this).hide(); $('#edit_maxmem').show()">{{ detail.mem.maxmemory|filesizeformat }}</a>
+            <span id='edit_maxmem' style='display: none'>
+                <input id='maxmem_input' value='{{ detail.mem.maxmemory }}'>
+                <button onclick='editMaxMem()' class='btn btn-primary'>修改</button>
+                <span class='label label-warning' style='display: none' id='edit-error'>设置的最大内存值超过范围</span>
+            </span>
+            <script>
+            function editMaxMem() {
+                $('#edit-error').hide();
+                var m = parseInt($('#maxmem_input').val());
+                if (isNaN(m) || m < 64 * 1000 * 1000 || m > {{ max_mem_limit|tojson }}) {
+                    $('#edit-error').show();
+                    return $('#edit_maxmem').focus();
+                }
+                $.ajax({
+                    url: '/nodes/set_max_mem',
+                    type: 'POST',
+                    data: {
+                        host: {{ node.host|tojson }},
+                        port: {{ node.port|tojson }},
+                        max_mem: m
+                    },
+                    success: function() {
+                        window.location.reload();
+                    },
+                    error: function(r) {
+                        console.error(r);
+                    }
+                });
+            }
+            </script>
+        {% else %}
+        等待轮询
+        {% endif %}
+        </td>
+    </tr>
+    {% if node.eru_deployed %}
+    <tr>
+        <th>部署</th>
+        <td><i class='fa fa-cube'></i> ERU 容器</td>
+    </tr>
+
+    {% if node.eru_info %}
+    <tr>
+        <td>ERU 容器 ID</td>
+        <td>{{ node.eru_container_id|e }}</td>
+    </tr>
+    <tr>
+        <td>ERU 容器创建时间</td>
+        <td>{{ node.eru_info.created|e }}</td>
+    </tr>
+    <tr>
+        <td>ERU 宿主机地址</td>
+        <td>{{ node.eru_info.host|e }}</td>
+    </tr>
+    {% endif %}
+
+    {% endif %}
+    <tr>
         <th>统计</th>
         <td>
             {% if not (detail and detail.stat) %}
@@ -93,7 +156,7 @@
     <tr>
         <th>节点操作</th>
         <td>
-            {% if node.assignee is none %}
+            {% if node.assignee is none and not node.eru_deployed %}
             <button class='btn btn-danger node-deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
             {% endif %}
 
@@ -433,7 +496,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
     <button class='btn' data-toggle='modal' data-target='#commandConsole' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>直接发送指令</button>
 </div>
 
-{{ render_template('components/node/autodiscover.html', host=node.host, port=node.port, max_mem=node.max_mem) }}
+{{ render_template('components/node/autodiscover.html', host=node.host, port=node.port) }}
 
 <div class='panel-div' id='start-cluster'>
     集群描述: <input id='start-cluster-descr'>

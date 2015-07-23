@@ -1,6 +1,7 @@
 from socket import error as SocketError
 import logging
 import redistrib.command
+from redistrib.clusternode import Talker
 
 import utils
 import base
@@ -18,16 +19,20 @@ def cluster_panel(request, cluster_id):
     c = models.cluster.get_by_id(cluster_id)
     if c is None:
         return base.not_found()
-    node_details = file_ipc.read_details()['nodes']
+    all_details = file_ipc.read_details()
+    node_details = all_details['nodes']
     nodes = []
     for n in c.nodes:
         detail = node_details.get('%s:%d' % (n.host, n.port))
         if detail is None:
-            nodes.append({'host': n.host, 'port': n.port,
-                          'max_mem': n.max_mem, 'stat': False})
+            nodes.append({'host': n.host, 'port': n.port, 'stat': False})
         else:
-            detail['max_mem'] = n.max_mem
             nodes.append(detail)
+
+    proxy_details = all_details['proxies']
+    for p in c.proxies:
+        p.read_slave = proxy_details.get(
+            '%s:%d' % (p.host, p.port), {}).get('read_slave')
     return request.render('cluster/panel.html', cluster=c, nodes=nodes)
 
 
@@ -207,6 +212,22 @@ def suppress_all_nodes_alert(request):
     for n in c.nodes:
         n.suppress_alert = suppress
         db.session.add(n)
+
+
+@base.post_async('/cluster/proxy_sync_remotes')
+def proxy_sync_remote(request):
+    p = models.proxy.get_by_host_port(
+        request.form['host'], int(request.form['port']))
+    if p is None or p.cluster is None:
+        raise ValueError('no such proxy')
+    cmd = ['setremotes']
+    for n in p.cluster.nodes:
+        cmd.extend([n.host, str(n.port)])
+    t = Talker(p.host, p.port)
+    try:
+        t.talk(*cmd)
+    finally:
+        t.close()
 
 
 @base.get_async('/cluster/autodiscover')

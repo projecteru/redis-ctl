@@ -7,11 +7,6 @@
 <script src='/static/redis_node.js'></script>
 <script src='/static/sort-nodes.js'></script>
 <style>
-.cluster-proxy-quickinfo {
-    float: left;
-    min-width: 360px;
-}
-
 .slave-row .node-addr {
     padding-left: 2em
 }
@@ -56,7 +51,7 @@
     </tr>
 </table>
 
-{{ render_template('components/node/autodiscover.html', host=cluster.nodes[0].host, port=cluster.nodes[0].port, max_mem=cluster.nodes[0].max_mem) }}
+{{ render_template('components/node/autodiscover.html', host=cluster.nodes[0].host, port=cluster.nodes[0].port) }}
 
 <script>
 $('#cluster-set-descr').click(function() {
@@ -193,11 +188,14 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 
         function memCell(n) {
             if (!(n.mem && n.mem.used_memory)) {
-                return $('<td>').text('? / ' + n.max_mem);
+                return $('<td>').text('?');
             }
-            var memRate = n.mem.used_memory / n.max_mem * 100;
+            if (!n.mem.maxmemory) {
+                return $('<td>').text(n.mem.used_memory);
+            }
+            var memRate = n.mem.used_memory / n.mem.maxmemory * 100;
             var memLabelClass = memRate < 70 ? 'label-success' : (memRate < 90 ? 'label-warning' : 'label-danger');
-            return $('<td>').text(n.mem.used_memory + ' / ' + n.max_mem + ' ').append($('<span>').addClass('label').addClass(memLabelClass).text(memRate.toFixed(2) + '%'));
+            return $('<td>').text(n.mem.used_memory + ' / ' + n.mem.maxmemory + ' ').append($('<span>').addClass('label').addClass(memLabelClass).text(memRate.toFixed(2) + '%'));
         }
 
         function makeBaseCells(n) {
@@ -251,11 +249,42 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 {{ render_template('components/cluster/export-nodes.html') }}
 
 <h1>代理设置</h1>
-<div>
-{% for p in cluster.proxies %}
-    {{ p|render_proxy('quickinfo', showdelbtn=True) }}
-{% endfor %}
-</div>
+<table class='table'>
+    <thead>
+        <tr>
+            <th>地址</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody style='text-align: center'>
+        {% for proxy in cluster.proxies %}
+        <tr>
+            <td>
+                {{ proxy.host|e }}:{{ proxy.port }}
+                {% if proxy.read_slave %}
+                <span class='label label-info'>只读</span>
+                {% endif %}
+                {% if proxy.eru_deployed %}
+                <i class='fa fa-cube'></i>
+                {% endif %}
+            </td>
+            <td>
+                <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
+                <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
+                    <span class='check-group-label'>关闭报警</span>
+                </button>
+                <button class='btn' data-toggle='modal' data-target='#commandConsole' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>直接发送指令</button>
+                <button class='btn btn-sync-remotes' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>同步槽位映射</button>
+                {% if proxy.eru_deployed %}
+                <a href='/nodes/manage/eru#proxy-{{ proxy.host|e }}' class='btn'>去删除此代理并下线容器</a>
+                {% else %}
+                <button class='btn btn-danger delete-proxy-btn' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port }}'>从监视面板移除此代理</button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
 <div style='clear: both'>
     <table style='margin: 1em; border-collapse: separate; border-spacing: 1em'>
@@ -276,6 +305,17 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 </div>
 
 <script>
+$('.btn-sync-remotes').click(function() {
+    $.ajax({
+        url: '/cluster/proxy_sync_remotes',
+        type: 'POST',
+        data: {
+            host: $(this).data('host'),
+            port: $(this).data('port')
+        }
+    });
+});
+
 $('#new-proxy-btn').click(function() {
     var addr = $('#new-proxy-addr').val();
     if (!addr) {
