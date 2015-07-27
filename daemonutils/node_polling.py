@@ -116,8 +116,7 @@ class NodeStatCollector(threading.Thread):
             p.join()
 
         save_polling_stat(nodes, proxies)
-        logging.info('Total %d nodes, %d proxies', len(nodes),
-                     len(proxies))
+        logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
 
         try:
             file_ipc.write_details({n.addr: n.details for n in nodes},

@@ -44,8 +44,11 @@
         <td class='label-cell'>操作</td>
         <td>
             <button class='btn btn-primary' id='cluster-fix-migrating'>修复槽位迁移</button>
-            <button class='btn btn-primary' id='cluster-enable-all-nodes-alert'>打开所有节点的报警</button>
-            <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert'>关闭所有节点的报警</button>
+            <button class='btn btn-primary' id='cluster-enable-all-nodes-alert' data-suppress='0'>打开所有节点的报警</button>
+            <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert' data-suppress='1'>关闭所有节点的报警</button>
+            <div style='margin: 1em'></div>
+            <button class='btn btn-info' id='cluster-enable-all-nodes-aof' data-aof='yes'>打开所有节点的 AOF</button>
+            <button class='btn btn-danger' id='cluster-disable-all-nodes-aof' data-aof='no'>关闭所有节点的 AOF</button>
             <button class='btn' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
         </td>
     </tr>
@@ -91,7 +94,7 @@ $('#cluster-fix-migrating').click(function() {
     });
 });
 
-$('#cluster-enable-all-nodes-alert').click(function() {
+$('#cluster-enable-all-nodes-alert,#cluster-suppress-all-nodes-alert').click(function() {
     var btn = $(this);
     btn.attr('disabled', 'disabled').text('请稍候');
     $.ajax({
@@ -99,7 +102,7 @@ $('#cluster-enable-all-nodes-alert').click(function() {
         type: 'POST',
         data: {
             cluster_id: {{ cluster.id|tojson }},
-            suppress: 0
+            suppress: btn.data('suppress')
         },
         success: function() {
             window.location.reload();
@@ -108,17 +111,17 @@ $('#cluster-enable-all-nodes-alert').click(function() {
             btn.text('失败: ' + e.responseText);
         }
     });
-})
+});
 
-$('#cluster-suppress-all-nodes-alert').click(function() {
+$('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function() {
     var btn = $(this);
     btn.attr('disabled', 'disabled').text('请稍候');
     $.ajax({
-        url: '/cluster/suppress_all_nodes_alert',
+        url: '/cluster/set_all_nodes_aof',
         type: 'POST',
         data: {
             cluster_id: {{ cluster.id|tojson }},
-            suppress: 1
+            aof: btn.data('aof')
         },
         success: function() {
             window.location.reload();
@@ -127,12 +130,12 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
             btn.text('失败: ' + e.responseText);
         }
     });
-})
+});
 </script>
 
 <hr>
 
-<h1>节点</h1>
+<h1 id='nodes'>节点</h1>
 
 <table class='table'>
     <thead>
@@ -140,6 +143,7 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
             <th>节点 ID</th>
             <th>地址</th>
             <th>内存</th>
+            <th>持久化</th>
             <th>角色</th>
             <th>槽位数量</th>
         </tr>
@@ -202,7 +206,8 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
             return [
                 $('<td>').addClass('node-id').text(n.node_id),
                 $('<td>').addClass('node-addr').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
-                memCell(n)
+                memCell(n),
+                $('<td>').append((n.storage && n.storage.aof_enabled) ? $('<span>').text('AOF').addClass('label').addClass('label-info') : '-')
             ];
         }
 
@@ -248,7 +253,7 @@ $('#cluster-suppress-all-nodes-alert').click(function() {
 
 {{ render_template('components/cluster/export-nodes.html') }}
 
-<h1>代理设置</h1>
+<h1 id='proxies'>代理设置</h1>
 <table class='table'>
     <thead>
         <tr>

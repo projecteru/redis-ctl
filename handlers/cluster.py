@@ -216,6 +216,20 @@ def suppress_all_nodes_alert(request):
         db.session.add(n)
 
 
+@base.post_async('/cluster/set_all_nodes_aof')
+def set_all_nodes_aof(request):
+    c = models.cluster.get_by_id(request.form['cluster_id'])
+    if c is None:
+        raise ValueError('no such cluster')
+    aof = request.form['aof']
+    for n in c.nodes:
+        t = Talker(n.host, n.port)
+        try:
+            t.talk('config', 'set', 'appendonly', aof)
+        finally:
+            t.close()
+
+
 @base.post_async('/cluster/proxy_sync_remotes')
 def proxy_sync_remote(request):
     p = models.proxy.get_by_host_port(

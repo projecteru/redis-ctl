@@ -12,7 +12,7 @@ STATUS_BROKEN = -2
 class RedisNode(Base):
     __tablename__ = 'redis_node'
 
-    host = db.Column(db.String(32), nullable=False)
+    host = db.Column(db.String(255), nullable=False)
     port = db.Column(db.Integer, nullable=False)
     eru_container_id = db.Column(db.String(64), index=True)
     assignee_id = db.Column(db.ForeignKey(Cluster.id), index=True)
