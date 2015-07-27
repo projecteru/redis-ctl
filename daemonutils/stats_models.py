@@ -253,7 +253,7 @@ class ProxyStatus(NodeBase):
             lines = i.split('\n')
             st = {}
             for ln in lines:
-                k, v = ln.split(':')
+                k, v = ln.split(':', 1)
                 st[k] = v
             conns = sum([int(c) for c in st['clients_count'].split(',')])
             mem_buffer_alloc = sum([int(m) for m in
