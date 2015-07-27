@@ -186,7 +186,7 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
             return [
                 $('<td>').append('-'),
                 $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
-                $('<td>').attr('colspan', 3).text('尚未获取节点详细信息')
+                $('<td>').attr('colspan', 4).text('尚未获取节点详细信息')
             ];
         }
 
@@ -241,7 +241,7 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
             e.slaves.sort(sortNodeByAddr);
             $.each(e.slaves, function(i, e) {
                 var row = makeSlaveRow(e);
-                row.find('td').eq(3).append($('<a>').attr('href', '#node-' + e.master_id).text('^'));
+                row.find('td').eq(4).append($('<a>').attr('href', '#node-' + e.master_id).text('^'));
                 tbody.append(row);
             });
         }
