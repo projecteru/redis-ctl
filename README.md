@@ -1,4 +1,4 @@
-Redis Instance Contolling and Distribution Service
+Redis Instance Controlling and Distribution Service
 
 Dependency
 ===
