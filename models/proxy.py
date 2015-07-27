@@ -7,7 +7,7 @@ from cluster import Cluster
 class Proxy(Base):
     __tablename__ = 'proxy'
 
-    host = db.Column(db.String(32), nullable=False)
+    host = db.Column(db.String(255), nullable=False)
     port = db.Column(db.Integer, nullable=False)
     eru_container_id = db.Column(db.String(64), index=True)
     cluster_id = db.Column(db.ForeignKey(Cluster.id), index=True)

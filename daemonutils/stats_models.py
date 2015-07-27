@@ -58,7 +58,7 @@ def _info_detail(t):
 class NodeBase(Base):
     __abstract__ = True
 
-    addr = db.Column('addr', db.String(32), unique=True, nullable=False)
+    addr = db.Column('addr', db.String(255), unique=True, nullable=False)
     poll_count = db.Column('poll_count', db.Integer, nullable=False)
     avail_count = db.Column('avail_count', db.Integer, nullable=False)
     rsp_1ms = db.Column('rsp_1ms', db.Integer, nullable=False)
