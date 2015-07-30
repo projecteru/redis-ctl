@@ -83,4 +83,5 @@ class Client(object):
         })).json()[0]['Values']
         if len(r) > POINT_LIMIT:
             r = r[::len(r) / POINT_LIMIT + 1]
-        return [[x['timestamp'], x['value']] for x in r]
+        return [[x['timestamp'], x['value']]
+                for x in r if x['value'] is not None]

@@ -29,12 +29,12 @@ def lastest_version_sha(what):
         raise ValueError('eru fail to give version SHA of ' + what)
 
 
-def deploy_with_network(what, pod, entrypoint, ncore=1, host=None):
+def deploy_with_network(what, pod, entrypoint, ncore=1, host=None, args=None):
     network = eru_client.get_network(config.ERU_NETWORK)
     version_sha = lastest_version_sha(what)
     r = eru_client.deploy_private(
         config.ERU_GROUP, pod, what, ncore, 1, version_sha,
-        entrypoint, 'prod', [network['id']], host_name=host)
+        entrypoint, 'prod', [network['id']], host_name=host, args=args)
     if r['msg'] == 'Not enough core resources':
         raise ValueError('Host drained')
     try:
