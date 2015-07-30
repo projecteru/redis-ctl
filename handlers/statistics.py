@@ -5,7 +5,7 @@ import base
 import stats
 from models.polling_stat import PollingStat
 
-PAT_HOST = re.compile('^[.a-zA-Z0-9]+$')
+PAT_HOST = re.compile('^[-.a-zA-Z0-9]+$')
 
 REDIS_MAX_FIELDS = [
     'used_cpu_sys', 'used_cpu_user', 'connected_clients',
@@ -41,7 +41,7 @@ if stats.client is not None:
             raise ValueError('Invalid hostname')
         port = int(args['port'])
         limit = min(int(args.get('limit', 100)), 500)
-        interval = max(int(args.get('interval', 2)), 1)
+        interval = max(int(args.get('interval', 8)), 8)
         return host, port, limit, interval, limit * interval * 60
 
     @base.get_async('/stats/fetchproxy')

@@ -24,8 +24,7 @@ if eru_utils.eru_client is not None:
     def create_eru_node(request):
         try:
             container_info = eru_utils.deploy_with_network(
-                'redis', request.form['pod'],
-                'aof' if request.form['aof'] == 'y' else 'rdb',
+                'redis', request.form['pod'], 'rdb',
                 host=request.form.get('host'))
             models.node.create_eru_instance(
                 container_info['address'], container_info['container_id'])
@@ -49,10 +48,12 @@ if eru_utils.eru_client is not None:
             if cluster is None or len(cluster.nodes) == 0:
                 raise ValueError('no such cluster')
             ncore = int(request.form['threads'])
+            args = ['-t', str(ncore)]
+            if request.form.get('read_slave') == 'rs':
+                args.extend(['-r', '1'])
             container_info = eru_utils.deploy_with_network(
-                'cerberus', request.form['pod'],
-                'th' + str(ncore) + request.form.get('read_slave', ''), ncore,
-                host=request.form.get('host'))
+                'cerberus', request.form['pod'], 'macvlan',
+                host=request.form.get('host'), args=args)
             models.proxy.create_eru_instance(
                 container_info['address'], cluster.id,
                 container_info['container_id'])
