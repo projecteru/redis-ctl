@@ -7,23 +7,27 @@ from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 
 class TaskRunner(threading.Thread):
-    def __init__(self, app, task, step):
+    def __init__(self, app, task_id, step_id):
         threading.Thread.__init__(self)
         self.app = app
-        self.task = task
-        self.step = step
+        self.task_id = task_id
+        self.step_id = step_id
 
     def run(self):
         from models.base import db
+        from models.task import ClusterTask, TaskStep
         with self.app.app_context():
-            step = self.step.reattach()
-            task = self.task.reattach()
-
-            # check again the step haven't run yet
-            if step.completion is not None:
-                return task.check_completed()
-
+            task = ClusterTask.query.get(self.task_id)
+            if task is None:
+                # not possible gonna happen
+                return
             try:
+                step = TaskStep.query.get(self.step_id)
+
+                # check again the step haven't run yet
+                if step.completion is not None:
+                    return task.check_completed()
+
                 logging.info('Execute step %d', step.id)
                 if not step.execute():
                     task.fail('Step fails')
@@ -80,7 +84,7 @@ def try_create_exec_thread_by_task(t, app):
         return None
 
     logging.debug('Run task %d', t.id)
-    return TaskRunner(app, t, step)
+    return TaskRunner(app, t.id, step.id)
 
 
 class TaskPoller(threading.Thread):

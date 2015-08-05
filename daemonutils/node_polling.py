@@ -13,25 +13,19 @@ from models.polling_stat import PollingStat
 
 
 class Poller(threading.Thread):
-    def __init__(self, app, nodes, algalon_client):
+    def __init__(self, nodes, algalon_client):
         threading.Thread.__init__(self)
         self.daemon = True
-        self.app = app
         self.nodes = nodes
         logging.debug('Poller %x distributed %d nodes',
                       id(self), len(self.nodes))
         self.algalon_client = algalon_client
 
     def run(self):
-        with self.app.app_context():
-            for node in self.nodes:
-                node = node.reattach()
-                logging.debug('Poller %x collect for %s:%d',
-                              id(self), node['host'], node['port'])
-                node.collect_stats(self._emit_data, self._send_alarm)
-                node.add_to_db()
-
-            db.session.commit()
+        for node in self.nodes:
+            logging.debug('Poller %x collect for %s:%d',
+                          id(self), node['host'], node['port'])
+            node.collect_stats(self._emit_data, self._send_alarm)
 
     def _send_alarm(self, message, trace):
         if self.algalon_client is not None:
@@ -84,7 +78,6 @@ def save_polling_stat(nodes, proxies):
             proxies_fail.append(p.addr)
 
     db.session.add(PollingStat(nodes_ok, nodes_fail, proxies_ok, proxies_fail))
-    db.session.commit()
 
 
 class NodeStatCollector(threading.Thread):
@@ -105,7 +98,7 @@ class NodeStatCollector(threading.Thread):
 
         all_nodes = nodes + proxies
         random.shuffle(all_nodes)
-        pollers = [Poller(self.app, all_nodes[i: i + NODES_EACH_THREAD],
+        pollers = [Poller(all_nodes[i: i + NODES_EACH_THREAD],
                           self.algalon_client)
                    for i in xrange(0, len(all_nodes), NODES_EACH_THREAD)]
         for p in pollers:
@@ -114,9 +107,13 @@ class NodeStatCollector(threading.Thread):
 
         for p in pollers:
             p.join()
+        for p in pollers:
+            for n in p.nodes:
+                n.add_to_db()
 
         save_polling_stat(nodes, proxies)
-        logging.info('Total %d nodes, %d proxies', len(nodes), len(proxies))
+        db.session.commit()
+        logging.debug('Total %d nodes, %d proxies', len(nodes), len(proxies))
 
         try:
             file_ipc.write_details({n.addr: n.details for n in nodes},
