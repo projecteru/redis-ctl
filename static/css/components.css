@@ -9,7 +9,8 @@
     vertical-align: middle;
     white-space: nowrap;
     font-size: 14px;
-    line-height: 1.428571429;
+    line-height: 1.428571429; 
+    border-radius: 6px;
 
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -27,7 +28,7 @@
     color: white;
 }
 .check-group-checked.check-group-info {
-    background-color: #5bc0de;
+    background-color: #1399BF;
     color: white;
 }
 .check-group-checked.check-group-success {
@@ -43,7 +44,7 @@
     cursor: pointer;
     display: inline-block;
     position: relative;
-    font-size: 16px;
+    font-size: 14px;
     color: #eee;
 
     -webkit-user-select: none;
@@ -62,6 +63,7 @@
     -o-transition: all 0.2s ease-in;
     -webkit-transition: all 0.2s ease-in;
     transition: all 0.2s ease-in;
+    border-radius: 6px;
 }
 
 .select-styled:after {
@@ -101,25 +103,30 @@
     padding: 12px 0;
     text-indent: 15px;
     border-top: 1px solid #eee;
+    border-bottom: 1px solid #eee;
+    border-left :1px solid #eee;
+    border-right:1px solid #eee;
     -moz-transition: all 0.15s ease-in;
     -o-transition: all 0.15s ease-in;
     -webkit-transition: all 0.15s ease-in;
     transition: all 0.15s ease-in;
+    border-radius: 6px;
 }
 
+
 .select-default.select-styled, .select-default .select-options {
-    background-color: #ccc;
-    color: #222;
+    background-color: #428bca;
+    color: #fff;
 }
 .select-default .select-options li:hover {
-    color: #ccc;
-    background-color: black;
+    color: #fff;
+    background-color: #A79B05;
 }
 .select-default .select-styled:after {
     border-top-color: #444;
 }
 .select-default .select-styled:hover {
-    background-color: #ccc;
+    background-color: #A79B05;
 }
 .select-default .select-styled:active, .select-styled.active {
     background-color: #ddd;
@@ -147,7 +154,7 @@
     background-color: transparent;
 }
 .select-embed .select-styled:active, .select-styled.active {
-    background-color: transparent;
+    background-color: black;
 }
 .select-embed .select-styled:active:after, .select-styled.active:after {
     border: none;

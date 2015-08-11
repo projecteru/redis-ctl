@@ -49,11 +49,9 @@
         {% if stats_enabled %}
         <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
         {% endif %}
-
         <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
-            关闭报警
+        关闭报警
         </button>
-
         {% if node.detail.slots_migrating %}
         <button class='btn btn-warning fix-migrating-btn' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>修复迁移状态</button>
         {% endif %}
