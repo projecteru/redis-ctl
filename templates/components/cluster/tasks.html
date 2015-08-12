@@ -1,4 +1,5 @@
-<table class='table'>
+<div class='panel panel-default'>
+  <table class='table'>
     <thead>
         <tr>
             <th>ID</th>
@@ -30,13 +31,13 @@
             {% endif %}
             </td>
             <td>
-                <button class='btn' data-toggle='modal' data-target='#taskDetail' data-taskid='{{ task.id }}'>查看详情</button>
+                <button class='btn btn-success' data-toggle='modal' data-target='#taskDetail' data-taskid='{{ task.id }}'>查看详情</button>
             </td>
         </tr>
     {% endfor %}
     </tbody>
-</table>
-
+  </table>
+</div>
 <div class='modal fade bs-example-modal-lg' id='taskDetail' tabindex='-1' role='dialog' aria-labelledby='taskDetailTitle' aria-hidden='true'>
     <div class='modal-dialog modal-lg'>
         <div class='modal-content'>
@@ -47,19 +48,23 @@
             <div class='modal-body'>
                 <span id='taskDetailLoaderPlaceholder'>正在载入任务详情...</span>
                 <div id='taskDetailContent'>
-                    <table class='table'>
-                        <caption>任务步骤 (共 <span id='taskDetailStepCount'></span> 项)</caption>
+                  <div class="panel panel-default">
+                    <div class="panel-heading">
+                      <table class='table'>
+                        <div class="panel-body">任务步骤 (共 <span id='taskDetailStepCount'></span> 项)</div>
                         <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>命令</th>
-                                <th>参数</th>
-                                <th>开始时间</th>
-                                <th>执行状态</th>
-                            </tr>
+                          <tr>
+                            <th>ID</th>
+                            <th>命令</th>
+                            <th>参数</th>
+                            <th>开始时间</th>
+                            <th>执行状态</th>
+                          </tr>
                         </thead>
                         <tbody style='text-align: center' id='taskDetailSteps'></tbody>
-                    </table>
+                      </table>
+                    </div>
+                  </div>
                 </div>
             </div>
         </div>

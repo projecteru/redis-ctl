@@ -3,21 +3,23 @@
 {% block title %}集群后台任务{% endblock %}
 
 {% block head %}
-<script src='/static/cluster_task.js'></script>
+<script src='/static/js/cluster_task.js'></script>
 {% endblock %}
 
 {% block body %}
 
 {% block pagination %}
 <nav>
-    <ul class='pager'>
+    <div class="pagination pagination-info">
+    <ul>
         {% if page != 0 %}
-        <li class='previous'><a href='/cluster/tasks/list/{{ cluster.id }}'><span aria-hidden='true'>&laquo;</span> 首页</a></li>
-        <li class='previous'><a href='/cluster/tasks/list/{{ cluster.id }}/{{ page - 1 }}'><span aria-hidden='true'>&larr;</span> 上一页</a></li>
+        <li><a href='/cluster/tasks/list/{{ cluster.id }}'> 首页</a></li>
+        <li class='previous'><a href='/cluster/tasks/list/{{ cluster.id }}/{{ page - 1 }}'> 上一页</a></li>
         {% endif %}
         <li><a href='/clusterp/{{ cluster.id }}'>回到集群面板</a></li>
-        <li class='next'><a href='/cluster/tasks/list/{{ cluster.id }}/{{ page + 1 }}'>下一页 <span aria-hidden='true'>&rarr;</span></a></li>
+        <li class='next'><a href='/cluster/tasks/list/{{ cluster.id }}/{{ page + 1 }}'>下一页 </a></li>
     </ul>
+    </div>
 </nav>
 {% endblock %}
 

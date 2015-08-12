@@ -1,0 +1,106 @@
+/* Required Stylesheets */
+.wheel-button {
+  position: relative;
+}
+
+.wheel {
+  margin: 10;
+  padding: 10;
+  list-style: none;
+  width: 350px; /* this will determine the diameter of the circle  */
+  height: 350px; /* this will determine the diameter of the circle  */
+  visibility: hidden;
+  position: relative;
+  display: none;
+}
+
+.wheel li {
+  overflow: hidden;
+  float:center;
+}
+
+.wheel li a {
+  display: block;
+}
+.wheel-button, .wheel-button:visited {
+  line-height: 18px;
+  font-weight: bold;
+  font-size: 36px;
+  background: #df4727; 
+  padding: 10px 11px;
+  text-align: center;
+  border-radius: 50px;
+  width: 50px;
+  height: 50px;
+  color: white;
+  display: block;
+  margin: 70px auto 20px;
+  border: 3px solid #92311e;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  -moz-box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+
+.wheel-button:hover{ 
+  color: white;
+}
+
+.wheel-button.ne {
+  border-color: white;
+  background: #1ABC9C;
+  color: #34FFFF;
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+}
+
+.wheel-button.nw {
+  border-color: white;
+  background-color: #E67E22;
+  color: #FFFC44;
+  position: absolute;
+  bottom: -25px;
+  right: 15px;
+}
+
+.wheel-button span, .wheel span{
+  position: relative;
+  -moz-transition: all 1s ease;
+  -webkit-transition: all 1s ease;
+  -o-transition: all 1s ease;
+  transition: all 1s ease;
+  display: block;
+}
+
+.wheel-button.active span{
+  transform: rotate(135deg);
+  -ms-transform: rotate(135deg); /* IE 9 */
+  -webkit-transform: rotate(135deg); /* Safari and Chrome */
+}
+
+.wheel li a, .wheel li a:visited{
+  background: rgba(0,0,0,0.65);
+  border-radius: 60px;
+  font-weight: bold;
+  padding: 8px;
+  text-align: center;
+  width: 60px;
+  height: 60px;
+  border: 1px solid black;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.5);
+  -moz-box-shadow: 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.5);
+  -webkit-box-shadow: 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 1px rgba(255,255,255,0.5);
+  color: white;
+  -moz-transition: all 0.25s ease;
+  -webkit-transition: all 0.25s ease;
+  -o-transition: all 0.25s ease;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.wheel li a:hover{
+  background: rgba(0,0,0,0.8);
+}
+
+
+

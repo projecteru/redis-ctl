@@ -1,14 +1,22 @@
 {% extends './base.html' %}
 
 {% block title %}ERU 节点管理{% endblock %}
-
+{% block head %}
+<style>
+.stroke{
+        color: transparent;
+        -webkit-text-stroke: 1px black;
+        letter-spacing: 0.04em;
+        background-color: }
+</style>
+{% endblock %}
 {% block body %}
-
 {% if not eru_client %}
 <span class='label label-danger'>没有设定 ERU 地址</span>
 {% else %}
 <div>
-    ERU 地址: {{ eru_client.url|e }}
+  <h4 style='text-align: right;'>Eru地址：{{ eru_client.url|e }}</h4>
+
     {% set pods = eru_client.list_pods() %}
 
     {% if pods|length == 0 %}
@@ -16,45 +24,54 @@
     ERU 没有可用的机房
     {% else %}
     <div>
-        <select id='pod-list' data-select-style='select-default'>
-            <option value=''>选择机房</option>
-            {% for p in pods %}
-            <option value='{{ p.name|e }}'>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
-            {% endfor %}
-        </select>
-
-        <div style='margin-left: 1em; display: inline-block'>
-            <button class='check-group check-group-info' id='specify-host-check'>指定机器</button>
-            <span id='host-list-container' style='display: none'></span>
+      <div class='row demo-samples'>
+        <div class='col-xs-3'>
+          <select id='pod-list' class="select-primary" data-select-style='select-default'>
+              <option value=''>选择机房</option>
+              {% for p in pods %}
+                <option value='{{ p.name|e }}'>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
+              {% endfor %}
+          </select>
         </div>
+          <div style='margin-left: 1em; display: inline-block'>
+            <div class='row demo-samples'>
+              <div style='float:left'>
+                  <button class='check-group check-group-info' id='specify-host-check' style=' margin-right: 13px; padding-top: 10px; padding-bottom: 10px;'>指定机器</button>
+              </div>
+              <div style='float:right'>
+                <span id='host-list-container' style='display: none'></span>
+              </div>
+            </div>
+          </div>
+      </div>
 
-        <script>
-        $('#pod-list').enableLabelSelect({
-            width: 240,
-            onChange: function(pod) {
-                $('#node-create-panel').show();
-                var selectHost = $('<select>').data('select-style', 'select-default');
-                $('#host-list-container').html('').append(selectHost);
-                $.get('/eru/list_hosts/' + pod, {}, function(r) {
-                    $.each(r, function(i, e) {
-                        selectHost.append($('<option>').val(e.name).text(e.name + ' - ' + e.addr))
-                    });
-                    selectHost.enableLabelSelect({width: 240});
-                });
-            }
+<script>
+$('#pod-list').change(function(pod){
+        $('#node-create-panel').show();
+        var selectHost = $('<select>').data('select-style', 'select-default');
+        $('#host-list-container').html('').append(selectHost);
+        $('#host-list-container').find('select').toggleClass('select-primary');
+        $("select").select2({dropdownCssClass: 'dropdown-inverse'});
+        $.get('/eru/list_hosts/' + pod.val, {}, function(r) {
+            $.each(r, function(i, e) {
+                selectHost.append($('<option>').val(e.name).text(e.name + ' - ' + e.addr))
+            });
         });
-        $('#specify-host-check').enableLabelCheck({
-            onClick: function(e) {
-                $('#host-list-container').toggle(e.prop('checked'));
-            }
-        });
+});
+$('#specify-host-check').enableLabelCheck({
+    onClick: function(e) {
+        $('#host-list-container').toggle(e.prop('checked'));
+    }
+});
 
-        function getSelectedHost() {
-            return $('#specify-host-check').prop('checked') ? $('#host-list-container :selected').val() : '';
-        }
-        </script>
+function getSelectedHost() {
+    return $('#specify-host-check').prop('checked') ? $('#host-list-container :selected').val() : '';
+}
+</script>
     </div>
-    <div id='node-create-panel' style='margin-left: 20px; margin-top: 0.5em; display: none'>
+    <br>
+    <div id='node-create-panel' style=' margin-top: 0.5em; display: none'>
+      <div class="panel panel-primary">
         <table class='table'>
             <tr>
                 <td>创建节点:</td>
@@ -67,37 +84,43 @@
             <tr>
                 <td>创建代理:</td>
                 <td>
-                    <select id='cluster-select' data-select-style='select-default'>
+                    <div class= 'col-xs-5' style="padding-left: 0px;padding-right: 0px;">
+                      <select id='cluster-select' class='select-primary' data-select-style='select-default'>
                         <option value=''>选择集群</option>
                         {% for c in clusters if c.nodes|length > 0 %}
                         <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} 个节点</option>
                         {% endfor %}
-                    </select>
-                    <select id='threads-select' data-select-style='select-default'>
+                      </select>
+                    </div>
+                    <div class='col-xs-5'>
+                      <select id='threads-select' class='select-primary' data-select-style='select-default'>
                         <option value=''>线程数</option>
                         <option value='8'>8 线程</option>
                         <option value='16'>16 线程</option>
                         <option value='24'>24 线程</option>
-                    </select>
-                    <button id='read-slave' class='check-opt check-group check-group-info'>只读</button>
+                      </select>
+                    </div>
+                    <button id='read-slave' class='check-opt check-group check-group-info' style="margin-top: 4px;">只读</button>
                 </td>
                 <td>
-                    <button class='btn btn-primary' onclick='requestEruProxy(this)'>申请 ERU 代理</button>
+                    <button class='btn btn-primary' onclick='requestEruProxy(this)' style="margin-top: 4px;">申请 ERU 代理</button>
                     <span style='display: none' id='proxy-error' class='label label-danger'></span>
                 </td>
             </tr>
         </table>
+      </div>
     </div>
 
-    <script>
-    $('#cluster-select').enableLabelSelect({width: 280});
-    $('#threads-select').enableLabelSelect({width: 180});
-    </script>
+<script>
+$("select").select2({dropdownCssClass: 'dropdown-inverse'});
+$('#cluster-select').change(function(){width: 280});
+$('#threads-select').change(function(){width: 180});
+</script>
     {% endif %}
 </div>
-
-<table class='table' style='text-align: center'>
-    <caption>已有节点</caption>
+<div class="panel panel-primary">
+  <div class="panel-heading">已有节点</div>
+  <table class='table' style='text-align: center'>
     <thead>
         <tr>
             <th>容器 ID</th>
@@ -131,10 +154,11 @@
         <tr>
     {% endfor %}
     </tbody>
-</table>
-
-<table class='table' style='text-align: center'>
-    <caption>已有代理</caption>
+  </table>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading">已有代理</div>
+  <table class='table' style='text-align: center'>
     <thead>
         <tr>
             <th>容器 ID</th>
@@ -164,7 +188,8 @@
         <tr>
     {% endfor %}
     </tbody>
-</table>
+  </table>
+</div>
 
 <script>
 $('.check-opt').enableLabelCheck();

@@ -3,14 +3,19 @@
 <head>
 <meta charset='utf-8'>
 <title>{% block title %}{% endblock %}</title>
-<link rel='stylesheet' type='text/css' href='/static/common.css'>
-<link rel='stylesheet' type='text/css' href='/static/flatstrap.css'>
+<link rel='stylesheet' type='text/css' href='/static/css/common.css'>
 <link rel='stylesheet' type='text/css' href='/static/lib/css/font-awesome.css'>
-<link rel='stylesheet' type='text/css' href='/static/components.css'>
-<script src='/static/jquery.js'></script>
-<script src='/static/bootstrap.js'></script>
-<script src='/static/common.js'></script>
-<script src='/static/components.js'></script>
+<link rel='stylesheet' type='text/css' href='/static/css/components.css'>
+<link rel='stylesheet' type='text/css' href='/static/css/flat-ui.min.css'>
+<link rel='stylesheet' type='text/css' href='/static/vendor/bootstrap.min.css'>
+<script src='/static/js/jquery.js'></script>
+<script src='/static/js/bootstrap.js'></script>
+<script src='/static/js/common.js'></script>
+<script src='/static/js/vendor/jquery.min.js'></script>
+<script src='/static/js/flat-ui.min.js'></script>
+<script src='/static/js/application.js'></script>
+<script src='/static/js/components.js'></script>
+<script src='/static/js/slidetoggle.js'></script>
 <script>
 function selectHash() {
     var e = document.getElementById(window.location.hash.slice(1));
@@ -33,21 +38,26 @@ $(document).ready(function() {
 </script>
 {% block head %}{% endblock %}
 </head>
-<body>
-<header>
-    <div class='main-width'>
-        <a class='nav-link' href='/'>RedisCtl</a>
-        <span style='float: right'>
-            <a class='nav-link' href='/nodes/manage/eru'>容器节点管理</a>
-            |
-            <a class='nav-link' href='/stats/pollings'>轮询记录</a>
-        </span>
-    </div>
-</header>
+    <header style='padding-left: 0px;
+            padding-right: 0px;
+            padding-bottom: 0px;
+            padding-top: 0px;'>
+        <nav class='navbar navbar-inverse navbar-embossed' role='navigation' style='margin-bottom:0px;'>
+        <div class='navbar-header'>
+            <a class='navbar-brand' style="padding-left: 45px;" href='/'>RedisCtl</a>
+        </div>
+        <div class='collapse navbar-collapse'>
+            <ul class='nav navbar-nav navbar-right'>      
+                <li><a class='nav-link' href='/nodes/manage/eru'><span class='fui-eye'></span> 容器节点管理</a></li>
+                <li><a class='nav-link' href='/stats/pollings'><span class='fui-calendar'></span> 轮询记录</a></li>
+                <li><a class='nav-link' href='/stats/statistics'><span class='fui-bubble'></span> 请求数监控</a></li>
+            </ul>
+        </div>    
+    </header>
 
 <div class='main-width'>{% block body %}{% endblock %}</div>
 
-<footer>
+<footer style="margin-top: 0px;">
     <div class='main-width'>
         <span style='float: right'>
             &copy; HunanTV Platform developers - ver0.7.0-2015-07-24
