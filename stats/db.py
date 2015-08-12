@@ -84,3 +84,18 @@ class Client(object):
         if len(r) > POINT_LIMIT:
             r = r[::len(r) / POINT_LIMIT + 1]
         return [[x['timestamp'], x['value']] for x in r]
+
+    def query_request(self, node, field, aggf, span, end, interval):
+        r = requests.post(self.query_uri, data=json.dumps({
+            'start': end - span,
+            'end': end,
+            'cf': aggf,
+            'endpoint_counters': [{
+                'endpoint': '%s-%s' % (self.prefix, node),
+                'counter': field + '/service=redisctl',
+            }],
+        })).json()[0]['Values']
+        for i in range(1,len(r)):
+            m  = r[-i]
+            if m['value']:
+                return m['value']

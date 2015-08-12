@@ -13,7 +13,6 @@ $(document).ready(function() {
             });
         }
     });
-
     $('.delete-proxy-btn').click(function() {
         var btn = $(this);
         btn.attr('disabled', 'disabled').text('请稍候');
