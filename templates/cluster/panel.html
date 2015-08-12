@@ -3,9 +3,9 @@
 {% block title %}集群控制面板{% endblock %}
 
 {% block head %}
-<script src='/static/cluster_task.js'></script>
-<script src='/static/redis_node.js'></script>
-<script src='/static/sort-nodes.js'></script>
+<script src='/static/js/cluster_task.js'></script>
+<script src='/static/js/redis_node.js'></script>
+<script src='/static/js/sort-nodes.js'></script>
 <style>
 .slave-row .node-addr {
     padding-left: 2em
@@ -18,42 +18,42 @@
 {% endblock %}
 
 {% block body %}
-
-<h1>基本设置</h1>
-<table style='width: 100%' class='table'>
+<div class="panel panel-primary">
+  <div class="panel-heading">基本设置</div>
+  <table style='width: 100%' class='table'>
     <tr>
-        <td class='label-cell'>集群 ID</td>
-        <td>{{ cluster.id }}</td>
+      <td class='label-cell'>集群 ID</td>
+      <td>{{ cluster.id }}</td>
     </tr>
     <tr>
-        <td class='label-cell'>集群描述</td>
-        <td>
-            <input id='cluster-descr-inp' value="{{ cluster.description|e }}">
-            <button class='btn btn-primary' id='cluster-set-descr'>改</button>
-        </td>
+      <td class='label-cell'>集群描述</td>
+      <td>
+          <input id='cluster-descr-inp' value="{{ cluster.description|e }}">
+          <button class='btn btn-primary' id='cluster-set-descr'>改</button>
+      </td>
     </tr>
     <tr>
-        <td class='label-cell'>代理数</td>
-        <td>{{ cluster.proxies|length }}</td>
+      <td class='label-cell'>代理数</td>
+      <td>{{ cluster.proxies|length }}</td>
     </tr>
     <tr>
-        <td class='label-cell'>节点数</td>
-        <td>{{ cluster.nodes|length }}</td>
+      <td class='label-cell'>节点数</td>
+      <td>{{ cluster.nodes|length }}</td>
     </tr>
     <tr>
-        <td class='label-cell'>操作</td>
-        <td>
-            <button class='btn btn-primary' id='cluster-fix-migrating'>修复槽位迁移</button>
-            <button class='btn btn-primary' id='cluster-enable-all-nodes-alert' data-suppress='0'>打开所有节点的报警</button>
-            <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert' data-suppress='1'>关闭所有节点的报警</button>
-            <div style='margin: 1em'></div>
-            <button class='btn btn-info' id='cluster-enable-all-nodes-aof' data-aof='yes'>打开所有节点的 AOF</button>
-            <button class='btn btn-danger' id='cluster-disable-all-nodes-aof' data-aof='no'>关闭所有节点的 AOF</button>
-            <button class='btn' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
-        </td>
+      <td class='label-cell'>操作</td>
+      <td>
+        <button class='btn btn-primary' id='cluster-fix-migrating'>修复槽位迁移</button>
+        <button class='btn btn-primary' id='cluster-enable-all-nodes-alert'>打开所有节点的报警</button>
+        <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert'>关闭所有节点的报警</button>
+        <div style='margin: 1em'></div>
+        <button class='btn btn-info' id='cluster-enable-all-nodes-aof' data-aof='yes'>打开所有节点的 AOF</button>
+        <button class='btn btn-danger' id='cluster-disable-all-nodes-aof' data-aof='no'>关闭所有节点的 AOF</button>
+        <button class='btn btn-primary' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
+      </td>
     </tr>
-</table>
-
+  </table>
+</div>
 {{ render_template('components/node/autodiscover.html', host=cluster.nodes[0].host, port=cluster.nodes[0].port) }}
 
 <script>
@@ -133,26 +133,28 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
 });
 </script>
 
-<hr>
-
-<h1 id='nodes'>节点</h1>
-
-<table class='table'>
-    <thead>
+<div class="panel panel-primary">
+    <div class="panel-heading">节点</div> 
+    <table class='table'>
+      <thead>
         <tr>
-            <th>节点 ID</th>
-            <th>地址</th>
-            <th>内存</th>
-            <th>持久化</th>
-            <th>角色</th>
-            <th>槽位数量</th>
+          <th>节点 ID</th>
+          <th>地址</th>
+          <th>内存</th>
+          <th>持久化</th>
+          <th>角色</th>
+          <th>槽位数量</th>
         </tr>
-    </thead>
-    <tbody id='cluster-nodes' style='text-align: center'></tbody>
-</table>
-
-<button class='btn' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
-
+      </thead>
+      <tbody id='cluster-nodes' style='text-align: center'></tbody>
+      <tfoot>
+        <tr>
+          <td>      
+            <div class="row demo-row">
+              <div class="col-xs-4"></div>
+              <div class="col-xs-4">
+                <button class='btn btn-primary' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
+              </div>
 <script>
 -function() {
     var tbody = $('#cluster-nodes');
@@ -248,20 +250,26 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
     });
 }();
 </script>
-
-<button class='btn' data-toggle='modal' data-target='#exportNodes'>节点地址列表</button>
-
-{{ render_template('components/cluster/export-nodes.html') }}
-
-<h1 id='proxies'>代理设置</h1>
-<table class='table'>
-    <thead>
-        <tr>
-            <th>地址</th>
-            <th>操作</th>
+              <div class="col-xs-4">
+                <button class='btn btn-primary' data-toggle='modal' data-target='#exportNodes'>节点地址列表</button>
+              </div>
+            </div>
+          </td>
         </tr>
-    </thead>
-    <tbody style='text-align: center'>
+      </tfoot>
+    </table>
+</div>
+{{ render_template('components/cluster/export-nodes.html') }}
+<div class="panel panel-primary">
+  <div class="panel-heading" id='proxies'>代理设置</div>
+  <table class='table' style='float: center; text-align:center;'>
+      <thead>
+        <tr>
+          <th>地址</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody style='text-align: center'>
         {% for proxy in cluster.proxies %}
         <tr>
             <td>
@@ -274,39 +282,30 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
                 {% endif %}
             </td>
             <td>
-                <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
-                <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
-                    <span class='check-group-label'>关闭报警</span>
-                </button>
-                <button class='btn' data-toggle='modal' data-target='#commandConsole' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>直接发送指令</button>
-                <button class='btn btn-sync-remotes' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>同步槽位映射</button>
+                <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' class='btn btn-info'>状态历史 <i class='fa fa-external-link'></i></a>
+                <button class='btn btn-info' data-toggle='modal' data-target='#commandConsole' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>直接发送指令</button>
+                <button class='btn btn-sync-remotes btn-info' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>同步槽位映射</button>
                 {% if proxy.eru_deployed %}
                 <a href='/nodes/manage/eru#proxy-{{ proxy.host|e }}' class='btn'>去删除此代理并下线容器</a>
                 {% else %}
-                <button class='btn btn-danger delete-proxy-btn' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port }}'>从监视面板移除此代理</button>
+                <button class='btn btn-danger delete-proxy-btn' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port }}'>从监视面板移除</button>
                 {% endif %}
+                <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if proxy.suppress_alert else '' }}' data-ntype='proxy' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port|tojson }}'>
+                  <span class='check-group-label'>关闭报警</span>
+                </button>
             </td>
         </tr>
         {% endfor %}
-    </tbody>
-</table>
-
-<div style='clear: both'>
-    <table style='margin: 1em; border-collapse: separate; border-spacing: 1em'>
         <tr>
-            <td>注册新集群代理</td>
+            <td>注册新集群代理:</td>
             <td>
-                地址
-                <br>
-                <sup>如 127.0.0.1:8889</sup>
-            </td>
-            <td>
-                <input id='new-proxy-addr'>
+                <input type="text"  id ='new-proxy-addr' class="login-field" value="" placeholder="地址，如：127.0.0.1:8889" >
                 <button class='btn btn-primary' id='new-proxy-btn'>注册代理</button>
                 <span class='label label-danger' id='new-proxy-error' style='display: none'></span>
             </td>
         </tr>
-    </table>
+      </tbody>
+  </table>
 </div>
 
 <script>
@@ -358,7 +357,8 @@ $('#new-proxy-btn').click(function() {
 
 {{ render_template('components/command_console.html') }}
 
-<h1>设置自动扩容</h1>
+<div class="panel panel-primary">
+  <div class="panel-heading">设置自动扩容</div>
 
 {% if not eru_client %}
 <span class='label label-danger'>没有设定 ERU 地址</span>
@@ -518,13 +518,14 @@ $('#new-proxy-btn').click(function() {
 }();
 </script>
     {% endif %}
-
 {% endif %}
+</div>
 
-<h1>后台任务</h1>
-
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    后台任务
+    <a href='/cluster/tasks/list/{{ cluster.id }}' style='color:white; float: right;'>查看更多任务</a>
+  </div>
 {{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
-
-<a href='/cluster/tasks/list/{{ cluster.id }}'>查看更多任务</a>
-
+</div>
 {% endblock %}
