@@ -2,6 +2,7 @@ import json
 import hashlib
 
 from daemonutils.auto_balance import add_node_to_balance_for
+import config
 import base
 import file_ipc
 import models.node
@@ -14,7 +15,7 @@ REDIS_SHA = hashlib.sha1('redis').hexdigest()
 class AutoBalance(base.TestCase):
     def test_master_only(self):
         with self.app.test_client() as client:
-            n = models.node.create_instance('127.0.0.1', 6301, 64000000)
+            n = models.node.create_instance('127.0.0.1', 6301)
             c = models.cluster.create_cluster('the quick brown fox')
             c.nodes.append(n)
             self.db.session.add(c)
@@ -35,7 +36,7 @@ class AutoBalance(base.TestCase):
                 'version': REDIS_SHA,
                 'entrypoint': 'ep0',
                 'env': 'prod',
-                'group': 'group',
+                'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
                 'network': ['network:net'],
@@ -75,7 +76,7 @@ class AutoBalance(base.TestCase):
 
     def test_master_with_slaves(self):
         with self.app.test_client() as client:
-            n = models.node.create_instance('127.0.0.1', 6301, 64000000)
+            n = models.node.create_instance('127.0.0.1', 6301)
             c = models.cluster.create_cluster('the quick brown fox')
             c.nodes.append(n)
             self.db.session.add(c)
@@ -96,7 +97,7 @@ class AutoBalance(base.TestCase):
                 'version': REDIS_SHA,
                 'entrypoint': 'ep0',
                 'env': 'prod',
-                'group': 'group',
+                'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
                 'network': ['network:net'],
@@ -162,7 +163,7 @@ class AutoBalance(base.TestCase):
 
     def test_specify_host(self):
         with self.app.test_client() as client:
-            n = models.node.create_instance('127.0.0.1', 6301, 64000000)
+            n = models.node.create_instance('127.0.0.1', 6301)
             c = models.cluster.create_cluster('the quick brown fox')
             c.nodes.append(n)
             self.db.session.add(c)
@@ -184,7 +185,7 @@ class AutoBalance(base.TestCase):
                 'version': REDIS_SHA,
                 'entrypoint': 'ep0',
                 'env': 'prod',
-                'group': 'group',
+                'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
                 'network': ['network:net'],
@@ -197,7 +198,7 @@ class AutoBalance(base.TestCase):
                 'version': REDIS_SHA,
                 'entrypoint': 'ep0',
                 'env': 'prod',
-                'group': 'group',
+                'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
                 'network': ['network:net'],
@@ -210,7 +211,7 @@ class AutoBalance(base.TestCase):
                 'version': REDIS_SHA,
                 'entrypoint': 'ep0',
                 'env': 'prod',
-                'group': 'group',
+                'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
                 'network': ['network:net'],
@@ -274,14 +275,14 @@ class AutoBalance(base.TestCase):
                 base.FakeEruClientBase.__init__(self)
                 self.limit = limit
 
-            def deploy_private(self, *args, **kwargs):
+            def deploy_private(self, *a, **kwargs):
                 if len(self.deployed) == self.limit:
                     raise ValueError('v')
                 return base.FakeEruClientBase.deploy_private(
-                    self, *args, **kwargs)
+                    self, *a, **kwargs)
 
         with self.app.test_client() as client:
-            n = models.node.create_instance('127.0.0.1', 6301, 64000000)
+            n = models.node.create_instance('127.0.0.1', 6301)
             c = models.cluster.create_cluster('the quick brown fox')
             c.nodes.append(n)
             self.db.session.add(c)
@@ -302,7 +303,7 @@ class AutoBalance(base.TestCase):
 
     def test_write_file_ipc(self):
         with self.app.test_client() as client:
-            n = models.node.create_instance('127.0.0.1', 6301, 64000000)
+            n = models.node.create_instance('127.0.0.1', 6301)
             c = models.cluster.create_cluster('the quick brown fox')
             c.nodes.append(n)
             self.db.session.add(c)

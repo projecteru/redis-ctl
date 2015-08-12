@@ -107,7 +107,7 @@ class FakeEruClientBase(object):
         return {'id': 'network:%s' % what}
 
     def deploy_private(self, group, pod, what, ncont, ncore, version_sha,
-                       entrypoint, env, network, host_name=None):
+                       entrypoint, env, network, host_name=None, args=None):
         self.next_container_id += 1
         self.deployed[self.next_container_id] = {
             'group': group,
@@ -124,7 +124,11 @@ class FakeEruClientBase(object):
         return {'msg': 'ok', 'tasks': [-self.next_container_id]}
 
     def get_container(self, cid):
-        return {'networks': [{'address': '10.0.0.%d' % cid}]}
+        return {
+            'networks': [{'address': '10.0.0.%d' % cid}],
+            'host': '172.10.0.%d' % cid,
+            'created': '2000-01-01 07:00:00',
+        }
 
     def remove_containers(self, cids):
         for i in cids:
