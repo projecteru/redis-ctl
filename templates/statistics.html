@@ -7,7 +7,7 @@
     src: url('/static/fonts/digital/ds-digib-webfont.woff'); 
 } 
 
-.jumbo{
+h1.jumbo{
     font-size: 17em;
     color:white;
     text-align:center;
@@ -16,6 +16,13 @@
     padding-top: 30px;
     margin-bottom: 10px;
     margin-top: 0px;
+}
+h5.jumbo{
+    text-align: left;  
+    color:white;
+    margin-top: 0px;
+    font-family: 'ds-digitalbold'; 
+    padding-left: 110px;
 }
 .dowebok{
     float: right;
@@ -48,49 +55,19 @@ h4{
 
 {% block body %}
 <h3>总请求数</h3>
-<h1 class="jumbo" id="myTargetElement"></h1>
+<h1 class="jumbo" id="TotalNumber"></h1>
 <h4>请求排行：</h4>
-<h5 class="jumbo" id="1st" style="
-    font-size: 6em;
-    text-align: left;  
-    opacity:0.7;
-    color:white;
-    padding-left: 110px;
-    font-family: 'ds-digitalbold'; 
-    padding-top: 20px;
-    margin-top: 0px;"
-    ></h5>
-<h5 class="jumbo" id="2nd" style="
-    opacity:0.5;
-    font-size: 5em;
-    text-align: left;
-    color:white;
-    font-family: 'ds-digitalbold'; 
-    padding-left: 110px;
-    padding-top: 10px;
-    margin-top: 0px;"
-    ></h5>
-<h5 class="jumbo" id="3rd" style="
-    font-size: 4em;
-    opacity:0.2;
-    color:white;
-    padding-left: 110px;
-    text-align: left;
-    font-family: 'ds-digitalbold'; 
-    padding-top: 0px;
-    margin-top: 0px;"
-   ></h5>
+<h2 id='addfield'></h2>
 <script>
 $(function(){
     var startVal = 0;
    // startVal = Number(startVal.replace(',','').replace(' ',''));
-    var endVal = 249000;
+    var endVal = 1;
    // endVal = Number(endVal.replace(',','').replace(' ',''));
     var decimals = 0,//小数点啦
         duration = 1,//增长速度
         prefix = "",//前方固定数
         suffix = "";//后方固定数
-    var useOnComplete = false;//计数结束后是否弹出提示框 
     options = {
         useEasing : true,   //速度
         useGrouping : true,   //分隔符
@@ -99,43 +76,37 @@ $(function(){
         prefix: prefix,
         suffix: suffix
     }
+    display_total = new CountUp("TotalNumber", startVal, endVal, decimals, duration, options);
+    display_total.start();
 
-    demo_total = new CountUp("myTargetElement", startVal, endVal, decimals, duration, options);
-    demo_1st = new CountUp("1st", startVal, endVal, decimals, duration, options);
-    demo_2nd = new CountUp("2nd", startVal, endVal, decimals, duration, options);
-    demo_3rd = new CountUp("3rd", startVal, endVal, decimals, duration, options);
+    $.get('/stats/sequence',function(data){
+        var s = [];
+        for (var i = 0; i < data.length && i < 3; i++) {
+            var h5 = $('<h5>').addClass('jumbo').css({'font-size': 5-i+'em','opacity': 1-0.3*(i+1),'padding-top': 20-i*10+'px'}).attr('id',i);
+            $("#addfield").append(h5);
+            var display = new CountUp(i.toString(), startVal, endVal, decimals, duration, options);
+            s.push(display);
+            display.start();
+        }
+        setInterval(function (){ 
+            $.get('/stats/sequence',function(data){
+                sum = eval(data.join('+'));
+                var updateVal = sum;
+                var num = updateVal ? updateVal : 0;
+                display_total.update(num)
 
-    if (useOnComplete) {
-        demo_total.start(methodToCallOnComplete);
-        demo_1st.start(methodToCallOnComplete);
-        demo_2nd.start(methodToCallOnComplete);
-        demo_3rd.start(methodToCallOnComplete);
-    } else {
-        demo_total.start();
-        demo_1st.start();
-        demo_2nd.start();
-        demo_3rd.start();
-    }
-});
-setInterval(function myInterval(){          
-    $.get('/stats/stacalculate', function(r){
-        var updateVal = r;
-        var num = updateVal ? updateVal : 0;
-
-        demo_total.update(num);
+                sorted_data = data.sort(function(a, b){ return a < b ? 1: -1 })
+                for (var k = 0; k < data.length && k < 3; k++){
+                    if (k > i - 1){
+                        location.reload();
+                    }
+                    var d_updateVal = data[k];
+                    var d_num = d_updateVal ? d_updateVal : 0;
+                    s[k].update(d_num);
+                };
+            });
+        },5000);
     });
-    $.get('/stats/sequence',function(first){
-        var f_updateVal = first[0][1];
-        var f_num = f_updateVal ? f_updateVal : 0;
-        var s_updateVal = first[1][1];
-        var s_num = s_updateVal ? s_updateVal : 0;
-        var t_updateVal = first[2][1];
-        var t_num = t_updateVal ? t_updateVal : 0;
-     
-        demo_1st.update(f_num);
-        demo_2nd.update(s_num);
-        demo_3rd.update(t_num);
-     });
-},5000);
+});
 </script>
 {% endblock %}

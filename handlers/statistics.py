@@ -82,32 +82,13 @@ if stats.client is not None:
     def statistics(request):
        return request.render('statistics.html')
 
-    def _use_args(args):
-        limit = min(int(args.get('limit', 100)), 500)
-        interval = max(int(args.get('interval', 2)), 1)
-        return limit, interval, limit * interval * 60
-
-    @base.get_async('/stats/stacalculate')
-    def calculate_value(request):
-        results = 0
-        limit, interval, span = _use_args(request.args)
-        now = int(time.time())
-        for c in proxy.list_ip():
-            node = '%s:%d' % (c[0],c[1]) 
-            field = 'completed_commands'
-            result = stats.client.query_request(node, field, 'MAX', span, now, interval)
-            if result:
-                results = results + result
-        return base.json_result(results)
-
     @base.get_async('/stats/sequence')
     def sequence(request):
-        m = {}
-        limit, interval, span = _use_args(request.args)
+        m = []
         now = int(time.time())
         for c in proxy.list_ip():
-            node = '%s:%d' % (c[0],c[1]) 
-            field = 'completed_commands'
-            m[node] = stats.client.query_request(node, field, 'MAX', span, now, interval)
-        sort_m = sorted(m.iteritems(),key=lambda d:d[1], reverse = True) 
-        return base.json_result(sort_m)
+            node = '%s:%d' % (c[0], c[1])
+            result = stats.client.query_request(node, now)
+            if result:
+                m.append(result)
+        return base.json_result(m)
