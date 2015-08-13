@@ -86,17 +86,18 @@ class Client(object):
         return [[x['timestamp'], x['value']]
                 for x in r if x['value'] is not None]
 
-    def query_request(self, node, field, aggf, span, end, interval):
+    def query_request(self, node, end):
         r = requests.post(self.query_uri, data=json.dumps({
-            'start': end - span,
+            'start': end - 12000,
             'end': end,
-            'cf': aggf,
+            'cf': 'MAX',
             'endpoint_counters': [{
                 'endpoint': '%s-%s' % (self.prefix, node),
-                'counter': field + '/service=redisctl',
+                'counter': 'completed_commands/service=redisctl',
             }],
         })).json()[0]['Values']
-        for i in range(1,len(r)):
-            m  = r[-i]
-            if m['value']:
-                return m['value']
+        if r:
+            for i in range(1, len(r)):
+                m  = r[-i]
+                if m['value']:
+                    return m['value']
