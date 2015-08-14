@@ -7,97 +7,55 @@
 #nodes-area > tbody > tr:nth-child(2n+1) { background-color: #f0f0f0; }
 .row-odd { background-color: #f0f0f0; }
 .proxy-tab { border-left: 1px solid #ddd; }
-.main-width { width: 1270px; }
 .a { text-decoration: none; }
 th { text-align: center; }
 </style>
-<link rel='stylesheet' type='text/css' href='/static/css/wheelmenu.css'>
 <script src='/static/js/redis_node.js'></script>
-<script src='/static/js/jquery.wheelmenu.min.js'></script>
 {% endblock %}
 
 {% block body %}
-<div class="row demo-samples">
-  <div class="col-xs-2">
-      <div class="todo" style="height: 350px;">
-      <ul>
-        <li class="todo-done" id="info">        
-          <div class="todo-icon fui-star-2"></div>
-          <div class="todo-content">
-            <h4 class="todo-name">
-              集群信息
-            </h4>
-            Cluster Information
-          </div>
-        </li>
-        <li class="todo-done" id="msg">        
-          <div class="todo-icon fui-link"></div>
-          <div class="todo-content">
-            <h4 class="todo-name">
-              节点信息
-            </h4>
-            Node Information
-          </div>
-        </li>
-        <li class="todo-done" id="reg">         
-          <div class="todo-icon fui-checkbox-checked"></div>
-          <div class="todo-content">
-            <h4 class="todo-name">
-              注册节点
-            </h4>
-            Register node
-          </div>
-        </li>
-      </ul>
-    </div>
-    <a href="#wheel3" class="wheel-button ne" id="msgbutton" data-toggle="tooltip" data-placement="right" title="此按钮为“节点信息”的过滤按钮">
-        <span>+</span>
-    </a>
-    <ul id="wheel3" data-angle="SE" class="wheel">
-        <li class="item" data-value='all'><a href='#'>全部节点</a></li>
-        <li class="item" data-value='error'><a href='#'>出错节点</a></li>
-        <li class="item" data-value='noalert'><a href='#'>忽略报警节点</a></li>
-        <li class="item" data-value='migrating'><a href='#'>槽位迁移中节点</a></li>
-    </ul>
-
-  </div>
-  <div class="col-xs-10">
-    <div id='information' style='display:block'>
-      <div class="panel panel-success">
-        <div class="panel-heading"><strong>Cluster Information</strong></div>
-        <table class='table'>
-          <thead>
-            <tr>
-              <th rowspan='2'>#</th>
-              <th rowspan='2' style="width: 320px;">描述</th>
-              <th rowspan='2'>节点数</th>
-              <th colspan='5'>代理</th>
-              <th>SLA</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-         {% for cluster in clusters if cluster.nodes %}
-            {{ cluster|render_cluster('row', stats_enabled=stats_enabled, odd_row=loop.index % 2) }}
-         {% endfor %}
-          </tbody>
-        </table>
+<div class="panel panel-success">
+  <div class="panel-heading"><strong>Cluster Information</strong></div>
+  <table class='table'>
+    <thead>
+      <tr>
+        <th rowspan='2'>#</th>
+        <th rowspan='2' style="width: 320px;">描述</th>
+        <th rowspan='2'>节点数</th>
+        <th colspan='5'>代理</th>
+        <th>SLA</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+   {% for cluster in clusters if cluster.nodes %}
+      {{ cluster|render_cluster('row', stats_enabled=stats_enabled, odd_row=loop.index % 2) }}
+   {% endfor %}
+    </tbody>
+  </table>
+</div>
+<div class="panel panel-success">
+  <div class="panel-heading">
+    <div class="row">
+      <div class='col-xs-4' style="margin-top: 10px;">
+        <strong style="">Node Information</strong>
+      </div>
+      <div class='col-xs-4' style="float:right">
+        <select class="select-primary" id="selectmenu">
+          <option value='all'>显示全部节点</option>
+          <option value='error'>只显示出错节点</option>
+          <option value='noalert'>忽略报警节点</option>
+          <option value='migrating'>显示槽位正在迁移的节点</option>
+        </select>
       </div>
     </div>
-    <div id='message' style='display:block'>
-      <div class="panel panel-success">
-        <div class="panel-heading"><strong>Node Information</strong></div>
+  </div>
 <script>
 $("select").select2({dropdownCssClass: 'dropdown-inverse'});
-$(".wheel-button").wheelmenu({
-  trigger: "hover", // Can be "click" or "hover". Default: "click"
-  animation: "fly", // Entrance animation. Can be "fade" or "fly". Default: "fade"
-  animationSpeed: "fast", // Entrance animation speed. Can be "instant", "fast", "medium", or "slow". Default: "medium"
-  angle: "all", // Angle which the menu will appear. Can be "all", "N", "NE", "E", "SE", "S", "SW", "W", "NW", or even array [0, 360]. Default: "all" or [0, 360]
-});
 $(function() {
-    $('.wheel li').click(function() {
-        switch ($(this).data('value')) {
+    $('#selectmenu').change(function() {
+        var chooseValues = $('#selectmenu').val();
+        switch (chooseValues) {
             case 'error':
                 return  setDisplayClass('error-only');
             case 'noalert':
@@ -116,43 +74,37 @@ $(function() {
     }
 });
 </script>
-    <table id='nodes-area' class='table'>
-      <thead>
-        <tr>
-            <th>节点</th>
-            <th>内存</th>
-            <th>SLA</th>
-            <th>集群信息</th>
-            <th>基本操作</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for node in nodes %}
-        {{ node|render_node('row', stats_enabled=stats_enabled) }}
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+  <table id='nodes-area' class='table'>
+    <thead>
+      <tr>
+        <th>节点</th>
+        <th>内存</th>
+        <th>SLA</th>
+        <th>集群信息</th>
+        <th>基本操作</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for node in nodes %}
+      {{ node|render_node('row', stats_enabled=stats_enabled) }}
+    {% endfor %}
+    </tbody>
+  </table>
 </div>
-<div id='regist' style='display:block'>
-  <div class="login-screen" style="padding-left: 199px;
-                                   padding-top: 30px;
-                                   background-color: #ecf0f1;
-                                   min-height: 200px;">
-    <div class='row'>
-      <div class="col-xs-3">
-        <img src="/static/picture/retina.svg" alt="Retina">
+<div class="login-screen" style="padding-left: 199px; padding-top: 30px;background-color: #ecf0f1;min-height: 200px;">
+  <div class='row'>
+    <div class="col-xs-3">
+      <img src="/static/picture/retina.svg" alt="Retina">
+    </div>
+    <div class="col-xs-8" style="padding-left: 45px;
+                                 padding-right: 0px;">
+      <div class="form-group">
+        <input type="text"  id ='add-nodes-host' class="form-control login-field" value="" placeholder="请输入地址" >
       </div>
-      <div class="col-xs-8" style="padding-left: 45px;
-                                   padding-right: 0px;">
-        <div class="form-group">
-          <input type="text"  id ='add-nodes-host' class="form-control login-field" value="" placeholder="请输入地址" >
-        </div>
-        <div class="form-group">
-          <input type="text"  id ='add-nodes-port' class="form-control login-field" value="" placeholder="请输入端口范围(如6370/ 6000-6020)"> 
-        </div>
-          <button id='add-nodes' class='btn btn-block btn-lg btn-primary'>注册这些节点</button><span id='add-node-info'></span>
+      <div class="form-group">
+        <input type="text"  id ='add-nodes-port' class="form-control login-field" value="" placeholder="请输入端口范围(如6370/ 6000-6020)"> 
       </div>
+        <button id='add-nodes' class='btn btn-block btn-lg btn-primary'>注册这些节点</button><span id='add-node-info'></span>
     </div>
   </div>
 </div>
@@ -191,19 +143,4 @@ $('#add-nodes').click(function() {
     }($('#add-nodes-host').val(), portBegin, portEnd);
 });
 </script>
-<script>
-$(document).ready(function(){
-  $("#info").click(function(){
-    $("#information").fadeToggle("slow");
-    });
-  $("#msg").click(function(){
-      $("#message").fadeToggle("slow");
-      $("#msgbutton").fadeToggle("slow");
-    });
-  $("#reg").click(function(){
-    $("#regist").fadeToggle("slow");
-  });
-});
-</script>
-</div>
 {% endblock %}
