@@ -374,7 +374,7 @@ $('#new-proxy-btn').click(function() {
     |
     集群自动扩容在集群节点内存容量使用超过 90% 时自动申请新节点并迁移数据.
 
-    {% set plan = cluster.balance_plan_detail or {} %}
+    {% set plan = cluster.balance_plan or {} %}
 
     <button id='balance-plan-check' class='check-group check-group-info {{ 'check-group-checked' if plan.pod else '' }}'>启用自动扩容</button>
 
@@ -406,7 +406,7 @@ $('#new-proxy-btn').click(function() {
             </div>
             {% endfor %}
         </div>
-        <button style='margin: 1em 0 1em 0' id='aof-enable' class='check-group check-group-info {% if plan.entrypoint == 'aof' %}check-group-checked{% endif %}'> 所有节点启用 AOF</button>
+        <button style='margin: 1em 0 1em 0' id='aof-enable' class='check-group check-group-info {% if plan.aof %}check-group-checked{% endif %}'> 所有节点启用 AOF</button>
     </div>
 
     <div>
@@ -499,7 +499,7 @@ $('#new-proxy-btn').click(function() {
             type: 'POST',
             data: {
                 pod: $('#pod-list').val(),
-                entrypoint: $('#aof-enable').prop('checked') ? 'aof' : 'rdb',
+                aof: $('#aof-enable').prop('checked') ? 1 : 0,
                 master_host: $('#master-host-list').val() === '-' ? '' : $('#master-host-list').val(),
                 slave_count: slaveCount,
                 slaves: slaves,

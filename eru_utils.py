@@ -30,6 +30,8 @@ def lastest_version_sha(what):
 
 
 def deploy_with_network(what, pod, entrypoint, ncore=1, host=None, args=None):
+    logging.info('Eru deploy %s to pod=%s entrypoint=%s cores=%d host=%s :%s:',
+                 what, pod, entrypoint, ncore, host, args)
     network = eru_client.get_network(config.ERU_NETWORK)
     version_sha = lastest_version_sha(what)
     r = eru_client.deploy_private(
@@ -47,11 +49,13 @@ def deploy_with_network(what, pod, entrypoint, ncore=1, host=None, args=None):
         raise ValueError('eru returns invalid container info')
     try:
         container_info = eru_client.get_container(cid)
-        addr = container_info['networks'][0]['address']
-        host = container_info['host']
+        logging.debug('Task %d container info=%s', task_id, container_info)
+        addr = host = container_info['host']
+        if len(container_info['networks']) != 0:
+            addr = container_info['networks'][0]['address']
         created = container_info['created']
     except LookupError, e:
-        raise ValueError('eru gives incorrent container info: %d missing %s'
+        raise ValueError('eru gives incorrent container info: %s missing %s'
                          % (cid, e.message))
     return {
         'version': version_sha,
@@ -60,3 +64,20 @@ def deploy_with_network(what, pod, entrypoint, ncore=1, host=None, args=None):
         'host': host,
         'created': created,
     }
+
+
+def deploy_node(pod, aof, netmode, cluster=True, host=None, port=6379):
+    args = ['--port', str(port)]
+    if aof:
+        args.extend(['--appendonly', 'yes'])
+    if cluster:
+        args.extend(['--cluster-enabled', 'yes'])
+    return deploy_with_network('redis', pod, netmode, host=host, args=args)
+
+
+def deploy_proxy(pod, threads, read_slave, netmode, host=None, port=8889):
+    args = ['-b', str(port), '-t', str(threads)]
+    if read_slave:
+        args.extend(['-r', '1'])
+    return deploy_with_network('cerberus', pod, netmode, ncore=threads,
+                               host=host, args=args)

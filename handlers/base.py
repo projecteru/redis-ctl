@@ -124,6 +124,8 @@ def route_async(uri, method, commit_db):
             except ValueError, e:
                 r = dict(reason=e.message)
             except StandardError, e:
+                import traceback
+                traceback.print_exc()
                 logging.error('UNEXPECTED ERROR')
                 logging.exception(e)
                 return json_result(

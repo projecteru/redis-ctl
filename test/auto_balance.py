@@ -8,8 +8,13 @@ import file_ipc
 import models.node
 import models.cluster
 import models.task
+from models.cluster_plan import ClusterBalancePlan
 
 REDIS_SHA = hashlib.sha1('redis').hexdigest()
+
+
+def _get_balance_plan(plan):
+    return ClusterBalancePlan(balance_plan_json=json.dumps(plan))
 
 
 class AutoBalance(base.TestCase):
@@ -24,17 +29,17 @@ class AutoBalance(base.TestCase):
             cluster_id = c.id
 
             self.replace_eru_client()
-            add_node_to_balance_for('127.0.0.1', 6301, {
+            add_node_to_balance_for('127.0.0.1', 6301, _get_balance_plan({
                 'pod': 'std',
-                'entrypoint': 'ep0',
+                'aof': True,
                 'slaves': [],
-            }, [2, 3, 5, 7])
+            }), [2, 3, 5, 7])
             self.assertTrue(1 in self.eru_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
                 'pod': 'std',
                 'version': REDIS_SHA,
-                'entrypoint': 'ep0',
+                'entrypoint': 'macvlan',
                 'env': 'prod',
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
@@ -85,17 +90,17 @@ class AutoBalance(base.TestCase):
             cluster_id = c.id
 
             self.replace_eru_client()
-            add_node_to_balance_for('127.0.0.1', 6301, {
+            add_node_to_balance_for('127.0.0.1', 6301, _get_balance_plan({
                 'pod': 'std',
-                'entrypoint': 'ep0',
+                'aof': True,
                 'slaves': [{}, {}],
-            }, [2, 3, 5, 7, 11, 13, 17])
+            }), [2, 3, 5, 7, 11, 13, 17])
             self.assertTrue(1 in self.eru_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
                 'pod': 'std',
                 'version': REDIS_SHA,
-                'entrypoint': 'ep0',
+                'entrypoint': 'macvlan',
                 'env': 'prod',
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
@@ -172,18 +177,18 @@ class AutoBalance(base.TestCase):
             cluster_id = c.id
 
             self.replace_eru_client()
-            add_node_to_balance_for('127.0.0.1', 6301, {
+            add_node_to_balance_for('127.0.0.1', 6301, _get_balance_plan({
                 'pod': 'std',
-                'entrypoint': 'ep0',
+                'aof': True,
                 'host': '10.0.1.173',
                 'slaves': [{}, {'host': '10.0.1.174'}],
-            }, [2, 3, 5, 7, 11, 13, 17, 19])
+            }), [2, 3, 5, 7, 11, 13, 17, 19])
             self.assertTrue(1 in self.eru_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
                 'pod': 'std',
                 'version': REDIS_SHA,
-                'entrypoint': 'ep0',
+                'entrypoint': 'macvlan',
                 'env': 'prod',
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
@@ -196,7 +201,7 @@ class AutoBalance(base.TestCase):
                 'what': 'redis',
                 'pod': 'std',
                 'version': REDIS_SHA,
-                'entrypoint': 'ep0',
+                'entrypoint': 'macvlan',
                 'env': 'prod',
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
@@ -209,7 +214,7 @@ class AutoBalance(base.TestCase):
                 'what': 'redis',
                 'pod': 'std',
                 'version': REDIS_SHA,
-                'entrypoint': 'ep0',
+                'entrypoint': 'macvlan',
                 'env': 'prod',
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
@@ -293,11 +298,11 @@ class AutoBalance(base.TestCase):
             self.replace_eru_client(EruClientLimited(2))
             self.assertRaisesRegexp(
                 ValueError, '^v$', add_node_to_balance_for,
-                '127.0.0.1', 6301, {
+                '127.0.0.1', 6301, _get_balance_plan({
                     'pod': 'std',
-                    'entrypoint': 'ep0',
+                    'aof': True,
                     'slaves': [{}, {}],
-                }, [2, 3, 5, 7, 11, 13, 17])
+                }), [2, 3, 5, 7, 11, 13, 17])
 
             self.assertEqual(0, len(self.eru_client.deployed))
 
@@ -328,12 +333,6 @@ class AutoBalance(base.TestCase):
                     'host': '127.0.0.1',
                     'port': 6301,
                     'suppress_alert': 1,
-                    'balance_plan': {
-                        'entrypoint': 'eee',
-                        'host': '10.0.0.100',
-                        'pod': 'ppp',
-                        'slaves': [{'host': u'10.0.0.101'}, {}],
-                    },
                 }],
                 'proxies': [],
             }, r)

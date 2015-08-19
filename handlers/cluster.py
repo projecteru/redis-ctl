@@ -313,7 +313,7 @@ def cluster_set_balance_plan(request):
         raise ValueError('no such cluster')
     plan = cluster.get_or_create_balance_plan()
     plan.balance_plan['pod'] = request.form['pod']
-    plan.balance_plan['entrypoint'] = request.form['entrypoint']
+    plan.balance_plan['aof'] = request.form['aof'] == '1'
     plan.balance_plan['host'] = request.form.get('master_host')
 
     slave_count = int(request.form['slave_count'])

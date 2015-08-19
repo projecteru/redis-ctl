@@ -2,22 +2,22 @@ import logging
 
 import file_ipc
 import eru_utils
-from eru_utils import deploy_with_network
+from eru_utils import deploy_node
 from models.base import db
 import models.node
 import models.task
 
 
-def _deploy_node(pod, entrypoint, host):
-    depl = deploy_with_network('redis', pod, entrypoint, host=host)
+def _deploy_node(pod, aof, host):
+    depl = deploy_node(pod, aof, 'macvlan', host=host)
     cid = depl['container_id']
     h = depl['address']
-    models.node.create_eru_instance(h, cid)
+    models.node.create_eru_instance(h, 6379, cid)
     return cid, h
 
 
-def _prepare_master_node(node, pod, entrypoint, host):
-    cid, new_node_host = _deploy_node(pod, entrypoint, host)
+def _prepare_master_node(node, pod, aof, host):
+    cid, new_node_host = _deploy_node(pod, aof, host)
     try:
         task = models.task.ClusterTask(
             cluster_id=node.assignee_id,
@@ -41,13 +41,13 @@ def _prepare_master_node(node, pod, entrypoint, host):
         raise
 
 
-def _add_slaves(slaves, task, cluster_id, master_host, pod, entrypoint):
+def _add_slaves(slaves, task, cluster_id, master_host, pod, aof):
     cids = []
     try:
         for s in slaves:
             logging.info('Auto deploy slave for master %s [task %d],'
                          ' use host %s', master_host, task.id, s.get('host'))
-            cid, new_host = _deploy_node(pod, entrypoint, s.get('host'))
+            cid, new_host = _deploy_node(pod, aof, s.get('host'))
             cids.append(cid)
             task.add_step('replicate', cluster_id=cluster_id,
                           master_host=master_host, master_port=6379,
@@ -60,7 +60,7 @@ def _add_slaves(slaves, task, cluster_id, master_host, pod, entrypoint):
         raise
 
 
-def add_node_to_balance_for(host, port, balance_plan, slots):
+def add_node_to_balance_for(host, port, plan, slots):
     node = models.node.get_by_host_port(host, int(port))
     if node is None or node.assignee_id is None:
         logging.info(
@@ -74,13 +74,12 @@ def add_node_to_balance_for(host, port, balance_plan, slots):
         return
 
     task, cid, new_host = _prepare_master_node(
-        node, balance_plan['pod'], balance_plan['entrypoint'],
-        balance_plan.get('host'))
+        node, plan.pod, plan.aof, plan.host)
     cids = [cid]
     try:
         cids.extend(_add_slaves(
-            balance_plan['slaves'], task, node.assignee_id,
-            new_host, balance_plan['pod'], balance_plan['entrypoint']))
+            plan.slaves, task, node.assignee_id,
+            new_host, plan.pod, plan.aof))
 
         migrating_slots = slots[: len(slots) / 2]
         task.add_step(

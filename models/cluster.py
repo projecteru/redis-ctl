@@ -42,11 +42,9 @@ class Cluster(Base):
         return p
 
     @cached_property
-    def balance_plan_detail(self):
+    def balance_plan(self):
         from cluster_plan import ClusterBalancePlan
-        p = db.session.query(ClusterBalancePlan).filter(
-            ClusterBalancePlan.cluster_id == self.id).first()
-        return None if p is None else p.balance_plan
+        return ClusterBalancePlan.query.filter_by(cluster_id=self.id).first()
 
     def del_balance_plan(self):
         from cluster_plan import ClusterBalancePlan

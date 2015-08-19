@@ -47,8 +47,8 @@ def get_or_create(host, port, cluster_id=None):
     return p
 
 
-def create_eru_instance(host, cluster_id, eru_container_id):
-    node = Proxy(host=host, port=8889, eru_container_id=eru_container_id,
+def create_eru_instance(host, port, cluster_id, eru_container_id):
+    node = Proxy(host=host, port=port, eru_container_id=eru_container_id,
                  cluster_id=cluster_id)
     db.session.add(node)
     db.session.flush()

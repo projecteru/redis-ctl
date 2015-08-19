@@ -69,7 +69,6 @@ class NodeBase(Base):
         Base.__init__(self, *args, **kwargs)
         self.suppress_alert = 1
         self.details = {}
-        self.balance_plan = None
 
     @classmethod
     def get_by(cls, host, port):
@@ -123,14 +122,9 @@ class NodeBase(Base):
             logging.exception(e)
             self.set_unavailable()
             self.send_alarm(alarm_func)
-        else:
-            self._check_capacity()
 
     def _collect_stats(self):
         raise NotImplementedError()
-
-    def _check_capacity(self):
-        pass
 
     def send_alarm(self, alarm_func):
         if self.suppress_alert != 1:
@@ -138,13 +132,6 @@ class NodeBase(Base):
 
     def _send_alarm(self, alarm_func):
         raise NotImplementedError()
-
-    def reattach(self):
-        n = db.session.query(self.__class__).get(self.id)
-        n.suppress_alert = self.suppress_alert
-        n.details = self.details
-        n.balance_plan = self.balance_plan
-        return n
 
     def add_to_db(self):
         db.session.add(self)
@@ -206,25 +193,36 @@ class RedisNodeStatus(NodeBase):
         finally:
             t.close()
 
+        try:
+            self._check_capacity()
+        except Exception as e:
+            logging.exception(e)
+
     def _check_capacity(self):
         import auto_balance
+        from models.cluster_plan import get_balance_plan_by_addr
 
         if (eru_client is None
-                or self.balance_plan is None
                 or not self.details['stat']
                 or len(self.details['slots']) == 0
                 or self.details['slots_migrating']):
             return
         maxmem = self.details['mem'].get('maxmemory')
-        if maxmem is None:
+        if maxmem is None or maxmem == 0:
             return
-        if self.details['mem']['used_memory'] >= maxmem * 9 / 10:
-            host, port = self.addr.split(':')
-            logging.info('Attempt to deploy node for %s due to memory drained;'
-                         ' used memory %d / %d max memory', self.addr,
-                         self.details['mem']['used_memory'], maxmem)
-            auto_balance.add_node_to_balance_for(
-                host, int(port), self.balance_plan, self.details['slots'])
+        if self.details['mem']['used_memory'] < maxmem * 9 / 10:
+            return
+
+        host, port = self.addr.split(':')
+        plan = get_balance_plan_by_addr(host, int(port))
+        if plan is None:
+            return
+
+        logging.info('Attempt to deploy node for %s due to memory drained;'
+                     ' used memory %d / %d max memory', self.addr,
+                     self.details['mem']['used_memory'], maxmem)
+        auto_balance.add_node_to_balance_for(
+            host, int(port), plan, self.details['slots'])
 
     def _send_alarm(self, alarm_func):
         alarm_func('Redis Failed %s:%d' % (

@@ -56,8 +56,8 @@ def create_instance(host, port):
     return node
 
 
-def create_eru_instance(host, eru_container_id):
-    node = RedisNode(host=host, port=6379, eru_container_id=eru_container_id)
+def create_eru_instance(host, port, eru_container_id):
+    node = RedisNode(host=host, port=port, eru_container_id=eru_container_id)
     db.session.add(node)
     db.session.flush()
     return node

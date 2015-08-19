@@ -1,15 +1,13 @@
 {% extends './base.html' %}
 
 {% block title %}ERU 节点管理{% endblock %}
+
 {% block head %}
 <style>
-.stroke{
-        color: transparent;
-        -webkit-text-stroke: 1px black;
-        letter-spacing: 0.04em;
-        background-color: }
+.select2-container { display: inline-block }
 </style>
 {% endblock %}
+
 {% block body %}
 {% if not eru_client %}
 <span class='label label-danger'>没有设定 ERU 地址</span>
@@ -36,10 +34,11 @@
           <div style='margin-left: 1em; display: inline-block'>
             <div class='row demo-samples'>
               <div style='float:left'>
-                  <button class='check-group check-group-info' id='specify-host-check' style=' margin-right: 13px; padding-top: 10px; padding-bottom: 10px;'>指定机器</button>
+                  <button class='check-group check-group-info' id='specify-host-check' style='margin-right: 13px; padding-top: 10px; padding-bottom: 10px;'>指定机器</button>
               </div>
-              <div style='float:right'>
-                <span id='host-list-container' style='display: none'></span>
+              <div style='float: right; display: none' id='host-panel'>
+                <span id='host-list-container'></span>
+                <button class='check-opt check-group check-group-info' id='netmode-host' style='margin-left: 13px; padding-top: 10px; padding-bottom: 10px;'>以 HOST 网络模型部署</button>
               </div>
             </div>
           </div>
@@ -60,31 +59,46 @@ $('#pod-list').change(function(pod){
 });
 $('#specify-host-check').enableLabelCheck({
     onClick: function(e) {
-        $('#host-list-container').toggle(e.prop('checked'));
+        $('#host-panel').toggle(e.prop('checked'));
     }
 });
 
 function getSelectedHost() {
     return $('#specify-host-check').prop('checked') ? $('#host-list-container :selected').val() : '';
 }
+
+function useHostMode() {
+    return $('#netmode-host').prop('checked');
+}
 </script>
     </div>
-    <br>
     <div id='node-create-panel' style=' margin-top: 0.5em; display: none'>
       <div class="panel panel-primary">
         <table class='table'>
             <tr>
-                <td>创建节点:</td>
-                <td><button id='aof-enable' class='check-opt check-group check-group-info'>启用 AOF</button></td>
+                <td style='width: 9em'>创建节点</td>
+                <td>
+                  <div class='col-xs-2'>
+                    <button id='aof-enable' class='check-opt check-group check-group-info'>启用 AOF</button>
+                  </div>
+                  <div class='col-xs-5'>
+                    <div class='input-group'>
+                      <span class='input-group-addon'>指定端口</span>
+                      <input type='text' id='port-node' class='form-control' placeholder='6379' />
+                    </div>
+                  </div>
+                </td>
                 <td>
                     <button class='btn btn-primary' onclick='requestEruNode(this)'>申请 ERU 节点</button>
+                    <br>
                     <span style='display: none' id='node-error' class='label label-danger'></span>
                 </td>
             </tr>
             <tr>
-                <td>创建代理:</td>
+                <td>创建代理</td>
                 <td>
-                    <div class= 'col-xs-5' style="padding-left: 0px;padding-right: 0px;">
+                  <div class='row mbl'>
+                    <div class= 'col-xs-5' style='padding-left: 0px;padding-right: 0px;'>
                       <select id='cluster-select' class='select-primary' data-select-style='select-default'>
                         <option value=''>选择集群</option>
                         {% for c in clusters if c.nodes|length > 0 %}
@@ -95,12 +109,25 @@ function getSelectedHost() {
                     <div class='col-xs-5'>
                       <select id='threads-select' class='select-primary' data-select-style='select-default'>
                         <option value=''>线程数</option>
+                        <option value='2'>2 线程</option>
+                        <option value='4'>4 线程</option>
                         <option value='8'>8 线程</option>
                         <option value='16'>16 线程</option>
                         <option value='24'>24 线程</option>
                       </select>
                     </div>
-                    <button id='read-slave' class='check-opt check-group check-group-info' style="margin-top: 4px;">只读</button>
+                  </div>
+                  <div class='row'>
+                    <div class='col-xs-2'>
+                      <button id='read-slave' class='check-opt check-group check-group-info'>只读</button>
+                    </div>
+                    <div class='col-xs-5'>
+                      <div class='input-group'>
+                        <span class='input-group-addon'>指定端口</span>
+                        <input type='text' id='port-proxy' class='form-control' placeholder='8889' />
+                      </div>
+                    </div>
+                  </div>
                 </td>
                 <td>
                     <button class='btn btn-primary' onclick='requestEruProxy(this)' style="margin-top: 4px;">申请 ERU 代理</button>
@@ -142,7 +169,7 @@ $('#threads-select').change(function(){width: 180});
             <td>{{ n.eru_info.host|e }}</td>
             <td>{{ n.eru_info.created|e }}</td>
             {% endif %}
-            <td><a href='/nodep/{{ n.host|e }}/6379'>{{ n.host|e }}</a></td>
+            <td><a href='/nodep/{{ n.host|e }}/{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
             <td>
                 {% if n.assignee_id %}
                 集群在役中
@@ -180,7 +207,7 @@ $('#threads-select').change(function(){width: 180});
             <td>{{ n.eru_info.host|e }}</td>
             <td>{{ n.eru_info.created|e }}</td>
             {% endif %}
-            <td><a href='/clusterp/{{ n.cluster.id }}'>{{ n.host|e }}</a></td>
+            <td><a href='/clusterp/{{ n.cluster.id }}'>{{ n.host|e }}:{{ n.port }}</a></td>
             <td>
                 <button class='btn toggle-next'>下线容器</button>
                 <button class='btn btn-danger' onclick='delContainer(this, "proxy", {{ n.eru_container_id|tojson }})'>确定</button>
@@ -204,25 +231,35 @@ function deleteButton(containerId, type) {
     return [toggleNext, offline];
 }
 
-function displayError(btn, label, e) {
+function displayErrorLabel(btn, label, msg) {
     btn.removeAttr('disabled');
+    label.show().text(msg);
+}
+
+function displayError(btn, label, e) {
     if (e.responseJSON && e.responseJSON.reason === 'Host drained') {
-        return label.show().text('指定机器的资源不足');
+        return displayErrorLabel('指定机器的资源不足');
     }
     console.error(e);
-    return label.show().text('未知错误: ' + e.responseText);
+    displayErrorLabel(btn, label, '未知错误: ' + e.responseText);
 }
 
 function requestEruNode(btn) {
     $(btn).attr('disabled', 'disabled');
     $('#node-error').hide();
+    var port = parseInt($('#port-node').val() || 6379);
+    if (!(6300 <= port && port <= 6399)) {
+        return displayErrorLabel($(btn), $('#node-error'), '端口范围应该在 6300-6399 之间');
+    }
     $.ajax({
         url: '/nodes/create/eru_node',
         type: 'POST',
         data: {
             pod: $('#pod-list').val(),
             aof: $('#aof-enable').prop('checked') ? 'y' : 'n',
-            host: getSelectedHost()
+            netmode: useHostMode() ? 'host' : 'macvlan',
+            host: getSelectedHost(),
+            port: port
         },
         success: function(r) {
             $(btn).removeAttr('disabled');
@@ -231,7 +268,7 @@ function requestEruNode(btn) {
                     ).append($('<td>').text(r.version.slice(0, 7))
                     ).append($('<td>').text(r.host)
                     ).append($('<td>').text(r.created)
-                    ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.address + '/6379').text(r.address))
+                    ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.address + '/' + port).text(r.address))
                     ).append($('<td>').append(deleteButton(r.container_id, 'node'))
                     ));
         },
@@ -250,6 +287,10 @@ function requestEruProxy(btn) {
     if (!threads) {
         return;
     }
+    var port = parseInt($('#port-proxy').val() || 8889);
+    if (!(8800 <= port && port <= 8899)) {
+        return displayErrorLabel($(btn), $('#proxy-error'), '端口范围应该在 8800-8899 之间');
+    }
 
     $(btn).attr('disabled', 'disabled');
     $('#node-error').hide();
@@ -261,7 +302,9 @@ function requestEruProxy(btn) {
             cluster_id: clusterId,
             threads: threads,
             read_slave: $('#read-slave').prop('checked') ? 'rs' : '',
-            host: getSelectedHost()
+            netmode: useHostMode() ? 'host' : 'macvlan',
+            host: getSelectedHost(),
+            port: port
         },
         success: function(r) {
             $(btn).removeAttr('disabled');
@@ -270,7 +313,7 @@ function requestEruProxy(btn) {
                     ).append($('<td>').text(r.version.slice(0, 7))
                     ).append($('<td>').text(r.host)
                     ).append($('<td>').text(r.created)
-                    ).append($('<td>').append($('<a>').attr('href', '/clusterp/' + clusterId).text(r.host))
+                    ).append($('<td>').append($('<a>').attr('href', '/clusterp/' + clusterId).text(r.address + ':' + port))
                     ).append($('<td>').append(deleteButton(r.container_id, 'proxy'))
                     ));
         },

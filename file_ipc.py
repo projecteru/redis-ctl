@@ -52,12 +52,8 @@ def write_nodes(nodes, proxies):
             'port': n.port,
             'suppress_alert': n.suppress_alert,
         }
-        if n.assignee_id is not None:
-            if n.assignee_id not in clusters:
-                clusters[n.assignee_id] = n.assignee
-            plan = clusters[n.assignee_id].balance_plan_detail
-            if plan is not None and plan.get('entrypoint') is not None:
-                i['balance_plan'] = plan
+        if n.assignee_id is not None and n.assignee_id not in clusters:
+            clusters[n.assignee_id] = n.assignee
         poll_nodes.append(i)
     write_poll(
         poll_nodes,
