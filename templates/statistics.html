@@ -14,7 +14,6 @@ h1.jumbo{
     padding-bottom: 10px;
     font-family: 'ds-digitalbold'; 
     padding-top: 30px;
-    margin-bottom: 10px;
     margin-top: 0px;
 }
 h5.jumbo{
@@ -32,6 +31,8 @@ body>div.main-width{
     height: 100%;
     background-image: url("/static/picture/matrix.jpg");
     margin-top: -10px;
+    background-size:100% 100%;
+    background-repeat:no-repeat;
 }
 h3{
     margin-top: 0px;
@@ -82,7 +83,7 @@ $(function(){
     $.get('/stats/sequence',function(data){
         var s = [];
         for (var i = 0; i < data.length && i < 3; i++) {
-            var h5 = $('<h5>').addClass('jumbo').css({'font-size': 5-i+'em','opacity': 1-0.3*(i+1),'padding-top': 20-i*10+'px'}).attr('id',i);
+            var h5 = $('<h5>').addClass('jumbo').css({'font-size': 5-i+'em','opacity': 1-0.3*(i+1)}).attr('id',i);
             $("#addfield").append(h5);
             var display = new CountUp(i.toString(), startVal, endVal, decimals, duration, options);
             s.push(display);
