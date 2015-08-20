@@ -80,7 +80,7 @@ if stats.client is not None:
 
     @base.get('/stats/statistics')
     def statistics(request):
-       return request.render('statistics.html')
+        return request.render('statistics.html')
 
     @base.get_async('/stats/sequence')
     def sequence(request):
