@@ -126,5 +126,5 @@ class NodeStatCollector(threading.Thread):
             while True:
                 try:
                     self._shot()
-                except StandardError, e:
+                except Exception as e:
                     logging.exception(e)

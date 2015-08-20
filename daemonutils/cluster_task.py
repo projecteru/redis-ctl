@@ -110,7 +110,7 @@ class TaskPoller(threading.Thread):
             with self.app.app_context():
                 try:
                     self._shot()
-                except StandardError as e:
+                except Exception as e:
                     logging.error('Unexpected Error %s', e.message)
                     logging.exception(e)
                 time.sleep(self.interval)

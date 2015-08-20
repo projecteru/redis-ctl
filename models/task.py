@@ -105,9 +105,6 @@ class ClusterTask(Base):
         db.session.delete(self.acquired_lock())
         db.session.commit()
 
-    def reattach(self):
-        return db.session.query(ClusterTask).get(self.id)
-
 
 def get_task_by_id(task_id):
     return db.session.query(ClusterTask).get(task_id)
@@ -169,9 +166,6 @@ class TaskStep(Base):
                 ProtocolError, ReplyError, RedisStatusError):
             self.complete(traceback.format_exc())
             return False
-
-    def reattach(self):
-        return db.session.query(TaskStep).get(self.id)
 
 
 class TaskLock(Base):
