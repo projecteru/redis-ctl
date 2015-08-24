@@ -4,6 +4,7 @@ import socket
 import itertools
 import urlparse
 import requests
+import logging
 
 POINT_LIMIT = 400
 
@@ -14,8 +15,17 @@ class Client(object):
             'http', '%s:%d' % (host_query, port_query), 'graph/history',
             None, None, None))
         self.prefix = db
+        self.write_addr = (host_write, port_write)
 
-        self.socket = socket.create_connection((host_write, port_write))
+        self.socket = None
+        self.stream = None
+        self.id_counter = None
+        self.buf_size = None
+        self.reconnect()
+
+    def reconnect(self):
+        self.close()
+        self.socket = socket.create_connection(self.write_addr)
         self.stream = self.socket.makefile()
         self.id_counter = itertools.count()
         self.buf_size = 1 << 16
@@ -33,15 +43,20 @@ class Client(object):
 
     def write_points(self, name, fields):
         now = int(time.time())
-        self._write([{
-            'metric': metric,
-            'endpoint': '%s-%s' % (self.prefix, name),
-            'timestamp': now,
-            'step': 30,
-            'value': val,
-            'counterType': 'GAUGE',
-            'tags': 'service=redisctl',
-        } for metric, val in fields.iteritems()])
+        try:
+            self._write([{
+                'metric': metric,
+                'endpoint': '%s-%s' % (self.prefix, name),
+                'timestamp': now,
+                'step': 30,
+                'value': val,
+                'counterType': 'GAUGE',
+                'tags': 'service=redisctl',
+            } for metric, val in fields.iteritems()])
+        except IOError as e:
+            logging.error('Fail to write points for %s as %s', name, e.message)
+            self.reconnect()
+            raise
 
     def _write(self, lines):
         s = 0
@@ -98,6 +113,6 @@ class Client(object):
         })).json()[0]['Values']
         if r:
             for i in range(1, len(r)):
-                m  = r[-i]
+                m = r[-i]
                 if m['value']:
                     return m['value']
