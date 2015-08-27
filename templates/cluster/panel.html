@@ -493,7 +493,6 @@ $('#new-proxy-btn').click(function() {
         var slaves = $('.slave-host-panel select').slice(0, slaveCount).map(function() {
             return $(this).val() == '-' ? '' : $(this).val();
         }).toArray().join(',');
-        console.log(slaves);
         $.ajax({
             url: '/cluster/set_balance_plan',
             type: 'POST',

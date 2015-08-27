@@ -44,4 +44,4 @@ def get_balance_plan_by_addr(host, port):
     n = RedisNode.query.filter_by(host=host, port=port).first()
     if n is None or n.assignee_id is None:
         return None
-    return ClusterBalancePlan.query.get(n.assignee_id)
+    return ClusterBalancePlan.query.filter_by(cluster_id=n.assignee_id).first()

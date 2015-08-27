@@ -8,7 +8,7 @@ import file_ipc
 import models.node
 import models.cluster
 import models.task
-from models.cluster_plan import ClusterBalancePlan
+from models.cluster_plan import ClusterBalancePlan, get_balance_plan_by_addr
 
 REDIS_SHA = hashlib.sha1('redis').hexdigest()
 
@@ -18,6 +18,69 @@ def _get_balance_plan(plan):
 
 
 class AutoBalance(base.TestCase):
+    def test_get_plan(self):
+        with self.app.test_client() as client:
+            n0 = models.node.create_instance('10.0.0.1', 6301)
+            n1 = models.node.create_instance('10.0.0.1', 6302)
+            n2 = models.node.create_instance('10.0.0.2', 6301)
+
+            c0 = models.cluster.create_cluster('the quick brown fox')
+            c1 = models.cluster.create_cluster('the lazy dog')
+
+            c0.nodes.append(n0)
+            c0.nodes.append(n1)
+            c1.nodes.append(n2)
+
+            self.db.session.add(c0)
+            self.db.session.add(c1)
+            self.db.session.commit()
+
+            r = client.post('/cluster/set_balance_plan', data={
+                'cluster': c1.id,
+                'pod': 'pod',
+                'aof': '0',
+                'slave_count': 0,
+            })
+            self.assertReqStatus(200, r)
+            p = get_balance_plan_by_addr('10.0.0.1', 6301)
+            self.assertIsNone(p)
+            p = get_balance_plan_by_addr('10.0.0.1', 6302)
+            self.assertIsNone(p)
+            p = get_balance_plan_by_addr('10.0.0.1', 6303)
+            self.assertIsNone(p)
+            p = get_balance_plan_by_addr('10.0.0.2', 6301)
+            self.assertIsNotNone(p)
+            self.assertEqual('pod', p.pod)
+            self.assertEqual(None, p.host)
+            self.assertEqual([], p.slaves)
+            self.assertEqual(False, p.aof)
+
+            r = client.post('/cluster/set_balance_plan', data={
+                'cluster': c0.id,
+                'pod': 'pod',
+                'aof': '1',
+                'master_host': '10.100.1.1',
+                'slave_count': 2,
+                'slaves': '10.100.1.2,',
+            })
+            self.assertReqStatus(200, r)
+            r = client.post('/cluster/del_balance_plan', data={
+                'cluster': c1.id,
+            })
+            self.assertReqStatus(200, r)
+            p = get_balance_plan_by_addr('10.0.0.2', 6301)
+            self.assertIsNone(p)
+
+            p0 = get_balance_plan_by_addr('10.0.0.1', 6301)
+            self.assertIsNotNone(p0)
+            self.assertEqual('pod', p0.pod)
+            self.assertEqual('10.100.1.1', p0.host)
+            self.assertEqual([{'host': '10.100.1.2'}, {}], p0.slaves)
+            self.assertEqual(True, p0.aof)
+
+            p1 = get_balance_plan_by_addr('10.0.0.1', 6302)
+            self.assertEqual(p0.id, p1.id)
+
     def test_master_only(self):
         with self.app.test_client() as client:
             n = models.node.create_instance('127.0.0.1', 6301)
@@ -319,10 +382,10 @@ class AutoBalance(base.TestCase):
             r = client.post('/cluster/set_balance_plan', data={
                 'cluster': cluster_id,
                 'pod': 'ppp',
-                'entrypoint': 'eee',
                 'master_host': '10.0.0.100',
                 'slave_count': '2',
                 'slaves': '10.0.0.101,',
+                'aof': '0',
             })
             self.assertReqStatus(200, r)
 

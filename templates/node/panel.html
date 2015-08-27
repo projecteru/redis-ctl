@@ -36,38 +36,12 @@
         <th>内存</th>
         <td>
         {% if detail.mem %}
-            {{ detail.mem.used_memory_human|e }} /
-            <a href='javascript:void(0)' onclick="$(this).hide(); $('#edit_maxmem').show()">{{ detail.mem.maxmemory|filesizeformat }}</a>
-            <span id='edit_maxmem' style='display: none'>
-                <input id='maxmem_input' value='{{ detail.mem.maxmemory }}'>
-                <button onclick='editMaxMem()' class='btn btn-primary'>修改</button>
-                <span class='label label-warning' style='display: none' id='edit-error'>设置的最大内存值超过范围</span>
+            <span>
+                {{ detail.mem.used_memory|filesizeformat }} / {{ detail.mem.maxmemory|filesizeformat if detail.mem.maxmemory != 0 else '未设置最大值' }}
             </span>
-            <script>
-            function editMaxMem() {
-                $('#edit-error').hide();
-                var m = parseInt($('#maxmem_input').val());
-                if (isNaN(m) || m < 64 * 1000 * 1000 || m > {{ max_mem_limit|tojson }}) {
-                    $('#edit-error').show();
-                    return $('#edit_maxmem').focus();
-                }
-                $.ajax({
-                    url: '/nodes/set_max_mem',
-                    type: 'POST',
-                    data: {
-                        host: {{ node.host|tojson }},
-                        port: {{ node.port|tojson }},
-                        max_mem: m
-                    },
-                    success: function() {
-                        window.location.reload();
-                    },
-                    error: function(r) {
-                        console.error(r);
-                    }
-                });
-            }
-            </script>
+            <button class='btn btn-inverse' data-toggle='modal' data-target='#nodeMemSetting'>设置</button>
+            {{ render_template('components/node/memory-setting.html', host=node.host, port=node.port,
+                               max_mem=detail.mem.maxmemory, used_mem=detail.mem.used_memory, mem_limit=max_mem_limit) }}
         {% else %}
         等待轮询
         {% endif %}
@@ -143,7 +117,7 @@
                 <caption>内存</caption>
                 <tr>
                     <td>已使用内存</td>
-                    <td>{{ detail.mem.used_memory_human }}</td>
+                    <td>{{ detail.mem.used_memory|filesizeformat }}</td>
                 </tr>
                 <tr>
                     <td>常驻集</td>
@@ -164,7 +138,7 @@
             <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
             {% endif %}
 
-            <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else ''     }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
+            <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
             关闭报警
             </button>
             {% if detail.slots_migrating %}
