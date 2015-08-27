@@ -1,6 +1,6 @@
 import logging
 from retrying import retry
-from eruhttp import EruClient
+from eruhttp import EruClient, EruException
 
 import config
 
@@ -81,3 +81,11 @@ def deploy_proxy(pod, threads, read_slave, netmode, host=None, port=8889):
         args.extend(['-r', '1'])
     return deploy_with_network('cerberus', pod, netmode, ncore=threads,
                                host=host, args=args)
+
+
+def rm_containers(container_ids):
+    logging.info('Remove containers: %s', container_ids)
+    try:
+        eru_client.remove_containers(container_ids)
+    except EruException as e:
+        logging.exception(e)

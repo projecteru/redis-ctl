@@ -1,8 +1,7 @@
 import logging
 
 import file_ipc
-import eru_utils
-from eru_utils import deploy_node
+from eru_utils import deploy_node, rm_containers
 from models.base import db
 import models.node
 import models.task
@@ -14,6 +13,15 @@ def _deploy_node(pod, aof, host):
     h = depl['address']
     models.node.create_eru_instance(h, 6379, cid)
     return cid, h
+
+
+def _rm_containers(cids):
+    rm_containers(cids)
+    for c in cids:
+        try:
+            models.node.delete_eru_instance(c)
+        except ValueError as e:
+            logging.exception(e)
 
 
 def _prepare_master_node(node, pod, aof, host):
@@ -36,7 +44,7 @@ def _prepare_master_node(node, pod, aof, host):
     except BaseException as exc:
         logging.exception(exc)
         logging.info('Remove container %s and rollback', cid)
-        eru_utils.eru_client.remove_containers([cid])
+        _rm_containers([cid])
         db.session.rollback()
         raise
 
@@ -55,7 +63,7 @@ def _add_slaves(slaves, task, cluster_id, master_host, pod, aof):
         return cids
     except BaseException as exc:
         logging.info('Remove container %s and rollback', cids)
-        eru_utils.eru_client.remove_containers(cids)
+        _rm_containers(cids)
         db.session.rollback()
         raise
 
@@ -98,10 +106,9 @@ def add_node_to_balance_for(host, port, plan, slots):
         logging.info('Auto balance task fail to lock,'
                      ' discard auto balance this time.'
                      ' Delete container id=%s', cids)
-        eru_utils.eru_client.remove_containers(cids)
+        _rm_containers(cids)
     except BaseException as exc:
-        logging.exception(exc)
         logging.info('Remove container %s and rollback', cids)
-        eru_utils.eru_client.remove_containers(cids)
+        _rm_containers(cids)
         db.session.rollback()
         raise

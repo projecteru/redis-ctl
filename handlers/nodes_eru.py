@@ -9,7 +9,7 @@ import file_ipc
 import models.node
 import models.proxy
 import models.cluster
-from eru_utils import (deploy_node, deploy_proxy, eru_client)
+from eru_utils import (deploy_node, deploy_proxy, rm_containers, eru_client)
 
 
 if eru_client is not None:
@@ -78,7 +78,7 @@ if eru_client is not None:
         else:
             models.proxy.delete_eru_instance(eru_container_id)
         file_ipc.write_nodes_proxies_from_db()
-        eru_client.remove_containers([eru_container_id])
+        rm_containers([eru_container_id])
 
 
 @base.get('/nodes/manage/eru')
