@@ -28,8 +28,8 @@ if eru_client is not None:
                 raise ValueError('invalid port')
             container_info = deploy_node(
                 request.form['pod'], request.form['aof'] == 'y',
-                request.form['netmode'], host=request.form.get('host'),
-                port=port)
+                request.form['netmode'], request.form['cluster'] == 'y',
+                host=request.form.get('host'), port=port)
             models.node.create_eru_instance(container_info['address'], port,
                                             container_info['container_id'])
             return base.json_result(container_info)
