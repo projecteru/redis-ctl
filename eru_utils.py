@@ -37,8 +37,6 @@ def deploy_with_network(what, pod, entrypoint, ncore=1, host=None, args=None):
     r = eru_client.deploy_private(
         config.ERU_GROUP, pod, what, ncore, 1, version_sha,
         entrypoint, 'prod', [network['id']], host_name=host, args=args)
-    if r['msg'] == 'Not enough core resources':
-        raise ValueError('Host drained')
     try:
         task_id = r['tasks'][0]
     except LookupError:

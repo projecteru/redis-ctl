@@ -82,7 +82,7 @@ function useHostMode() {
                     <button id='aof-enable' class='check-opt check-group check-group-info'>启用 AOF</button>
                   </div>
                   <div class='col-xs-2' style="padding-left: 0px;">
-                    <button class='check-opt check-group check-group-info check-group-checked' id='use-cluster-enable'>使用cluster</button>
+                    <button class='check-opt check-group check-group-info check-group-checked' id='use-cluster-enable'>集群模式</button>
                   </div>  
                   <div class='col-xs-5'>
                     <div class='input-group'>
@@ -240,11 +240,11 @@ function displayErrorLabel(btn, label, msg) {
 }
 
 function displayError(btn, label, e) {
-    if (e.responseJSON && e.responseJSON.reason === 'Host drained') {
-        return displayErrorLabel('指定机器的资源不足');
+    var err = e.responseJSON || {};
+    if (err.reason === 'eru fail' && err.detail === 'Not enough core resources') {
+        return displayErrorLabel(btn, label, '指定机器的资源不足');
     }
-    console.error(e);
-    displayErrorLabel(btn, label, '未知错误: ' + e.responseText);
+    displayErrorLabel(btn, label, '错误: ' + e.responseText);
 }
 
 function requestEruNode(btn) {

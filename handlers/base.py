@@ -8,6 +8,7 @@ import werkzeug.exceptions
 from werkzeug.utils import cached_property
 from cStringIO import StringIO
 from cgi import parse_qs
+from eruhttp import EruException
 
 import template
 import file_ipc
@@ -123,9 +124,10 @@ def route_async(uri, method, commit_db):
                 r = dict(reason='invalid input encoding')
             except ValueError, e:
                 r = dict(reason=e.message)
+            except EruException, e:
+                logging.exception(e)
+                r = dict(reason='eru fail', detail=e.message)
             except StandardError, e:
-                import traceback
-                traceback.print_exc()
                 logging.error('UNEXPECTED ERROR')
                 logging.exception(e)
                 return json_result(
