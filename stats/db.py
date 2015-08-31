@@ -96,6 +96,8 @@ class Client(object):
                 'counter': field + '/service=redisctl',
             }],
         })).json()[0]['Values']
+        if r is None:
+            return []
         if len(r) > POINT_LIMIT:
             r = r[::len(r) / POINT_LIMIT + 1]
         return [[x['timestamp'], x['value']]

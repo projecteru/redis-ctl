@@ -3,8 +3,9 @@
 
 {% block graph %}
 <div>
-    <div><p>内存状况</p><svg id='usages_mem'></svg></div>
     <div><p>连接</p><svg id='connections'></svg></div>
+    <div><p>CPU 状况</p><svg id='usages_cpu'></svg></div>
+    <div><p>内存状况</p><svg id='usages_mem'></svg></div>
     <div><p>数据指令执行时间</p><svg id='response_time'></svg></div>
 </div>
 <script>
@@ -12,6 +13,8 @@ statistics({
     mem_buffer_alloc: [],
     connected_clients: [],
     completed_commands: [],
+    used_cpu_sys: [],
+    used_cpu_user: [],
     command_elapse: [],
     remote_cost: []
 }, '/stats/fetchproxy', {{ host|tojson }}, {{ port|tojson }}, [{
@@ -21,6 +24,14 @@ statistics({
     ],
     yMapF: function(y) {return y / 1024;},
     title: '内存 (KB)'
+}, {
+    selector: '#usages_cpu',
+    fields: [
+        {keyName: 'used_cpu_user', keyDisp: '用户态', color: '#0c0', deriv: true},
+        {keyName: 'used_cpu_sys', keyDisp: '内核态', color: 'navy', deriv: true}
+    ],
+    yMapF: function(y) {return y * 100;},
+    title: '连接'
 }, {
     selector: '#connections',
     fields: [

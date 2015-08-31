@@ -16,7 +16,7 @@ REDIS_MAX_FIELDS = [
 ]
 REDIS_AVG_FIELDS = ['used_memory', 'used_memory_rss', 'response_time']
 PROXY_MAX_FIELDS = ['connected_clients', 'mem_buffer_alloc',
-                    'completed_commands']
+                    'completed_commands', 'used_cpu_sys', 'used_cpu_user']
 PROXY_AVG_FIELDS = ['command_elapse', 'remote_cost']
 
 

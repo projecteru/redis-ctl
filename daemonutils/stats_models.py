@@ -240,6 +240,8 @@ class ProxyStatus(NodeBase):
             'total_process_elapse': self['conn']['total_process_elapse'],
             'command_elapse': self['command_elapse'],
             'remote_cost': self['remote_cost'],
+            'used_cpu_sys': self['used_cpu_sys'],
+            'used_cpu_user': self['used_cpu_user'],
         })
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
@@ -261,6 +263,8 @@ class ProxyStatus(NodeBase):
                 'stat': True,
                 'threads': st['threads'],
                 'version': st['version'],
+                'used_cpu_sys': float(st.get('used_cpu_sys', 0)),
+                'used_cpu_user': float(st.get('used_cpu_user', 0)),
                 'conn': {
                     'connected_clients': conns,
                     'completed_commands': int(st['completed_commands']),
