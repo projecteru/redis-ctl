@@ -46,6 +46,13 @@ def list_cluster_tasks(request, page, cluster_id):
     return request.render('cluster/tasks.html', cluster=c, page=page)
 
 
+@base.paged('/cluster/tasks/list_all')
+def list_all_tasks(request, page):
+    return request.render(
+        'cluster/tasks_all.html', page=page,
+        tasks=models.task.get_all_tasks(page * 50, 50))
+
+
 @base.get_async('/cluster/task/steps')
 def cluster_get_task_steps(request):
     t = models.task.get_task_by_id(int(request.args['id']))

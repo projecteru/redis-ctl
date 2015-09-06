@@ -3,6 +3,7 @@
     <thead>
         <tr>
             <th>ID</th>
+            <th>所属集群</th>
             <th>类型</th>
             {% set task_types = ['修复迁移状态', '迁移槽位', '扩容', '添加从节点', '移除节点', '自动扩容'] %}
             <th>创建时间</th>
@@ -14,6 +15,7 @@
     {% for task in tasks %}
         <tr>
             <td>#{{ task.id }}</td>
+            <td><a href='/clusterp/{{ task.cluster_id }}'>#{{ task.cluster_id }}</a></td>
             <td>{{ task_types[task.task_type]|e }}</td>
             <td>{{ task.creation|strftime }}</td>
             <td>

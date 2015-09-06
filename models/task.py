@@ -110,6 +110,11 @@ def get_task_by_id(task_id):
     return db.session.query(ClusterTask).get(task_id)
 
 
+def get_all_tasks(offset, limit):
+    return db.session.query(ClusterTask).order_by(
+        ClusterTask.id.desc()).offset(offset).limit(limit).all()
+
+
 def undone_tasks():
     return db.session.query(ClusterTask).filter(
         ClusterTask.completion == None).order_by(ClusterTask.id).all()
