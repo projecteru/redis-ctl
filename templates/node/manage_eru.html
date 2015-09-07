@@ -203,7 +203,7 @@ $('#threads-select').change(function(){width: 180});
     </thead>
     <tbody id='eru-proxies'>
     {% for n in eru_proxies %}
-        <tr id='proxy-{{ n.host|e }}'>
+        <tr id='proxy-{{ n.host|e }}-{{ n.port }}'>
             <td>{{ n.eru_container_id[:16]|e }}</td>
             {% if eru_client is not none %}
             <td>{{ n.eru_info.version|e }}</td>
