@@ -1,0 +1,17 @@
+{% extends './base.html' %}
+
+{% block title %}ERU 异常{% endblock %}
+
+{% block body %}
+
+<div style='text-align: center'>
+{% if eru_client is none %}
+  <h1>未设定 Eru 地址</h1>
+  <p>需要在启动时设定 Eru 地址; 如果 Eru 已经部署完毕, 需要修改配置文件或启动参数, 然后重新启动 RedisCtl 进程 (包括 daemon 进程)</p>
+{% else %}
+  <h1>Eru 无可用的机房</h1>
+  <p>Eru 已经部署在 {{ eru_client.url|e }}, 但它没有给出可用的机房; 请检查 Eru, 然后刷新此页面即可</p>
+{% endif %}
+</div>
+
+{% endblock %}

@@ -2,6 +2,7 @@ import logging
 import time
 import threading
 from redistrib.clusternode import Talker
+from sqlalchemy.exc import IntegrityError
 
 import base
 import config
@@ -22,6 +23,7 @@ if eru_client is not None:
 
     @base.post_async('/nodes/create/eru_node')
     def create_eru_node(request):
+        container_info = None
         try:
             port = int(request.form.get('port', 6379))
             if not 6300 <= port <= 6399:
@@ -33,6 +35,10 @@ if eru_client is not None:
             models.node.create_eru_instance(container_info['address'], port,
                                             container_info['container_id'])
             return base.json_result(container_info)
+        except IntegrityError:
+            if container_info is not None:
+                rm_containers([container_info['container_id']])
+            raise ValueError('exists')
         except BaseException as exc:
             logging.exception(exc)
             raise
@@ -47,6 +53,7 @@ if eru_client is not None:
             finally:
                 t.close()
 
+        container_info = None
         try:
             cluster = models.cluster.get_by_id(int(request.form['cluster_id']))
             if cluster is None or len(cluster.nodes) == 0:
@@ -66,6 +73,10 @@ if eru_client is not None:
                 container_info['address'], port, cluster.nodes[0].host,
                 cluster.nodes[0].port)).start()
             return base.json_result(container_info)
+        except IntegrityError:
+            if container_info is not None:
+                rm_containers([container_info['container_id']])
+            raise ValueError('exists')
         except BaseException as exc:
             logging.exception(exc)
             raise
@@ -81,10 +92,27 @@ if eru_client is not None:
         rm_containers([eru_container_id])
 
 
-@base.get('/nodes/manage/eru')
+@base.get('/nodes/manage/eru/')
 def nodes_manage_page_eru(request):
+    pods = []
+    if eru_client is not None:
+        pods = eru_client.list_pods()
+    if len(pods) == 0:
+        return request.render('node/no_eru.html', eru_client=eru_client), 400
     return request.render(
-        'node/manage_eru.html', eru=config.ERU_URL,
-        eru_nodes=models.node.list_all_eru_nodes(),
-        eru_proxies=models.proxy.list_all_eru_proxies(),
-        eru_client=eru_client, clusters=models.cluster.list_all())
+        'node/manage_eru.html', eru_url=config.ERU_URL, pods=pods,
+        clusters=models.cluster.list_all())
+
+
+@base.paged('/nodes/manage/eru/nodes')
+def nodes_manage_page_eru_nodes(request, page):
+    return request.render(
+        'node/manage_eru_nodes.html', page=page,
+        nodes=models.node.list_eru_nodes(page * 20, 20))
+
+
+@base.paged('/nodes/manage/eru/proxies')
+def nodes_manage_page_eru_proxies(request, page):
+    return request.render(
+        'node/manage_eru_proxies.html', page=page,
+        proxies=models.proxy.list_eru_proxies(page * 20, 20))

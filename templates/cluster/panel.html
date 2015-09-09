@@ -5,6 +5,7 @@
 {% block head %}
 <script src='/static/js/cluster_task.js'></script>
 <script src='/static/js/redis_node.js'></script>
+<script src='/static/js/eru_container.js'></script>
 <script src='/static/js/sort-nodes.js'></script>
 <style>
 .slave-row .node-addr {
@@ -19,7 +20,7 @@
 
 {% block body %}
 <div class="panel panel-primary">
-  <div class="panel-heading">基本设置</div>
+  <div class="panel-heading panel-heading-hide-content">基本设置</div>
   <table style='width: 100%' class='table'>
     <tr>
       <td class='label-cell'>集群 ID</td>
@@ -134,7 +135,7 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
 </script>
 
 <div class="panel panel-primary">
-    <div class="panel-heading">节点</div> 
+    <div class="panel-heading panel-heading-hide-content">节点</div>
     <table class='table'>
       <thead>
         <tr>
@@ -261,7 +262,7 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
 </div>
 {{ render_template('components/cluster/export-nodes.html') }}
 <div class="panel panel-primary">
-  <div class="panel-heading" id='proxies'>代理设置</div>
+  <div class="panel-heading panel-heading-hide-content" id='proxies'>代理设置</div>
   <table class='table' style='float: center; text-align:center;'>
       <thead>
         <tr>
@@ -271,7 +272,7 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
       </thead>
       <tbody style='text-align: center'>
         {% for proxy in cluster.proxies %}
-        <tr>
+        <tr id='proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
             <td>
                 {{ proxy.host|e }}:{{ proxy.port }}
                 {% if proxy.read_slave %}
@@ -286,7 +287,8 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
                 <button class='btn btn-info' data-toggle='modal' data-target='#commandConsole' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>直接发送指令</button>
                 <button class='btn btn-sync-remotes btn-info' data-host='{{ proxy.host|e }}' data-port='{{ proxy.port }}'>同步槽位映射</button>
                 {% if proxy.eru_deployed %}
-                <a href='/nodes/manage/eru#proxy-{{ proxy.host|e }}-{{ proxy.port }}' class='btn'>去删除此代理并下线容器</a>
+                <button class='btn btn-inverse toggle-next'>删除此代理并下线容器</button>
+                <button class='btn btn-danger btn-del-container' data-type='proxy' data-cid={{ proxy.eru_container_id|tojson }}>确定</button>
                 {% else %}
                 <button class='btn btn-danger delete-proxy-btn' data-host={{ proxy.host|tojson }} data-port='{{ proxy.port }}'>从监视面板移除</button>
                 {% endif %}
@@ -358,7 +360,7 @@ $('#new-proxy-btn').click(function() {
 {{ render_template('components/command_console.html') }}
 
 <div class="panel panel-primary">
-  <div class="panel-heading">设置自动扩容</div>
+  <div class="panel-heading panel-heading-hide-content">设置自动扩容</div>
 
 {% if not eru_client %}
 <span class='label label-danger'>没有设定 ERU 地址</span>
@@ -522,7 +524,7 @@ $('#new-proxy-btn').click(function() {
 </div>
 
 <div class="panel panel-primary">
-  <div class="panel-heading">
+  <div class="panel-heading panel-heading-hide-content">
     后台任务
     <a href='/cluster/tasks/list/{{ cluster.id }}' style='color:white; float: right;'>查看更多任务</a>
   </div>

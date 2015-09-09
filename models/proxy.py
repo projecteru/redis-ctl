@@ -64,9 +64,11 @@ def list_all():
     return db.session.query(Proxy).all()
 
 
-def list_all_eru_proxies():
+def list_eru_proxies(offset, limit):
     return db.session.query(Proxy).filter(
-        Proxy.eru_container_id != None).all()
+        Proxy.eru_container_id != None).order_by(
+        Proxy.id.desc()).offset(offset).limit(limit).all()
+
 
 def list_ip():
     return db.session.query(Proxy.host, Proxy.port).all()

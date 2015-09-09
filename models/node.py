@@ -49,9 +49,10 @@ def get_by_host_port(host, port):
         RedisNode.host == host, RedisNode.port == port).first()
 
 
-def list_all_eru_nodes():
+def list_eru_nodes(offset, limit):
     return db.session.query(RedisNode).filter(
-        RedisNode.eru_container_id != None).all()
+        RedisNode.eru_container_id != None).order_by(
+        RedisNode.id.desc()).offset(offset).limit(limit).all()
 
 
 def list_all_nodes():

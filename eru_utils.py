@@ -76,7 +76,7 @@ def deploy_node(pod, aof, netmode, cluster=True, host=None, port=6379):
 def deploy_proxy(pod, threads, read_slave, netmode, host=None, port=8889):
     args = ['-b', str(port), '-t', str(threads)]
     if read_slave:
-        args.extend(['-r', '1'])
+        args.extend(['-r', 'yes'])
     return deploy_with_network('cerberus', pod, netmode, ncore=threads,
                                host=host, args=args)
 
