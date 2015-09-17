@@ -51,6 +51,11 @@
         <button class='btn btn-info' id='cluster-enable-all-nodes-aof' data-aof='yes'>打开所有节点的 AOF</button>
         <button class='btn btn-danger' id='cluster-disable-all-nodes-aof' data-aof='no'>关闭所有节点的 AOF</button>
         <button class='btn btn-primary' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
+
+      {% if cluster.nodes|length == 1 %}
+        <div style='margin: 1em'></div>
+        <button class='btn btn-danger' id='shutdown-cluster'>重置最后一个节点并关闭集群</button>
+      {% endif %}
       </td>
     </tr>
   </table>
@@ -128,6 +133,33 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
             window.location.reload();
         },
         error: function(e) {
+            btn.text('失败: ' + e.responseText);
+        }
+    });
+});
+
+$('#shutdown-cluster').click(function() {
+    var btn = $(this);
+    btn.attr('disabled', 'disabled').text('正在验证数据已清空并关闭集群');
+    $.ajax({
+        url: '/cluster/shutdown',
+        type: 'POST',
+        data: {
+            cluster_id: {{ cluster.id|tojson }}
+        },
+        success: function() {
+            btn.text('集群已经关闭, 此页面已经失效');
+        },
+        error: function(e) {
+            if (!e.responseJSON) {
+                return btn.text('失败: 未知错误');
+            }
+            if (e.responseJSON.reason === 'not empty') {
+                return btn.text('此节点中还有数据, 请手动清理后重试');
+            }
+            if (e.responseJSON.reason === 'More than 1 nodes in cluster.') {
+                return btn.text('集群中有其他节点, 请使用自动发现刷新节点列表');
+            }
             btn.text('失败: ' + e.responseText);
         }
     });
@@ -521,7 +553,6 @@ $('#new-proxy-btn').click(function() {
     {% endif %}
 {% endif %}
 </div>
-</div>
 
 <div class="panel panel-primary">
   <div class="panel-heading panel-heading-hide-content">
@@ -529,5 +560,7 @@ $('#new-proxy-btn').click(function() {
     <a href='/cluster/tasks/list/{{ cluster.id }}' style='color:white; float: right;'>查看更多任务</a>
   </div>
 {{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
+</div>
+
 </div>
 {% endblock %}

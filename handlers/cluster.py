@@ -2,6 +2,7 @@ from socket import error as SocketError
 import logging
 import redistrib.command
 from redistrib.clusternode import Talker
+from redistrib.exceptions import RedisStatusError
 
 import utils
 import base
@@ -18,7 +19,7 @@ from models.base import db
 @base.get('/clusterp/<int:cluster_id>')
 def cluster_panel(request, cluster_id):
     c = models.cluster.get_by_id(cluster_id)
-    if c is None:
+    if c is None or len(c.nodes) == 0:
         return base.not_found()
     all_details = file_ipc.read_details()
     node_details = all_details['nodes']
@@ -311,6 +312,27 @@ def cluster_auto_join(request):
         return str(cluster_id)
     finally:
         models.cluster.remove_empty_cluster(cluster_id)
+
+
+@base.post_async('/cluster/shutdown')
+def cluster_shutdown(request):
+    c = models.cluster.get_by_id(int(request.form['cluster_id']))
+    if c is None or len(c.nodes) == 0:
+        raise ValueError('no such cluster')
+    n = c.nodes[0]
+    t = Talker(n.host, n.port)
+    try:
+        redistrib.command.shutdown_cluster(n.host, n.port)
+        n.assignee_id = None
+        db.session.add(n)
+    except RedisStatusError as e:
+        if e.message == 'Cluster containing keys':
+            raise ValueError('not empty')
+        raise ValueError(e.message)
+    except Exception as e:
+        raise ValueError(e.message)
+    finally:
+        t.close()
 
 
 @base.post_async('/cluster/set_balance_plan')
