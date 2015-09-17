@@ -15,7 +15,9 @@ Install dependencies via
 
     pip install -r requirements.txt
 
-[OpenFalcon](https://github.com/open-falcon) (optional)
+[OpenFalcon](https://github.com/open-falcon) (optional) a statistics data server, Redis-Ctl would draw charts like redis memory / CPU usage if open-falcon enabled.
+
+[Eru](https://github.com/HunanTV/eru-agent) (optional) a great power-up you should ever try. It allows Redis-Ctl launching redis / cerberus in docker containers on a web page, and even automatically deploying new redis and migrating slots when a redis serves too much data.
 
 Configure and Run the Server
 ===
