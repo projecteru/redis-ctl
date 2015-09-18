@@ -33,7 +33,7 @@ LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
 
 DEBUG = int(os.getenv('DEBUG', 0))
 POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', 10))
-PERMDIR = os.getenv('PERMDIR', tempfile.gettempdir())
+PERMDIR = os.getenv('ERU_PERMDIR', tempfile.gettempdir())
 NODE_MAX_MEM = int(os.getenv('NODE_MAM_MEM', 2048 * 1000 * 1000))
 NODES_EACH_THREAD = int(os.getenv('NODES_EACH_THREAD', 10))
 REDIS_CONNECT_TIMEOUT = int(os.getenv('REDIS_CONNECT_TIMEOUT', 5))
