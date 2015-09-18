@@ -35,6 +35,6 @@ $(document).ready(function() {
     $('.toggle-next').click(function() {$(this).next().toggle();}).next().hide();
 
     $('.panel-heading-hide-content').click(function() {
-       $(this).nextAll('table').fadeToggle('slow');
+       $(this).next().fadeToggle('slow');
     });
 });
