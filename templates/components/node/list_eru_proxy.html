@@ -18,8 +18,7 @@
       <td>{{ n.eru_info.created|e }}</td>
       <td><a href='/clusterp/{{ n.cluster.id }}#proxy-{{ n.host|e }}-{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
       <td>
-        <button class='btn toggle-next'>下线容器</button>
-        <button class='btn btn-danger btn-del-container' data-type='proxy' data-cid={{ n.eru_container_id|tojson }}>确定</button>
+        {{ button('下线容器', color='danger', cls=['btn-del-container'], data={'type': 'proxy', 'cid': n.eru_container_id}) }}
       </td>
     <tr>
   {% endfor %}

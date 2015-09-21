@@ -10,7 +10,19 @@ import file_ipc
 import models.node
 import models.proxy
 import models.cluster
-from eru_utils import (deploy_node, deploy_proxy, rm_containers, eru_client)
+from eru_utils import (deploy_node, deploy_proxy, rm_containers, eru_client,
+                       revive_container)
+
+
+def _set_proxy_remote(proxy_addr, proxy_port, redis_host, redis_port):
+    def set_remotes():
+        time.sleep(1)
+        t = Talker(proxy_addr, proxy_port)
+        try:
+            t.talk('SETREMOTES', redis_host, redis_port)
+        finally:
+            t.close()
+    threading.Thread(target=set_remotes).start()
 
 
 if eru_client is not None:
@@ -26,7 +38,7 @@ if eru_client is not None:
         container_info = None
         try:
             port = int(request.form.get('port', 6379))
-            if not 6300 <= port <= 6399:
+            if not 6000 <= port <= 7999:
                 raise ValueError('invalid port')
             container_info = deploy_node(
                 request.form['pod'], request.form['aof'] == 'y',
@@ -45,21 +57,13 @@ if eru_client is not None:
 
     @base.post_async('/nodes/create/eru_proxy')
     def create_eru_proxy(request):
-        def set_remotes(proxy_addr, proxy_port, redis_host, redis_port):
-            time.sleep(1)
-            t = Talker(proxy_addr, proxy_port)
-            try:
-                t.talk('setremotes', redis_host, redis_port)
-            finally:
-                t.close()
-
         container_info = None
         try:
             cluster = models.cluster.get_by_id(int(request.form['cluster_id']))
             if cluster is None or len(cluster.nodes) == 0:
                 raise ValueError('no such cluster')
             port = int(request.form.get('port', 8889))
-            if not 8800 <= port <= 8899:
+            if not 8000 <= port <= 9999:
                 raise ValueError('invalid port')
             container_info = deploy_proxy(
                 request.form['pod'], int(request.form['threads']),
@@ -69,9 +73,8 @@ if eru_client is not None:
             models.proxy.create_eru_instance(
                 container_info['address'], port, cluster.id,
                 container_info['container_id'])
-            threading.Thread(target=set_remotes, args=(
-                container_info['address'], port, cluster.nodes[0].host,
-                cluster.nodes[0].port)).start()
+            _set_proxy_remote(container_info['address'], port,
+                              cluster.nodes[0].host, cluster.nodes[0].port)
             return base.json_result(container_info)
         except IntegrityError:
             if container_info is not None:
@@ -88,8 +91,17 @@ if eru_client is not None:
             models.node.delete_eru_instance(eru_container_id)
         else:
             models.proxy.delete_eru_instance(eru_container_id)
-        file_ipc.write_nodes_proxies_from_db()
         rm_containers([eru_container_id])
+
+    @base.post_async('/nodes/revive/eru')
+    def revive_eru_node(request):
+        revive_container(request.form['id'])
+        p = models.proxy.get_eru_by_container_id(request.form['id'])
+        if p is not None:
+            logging.info('Revive and setremotes for proxy %d, cluster #%d',
+                         p.id, p.cluster_id)
+            _set_proxy_remote(p.host, p.port, p.cluster.nodes[0].host,
+                              p.cluster.nodes[0].port)
 
 
 @base.get('/nodes/manage/eru/')
@@ -106,9 +118,12 @@ def nodes_manage_page_eru(request):
 
 @base.paged('/nodes/manage/eru/nodes')
 def nodes_manage_page_eru_nodes(request, page):
-    return request.render(
-        'node/manage_eru_nodes.html', page=page,
-        nodes=models.node.list_eru_nodes(page * 20, 20))
+    node_details = file_ipc.read_details()['nodes']
+    nodes = []
+    for n in models.node.list_eru_nodes(page * 20, 20):
+        n.detail = node_details.get('%s:%d' % (n.host, n.port))
+        nodes.append(n)
+    return request.render('node/manage_eru_nodes.html', page=page, nodes=nodes)
 
 
 @base.paged('/nodes/manage/eru/proxies')

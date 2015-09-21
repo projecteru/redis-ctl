@@ -2,11 +2,15 @@
 {% set row_cls = 'class="row-odd"' if odd_row else '' %}
 <tr id='cluster-{{ cluster.id }}' {{ row_cls }}>
     <td rowspan='{{ info_rows }}'><a href='/clusterp/{{ cluster.id }}'>{{ cluster.id }}</a></td>
-    <td rowspan='{{ info_rows }}'>{{ cluster.description|e }}</td>
+    <td rowspan='{{ info_rows }}'><a href='/clusterp/{{ cluster.id }}'>{{ cluster.description|e }}</a></td>
     <td rowspan='{{ info_rows }}'>{{ cluster.nodes|length }}</td>
 {% if cluster.proxies %}
     {% for proxy in cluster.proxies %}
-    <td class='proxy-tab'>{{ proxy.host|e }}:{{ proxy.port }}</td>
+    <td class='proxy-tab'>
+        <a href='/clusterp/{{ cluster.id }}#proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
+            {{ proxy.host|e }}:{{ proxy.port }}
+        </a>
+    </td>
     <td>{% if proxy.detail.read_slave %}<span class='label label-info'>R</span>{% endif %}</td>
     <td>
     {% if proxy.stat %}
@@ -20,7 +24,7 @@
     <td>{{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%</td>
     <td>
     {% if stats_enabled %}
-        <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}'>状态历史 <i class='fa fa-external-link'></i></a>
+        <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}'>状态历史 {{ icon('line-chart') }}</a>
     {% endif %}
     </td>
     </tr><tr {{ row_cls }}>

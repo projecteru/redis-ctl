@@ -16,6 +16,7 @@ except ImportError:
 config.PERMDIR = os.path.join(tempfile.gettempdir(), 'redistribpytestpermdir')
 config.POLL_INTERVAL = 0
 config.ERU_URL = None
+config.ERU_NETWORK = 'net'
 try:
     os.makedirs(config.PERMDIR)
 except OSError as exc:

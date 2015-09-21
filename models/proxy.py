@@ -26,6 +26,10 @@ class Proxy(Base):
             return None
         return eru_utils.eru_client.get_container(self.eru_container_id)
 
+    @cached_property
+    def cluster(self):
+        return Cluster.query.get(self.cluster_id)
+
 
 def get_by_host_port(host, port):
     return db.session.query(Proxy).filter(
@@ -58,6 +62,11 @@ def create_eru_instance(host, port, cluster_id, eru_container_id):
 def delete_eru_instance(eru_container_id):
     db.session.query(Proxy).filter(
         Proxy.eru_container_id == eru_container_id).delete()
+
+
+def get_eru_by_container_id(eru_container_id):
+    return db.session.query(Proxy).filter(
+        Proxy.eru_container_id == eru_container_id).first()
 
 
 def list_all():

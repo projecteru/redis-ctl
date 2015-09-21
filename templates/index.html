@@ -28,9 +28,9 @@ th { text-align: center; }
       </tr>
     </thead>
     <tbody>
-   {% for cluster in clusters if cluster.nodes %}
-      {{ cluster|render_cluster('row', stats_enabled=stats_enabled, odd_row=loop.index % 2) }}
-   {% endfor %}
+    {% for cluster in clusters if cluster.nodes %}
+        {{ cluster|render_cluster('row', stats_enabled=stats_enabled, odd_row=loop.index % 2) }}
+    {% endfor %}
     </tbody>
   </table>
 </div>
@@ -91,21 +91,21 @@ $(function() {
     </tbody>
   </table>
 </div>
-<div class="login-screen" style="padding-left: 199px; padding-top: 30px;background-color: #ecf0f1;min-height: 200px;">
-  <div class='row'>
-    <div class="col-xs-3">
-      <img src="/static/picture/retina.svg" alt="Retina">
-    </div>
-    <div class="col-xs-8" style="padding-left: 45px;
-                                 padding-right: 0px;">
-      <div class="form-group">
-        <input type="text"  id ='add-nodes-host' class="form-control login-field" value="" placeholder="请输入地址" >
+<div class="panel panel-success form-horizontal">
+  <div class="panel-heading panel-heading-hide-content" style='margin-bottom: 1em'><strong>注册新节点</strong></div>
+  <div class='form-group'>
+      {{ label('节点地址', offset=2) }}
+      {{ input(size=6, placeholder='IP 地址, 或域名', id='add-nodes-host') }}
+  </div>
+  <div class='form-group'>
+      {{ label('节点端口号', offset=2) }}
+      {{ input(size=6, placeholder='端口号, 或范围 (如6370 / 6000-6020)', id='add-nodes-port') }}
+  </div>
+  <div class='form-group'>
+      {{ button('注册这些节点', size=2, offset=4, id='add-nodes', color='primary') }}
+      <div class='col-xs-2'>
+          <span id='add-node-info'></span>
       </div>
-      <div class="form-group">
-        <input type="text"  id ='add-nodes-port' class="form-control login-field" value="" placeholder="请输入端口范围(如6370/ 6000-6020)"> 
-      </div>
-        <button id='add-nodes' class='btn btn-block btn-lg btn-primary'>注册这些节点</button><span id='add-node-info'></span>
-    </div>
   </div>
 </div>
 <script>

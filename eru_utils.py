@@ -87,3 +87,8 @@ def rm_containers(container_ids):
         eru_client.remove_containers(container_ids)
     except EruException as e:
         logging.exception(e)
+
+
+def revive_container(container_id):
+    logging.debug('Revive container: %s', container_id)
+    eru_client.start_container(container_id)

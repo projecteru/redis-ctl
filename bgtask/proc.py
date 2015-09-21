@@ -5,7 +5,7 @@ from hiredis import ProtocolError
 import redistrib.command
 
 import config
-from models.base import db
+from models.base import db, commit_session
 from models.node import get_by_host_port as get_node_by_host_port
 from models.cluster import remove_empty_cluster
 
@@ -26,7 +26,7 @@ def _join(_, cluster_id, cluster_host, cluster_port, newin_host, newin_port):
         return True
     n.assignee_id = cluster_id
     db.session.add(n)
-    db.session.commit()
+    commit_session()
     return True
 
 
@@ -39,7 +39,7 @@ def _replicate(_, cluster_id, master_host, master_port, slave_host,
         return True
     n.assignee_id = cluster_id
     db.session.add(n)
-    db.session.commit()
+    commit_session()
     return True
 
 
@@ -64,7 +64,7 @@ def _quit(_, cluster_id, host, port):
     if n is not None:
         n.assignee_id = None
         db.session.add(n)
-    db.session.commit()
+    commit_session()
     return True
 
 
@@ -78,7 +78,7 @@ def _migrate_slots(command, src_host, src_port, dst_host, dst_port, slots,
         if (datetime.now() - begin).seconds >= config.POLL_INTERVAL:
             command.args['start'] = start
             command.save()
-            db.session.commit()
+            commit_session()
             return start == len(slots)
     return True
 

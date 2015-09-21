@@ -3,6 +3,7 @@
 {% block title %}节点控制面板{% endblock %}
 
 {% block head %}
+<script src='/static/js/eru_container.js'></script>
 <style>
 .table { text-align: center; }
 .status-table {
@@ -35,28 +36,32 @@
     <tr>
         <th>内存</th>
         <td>
-        {% if detail.mem %}
+        {% if detail %}
             <span>
-                {{ detail.mem.used_memory|filesizeformat }} / {{ detail.mem.maxmemory|filesizeformat if detail.mem.maxmemory != 0 else '未设置最大值' }}
+                {{ detail.used_memory|filesizeformat }} / {{ detail.maxmemory|filesizeformat if detail.maxmemory != 0 else '未设置最大值' }}
             </span>
             <button class='btn btn-inverse' data-toggle='modal' data-target='#nodeMemSetting'>设置</button>
             {{ render_template('components/node/memory-setting.html', host=node.host, port=node.port,
-                               max_mem=detail.mem.maxmemory, used_mem=detail.mem.used_memory, mem_limit=max_mem_limit) }}
+                               max_mem=detail.maxmemory, used_mem=detail.used_memory, mem_limit=max_mem_limit) }}
         {% else %}
         等待轮询
         {% endif %}
         </td>
     </tr>
-    {% if node.eru_deployed %}
+  {%- if node.eru_deployed %}
     <tr>
         <th>部署</th>
         <td><i class='fa fa-cube'></i> ERU 容器</td>
     </tr>
-
-    {% if node.eru_info %}
+    {%- if node.eru_info %}
     <tr>
         <td>ERU 容器 ID</td>
-        <td>{{ node.eru_container_id|e }}</td>
+        <td>
+            <span>{{ node.eru_container_id|e }}</span>
+          {%- if not node.eru_info.is_alive %}
+            <button class='btn btn-info btn-revive-container' data-cid='{{ node.eru_container_id|e }}'>复活此容器</button>
+          {%- endif %}
+        </td>
     </tr>
     <tr>
         <td>ERU 容器创建时间</td>
@@ -66,9 +71,8 @@
         <td>ERU 宿主机地址</td>
         <td>{{ node.eru_info.host|e }}</td>
     </tr>
-    {% endif %}
-
-    {% endif %}
+    {%- endif %}
+  {%- endif %}
     <tr>
         <th>统计</th>
         <td>
@@ -79,74 +83,78 @@
                 <caption>CPU</caption>
                 <tr>
                     <td>用户态累计</td>
-                    <td>{{ detail.cpu.used_cpu_user }}</td>
+                    <td>{{ detail.used_cpu_user }}</td>
                 </tr>
                 <tr>
                     <td>内核态累计</td>
-                    <td>{{ detail.cpu.used_cpu_sys }}</td>
+                    <td>{{ detail.used_cpu_sys }}</td>
                 </tr>
                 <tr>
                     <td>总运行时间</td>
-                    <td>{{ detail.cpu.uptime_in_seconds }}</td>
+                    <td>{{ detail.uptime_in_seconds }}</td>
                 </tr>
                 <tr>
                     <td>平均 CPU 占用率</td>
-                    <td>{{ ((detail.cpu.used_cpu_user + detail.cpu.used_cpu_sys) / detail.cpu.uptime_in_seconds * 100)|round(2) }}%</td>
+                    <td>{{ ((detail.used_cpu_user + detail.used_cpu_sys) / detail.uptime_in_seconds * 100)|round(2) }}%</td>
                 </tr>
             </table>
             <table class='table status-table'>
                 <caption>存储</caption>
                 <tr>
                     <td>Keyspace hits</td>
-                    <td>{{ detail.storage.keyspace_hits }}</td>
+                    <td>{{ detail.keyspace_hits }}</td>
                 </tr>
                 <tr>
                     <td>Keyspace misses</td>
-                    <td>{{ detail.storage.keyspace_misses }}</td>
+                    <td>{{ detail.keyspace_misses }}</td>
                 </tr>
                 <tr>
                     <td>Expired keys</td>
-                    <td>{{ detail.storage.expired_keys }}</td>
+                    <td>{{ detail.expired_keys }}</td>
                 </tr>
                 <tr>
                     <td>Evicted keys</td>
-                    <td>{{ detail.storage.evicted_keys }}</td>
+                    <td>{{ detail.evicted_keys }}</td>
                 </tr>
             </table>
             <table class='table status-table'>
                 <caption>内存</caption>
                 <tr>
                     <td>已使用内存</td>
-                    <td>{{ detail.mem.used_memory|filesizeformat }}</td>
+                    <td>{{ detail.used_memory|filesizeformat }}</td>
                 </tr>
                 <tr>
                     <td>常驻集</td>
-                    <td>{{ detail.mem.used_memory_rss|filesizeformat }}</td>
+                    <td>{{ detail.used_memory_rss|filesizeformat }}</td>
                 </tr>
             </table>
             {% endif %}
         </td>
     </tr>
-    <tr>
-        <th>节点操作</th>
-        <td>
-            {% if node.assignee is none and not node.eru_deployed %}
-            <button class='btn btn-danger node-deleter' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>将此节点从监视器中移除</button>
-            {% endif %}
-
-            {% if stats_enabled %}
-            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
-            {% endif %}
-
-            <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
-            关闭报警
-            </button>
-            {% if detail.slots_migrating %}
-            <button class='btn btn-warning fix-migrating-btn' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>修复迁移状态</button>
-            {% endif %}
-        </td>
-    </tr>
 </table>
+
+<div class='form-horizontal form-submit'>
+    <div class='form-group'>
+        {%- if stats_enabled %}
+        <div class='col-xs-2'>
+            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 {{ icon('line-chart') }}</a>
+        </div>
+        {% endif %}
+
+        {{ checkbox('关闭报警', size=2, color='danger', cls=['check-suppress-alert'], checked=node.suppress_alert, data={'ntype': 'redis', 'host': node.host, 'port': node.port}) }}
+
+        {%- if node.assignee is none and not node.eru_deployed %}
+            {{ button('从监视器中移除此节点', size=2, color='danger', cls=['node-deleter'], data={'host': node.host, 'port': node.port}) }}
+        {% endif %}
+
+        {%- if detail.slots_migrating %}
+            {{ button('修复迁移状态', size=2, color='warning', cls=['fix-migrating-btn'], data={'host': node.host, 'port': node.port}) }}
+        {% endif %}
+        {{ button('发送指令', size=1, data={'toggle': 'modal', 'target': '#commandConsole', 'host': node.host, 'port': node.port}) }}
+        {{ button('INFO', size=1, cls=['info-btn'], data={'type': 'node', 'host': node.host, 'port': node.port}) }}
+        {{ button('CLUSTER NODES', size=2, cls=['cluster-nodes-btn'], data={'host': node.host, 'port': node.port}) }}
+    </div>
+</div>
 
 {% if node.assignee %}
 
@@ -165,7 +173,6 @@
     <button class='btn panel-btn btn-primary' id='quit-cluster-btn' data-bind='quit-cluster'>退出集群</button>
     <button class='btn panel-btn btn-primary' id='migrating-slots-btn' data-bind='migrating-slots'>迁出槽位</button>
     <button class='btn btn-info' style='display: none' id='quit-cluster-force'>此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联</button>
-    <button class='btn btn-info' data-toggle='modal' data-target='#commandConsole' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>直接发送指令</button>
 </div>
 
 <div class='panel-div' id='quit-cluster'>
@@ -390,7 +397,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
     }
 
     $.ajax({
-        url: '/nodes/get_masters',
+        url: '/cmd/get_masters',
         type: 'GET',
         data: {
             host: {{ node.host|tojson }},
@@ -462,11 +469,10 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
 
 {% else %}
 
-<div style='margin-bottom: 1em'>
-    <button class='btn btn-inverse' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
-    <button class='btn panel-btn btn-inverse' id='start-cluster-btn' data-bind='start-cluster'>启动集群</button>
-    <button class='btn panel-btn btn-inverse' id='join-cluster-btn' data-bind='join-cluster'>加入集群</button>
-    <button class='btn btn-inverse' data-toggle='modal' data-target='#commandConsole' data-host='{{ node.host|e }}' data-port='{{ node.port }}'>直接发送指令</button>
+<div style='margin-bottom: 1em' class='row'>
+    {{ button('集群自动发现', size=2, data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}) }}
+    {{ button('启动集群', size=2, id='start-cluster-btn', cls=['panel-btn'], data={'bind': 'start-cluster'}) }}
+    {{ button('加入集群', size=2, id='join-cluster-btn', cls=['panel-btn'], data={'bind': 'join-cluster'}) }}
 </div>
 
 {{ render_template('components/node/autodiscover.html', host=node.host, port=node.port) }}
@@ -538,7 +544,10 @@ $('#join-cluster-btn').click(function() {
             local.clusterList = r;
             for (var i in r) {
                 var cluster = r[i];
-                $('#select-cluster').append($('<option>').text([cluster.descr, '-', cluster.nodes, '个节点'].join(' ')).val(cluster.id));
+                $('#select-cluster').append($('<option>')
+                    .text([cluster.descr, '-', cluster.nodes, '个节点'].join(' '))
+                    .val(cluster.id)
+                    .data('index', i));
             }
             $('#select-cluster').enableLabelSelect({
                 itemWidth: 360,
@@ -549,16 +558,14 @@ $('#join-cluster-btn').click(function() {
                     }
 
                     $.ajax({
-                        url: '/cluster/get_masters',
+                        url: '/cmd/get_masters',
                         type: 'GET',
-                        data: {
-                            id: clusterId
-                        },
+                        data: local.clusterList[select.find(':selected').data('index')].node0,
                         success: function(r) {
-                            r.sort(sortNodeByAddr);
-                            local.clusterMasters[clusterId] = r;
+                            var nodes = r.masters.sort(sortNodeByAddr)
+                            local.clusterMasters[clusterId] = nodes;
                             if (select.val() === clusterId) {
-                                fillMasterNodesTo(r);
+                                fillMasterNodesTo(nodes);
                             }
                         },
                         error: function(r) {
@@ -644,4 +651,6 @@ $(document).ready(function() {
 });
 </script>
 {{ render_template('components/command_console.html') }}
+
+{% include 'components/info_console.html' %}
 {% endblock %}

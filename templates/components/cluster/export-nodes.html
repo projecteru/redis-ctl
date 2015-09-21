@@ -1,19 +1,13 @@
-<div class='modal fade bs-example-modal-lg' id='exportNodes' tabindex='-1' role='dialog' aria-labelledby='exportNodesTitle' aria-hidden='true'>
-    <div class='modal-dialog modal-lg'>
-        <div class='modal-content'>
-            <div class='modal-header'>
-                <button type='button' class='close' data-dismiss='modal' aria-label='Close'><span aria-hidden='true'>&times;</span></button>
-                <h4 class='modal-title' id='exportNodesTitle'>集群节点列表</h4>
-            </div>
-            <div class='modal-body'>
-                <button id='expnd-show-masters-only' class='check-group check-group-info'>只显示主节点</button>
-                <button id='expnd-sort' class='btn btn-info'>按地址排序</button>
-                <button id='expnd-reverse' class='btn btn-info'>倒转顺序</button>
-                <textarea id='expnd-cluster-nodes' style='display: block; width: 100%; min-height: 16em; margin: 8px'></textarea>
-            </div>
-        </div>
-    </div>
+{% import 'blocks/modal.html' as modal %}
+
+{{ modal.head('exportNodes', '集群节点列表') }}
+<div class='row'>
+    {{ checkbox('只显示主节点', size=3, id='expnd-show-masters-only') }}
+    {{ button('按地址排序', size=2, id='expnd-sort') }}
+    {{ button('倒转顺序', size=2, id='expnd-reverse') }}
 </div>
+<textarea id='expnd-cluster-nodes' style='display: block; width: 100%; min-height: 16em; margin: 8px'></textarea>
+{{ modal.tail() }}
 
 <script>
 function fillNodes(masterOnly) {

@@ -1,0 +1,225 @@
+{% import 'blocks/modal.html' as modal %}
+
+{{ modal.head('nodesAdjustment', '集群节点调整') }}
+<div class='form-horizontal form-submit' style='text-align: center'>
+    <div class='form-group'>
+        <div class='col-sm-2'>节点</div>
+        <div class='col-sm-2'>当前槽位数</div>
+        <div class='col-sm-4'>调整后槽位数</div>
+    </div>
+    <div class='form-group' id='adjBody'></div>
+    <div class='form-group'>
+        <div class='col-sm-2 control-label'>剩余槽位数</div>
+        <div class='col-sm-1'>
+            <label id='rest-slots'>16384</label>
+        </div>
+        {{ button('预览迁移', id='adjust-preview', color='info') }}
+        <div class='col-sm-2'><span class='label label-default'>预览前需要分配所有槽位</span></div>
+        {{ button('平分槽位', id='adjust-avg-slots') }}
+    </div>
+    <div class='form-group' style='text-align: center' id='adjust-migrs-parent'>
+        <hr>
+        <div class='form-group' style='font-weight: bold'>
+            <div class='col-sm-2'>迁移来源</div>
+            <div class='col-sm-1'></div>
+            <div class='col-sm-2'>迁移目标</div>
+            <div class='col-sm-2'>槽位数量</div>
+        </div>
+        <div id='adjust-migrs'></div>
+        <div class='form-group' style='font-weight: bold'>
+            <div class='col-sm-2'>移除节点</div>
+            <div class='col-sm-1'>角色</div>
+        </div>
+        <div id='adjust-quits'></div>
+        <div class='form-group'>
+            {{ button('确认以上任务', offset=1, id='adjust-confirm', color='primary') }}
+        </div>
+    </div>
+</div>
+{{ modal.tail() }}
+
+<script>
+-function() {
+    var TOTAL_SLOTS = 16384;
+    var restSlots = $('#rest-slots');
+
+    $('#nodesAdjustment').on('show.bs.modal', function(event) {
+        $('#adjust-migrs-parent').hide();
+        restSlots.text(TOTAL_SLOTS);
+
+        function incrRestSlots(diff) {
+            var rest = parseInt(restSlots.text()) + diff;
+            restSlots.text(rest);
+            return rest;
+        }
+
+        function makeNode(node, masterIndex) {
+            var countSlots = node.slots ? node.slots.length : NaN;
+            incrRestSlots(-countSlots);
+            return $('<div>').addClass('form-group control-group').append([
+                $('<div>').addClass('col-sm-2').text(node.host + ':' + node.port),
+                $('<div>').addClass('col-sm-2').text(countSlots),
+                $('<div>').addClass('col-sm-4').append(
+                    $('<input>').addClass('form-control slot-control').val(countSlots || '')
+                        .data('masterIndex', masterIndex)
+                        .data('last', countSlots)
+                        .data('host', node.host)
+                        .data('port', node.port)),
+                $('<div>').addClass('col-sm-offset-1 col-sm-2').append(
+                    $('<button>').text('移除此节点')
+                        .addClass('form-control check-group check-group-danger rm-control'))
+            ]);
+        }
+
+        var body = $('#adjBody').html('');
+        $.each(allMasters, function(i, e) {
+            body.append(makeNode(e, i));
+        });
+
+        $('.rm-control').enableLabelCheck({
+            onClick: function(btn) {
+                var input = btn.parent().parent().find('.slot-control');
+                if (btn.prop('checked')) {
+                    input.val(0).trigger('change').attr('disabled', 'disabled');
+                } else {
+                    input.removeAttr('disabled');
+                }
+            }
+        });
+
+        $('.slot-control').change(function() {
+            var self = $(this);
+            self.parent().parent().removeClass('has-error');
+            var slots = parseInt(self.val());
+            if (isNaN(slots) || slots.toString() !== self.val()) {
+                return self.parent().parent().addClass('has-error');
+            }
+            var diff = self.data('last') - slots;
+            self.data('last', slots);
+            var rest = incrRestSlots(diff);
+            if (rest === 0) {
+                $('#adjust-preview').removeAttr('disabled');
+            } else {
+                $('#adjust-preview').attr('disabled', 'disabled');
+            }
+        });
+    });
+
+    $('#adjust-avg-slots').click(function() {
+        var input = $('.slot-control:enabled');
+        if (input.length === 0) {
+            return;
+        }
+        var each = Math.floor(TOTAL_SLOTS / input.length);
+        var rest = TOTAL_SLOTS - each * input.length;
+        input.slice(0, rest).val(each + 1);
+        input.slice(rest).val(each);
+        input.trigger('change');
+    });
+
+    var migrs = [], quits = [];
+    $('#adjust-preview').click(function() {
+        $('#adjust-migrs-parent').show();
+        migrs.length = 0;
+        quits.length = 0;
+        var adjustMigrs = $('#adjust-migrs').html('');
+        var adjustRemoves = $('#adjust-quits').html('');
+
+        if (parseInt($('#rest-slots').text()) !== 0) {
+            return $('#adjust-migrs-parent').hide();
+        }
+        var r = $('.slot-control').map(function(_, e) {
+            var i = $(e);
+            var slots = allMasters[i.data('masterIndex')].slots;
+            var diff = slots.length - i.data('last');
+            var migr = 0 < diff ? slots.slice(0, diff) : [];
+            return {
+                diff: diff,
+                host: i.data('host'),
+                port: i.data('port'),
+                migr: migr
+            }
+        }).sort(function(a, b) {
+            return b.diff - a.diff;
+        });
+        var first = 0, last = r.length - 1, f, t;
+        while (first < last && r[first].diff !== 0 && r[last].diff !== 0) {
+            f = r[first];
+            t = r[last];
+            if (f.diff > -t.diff) {
+                migrs.push({
+                    src_host: f.host,
+                    src_port: f.port,
+                    dst_host: t.host,
+                    dst_port: t.port,
+                    slots: f.migr.slice(0, -t.diff)
+                });
+                last -= 1;
+                f.diff += t.diff;
+                f.migr = f.migr.slice(-t.diff);
+                continue;
+            }
+            migrs.push({
+                src_host: f.host,
+                src_port: f.port,
+                dst_host: t.host,
+                dst_port: t.port,
+                slots: f.migr.slice(0, f.migr.length) // a copy
+            });
+            first += 1;
+            t.diff += f.diff;
+            if (t.diff === 0) {
+                last -= 1;
+            }
+        }
+        function label(what, n) {
+            return $('<div>').addClass('col-sm-' + n).text(what);
+        }
+        $('.slot-control:disabled').each(function(_, e) {
+            var master = allMasters[$(e).data('masterIndex')];
+            for (var i = 0; i < master.slaves.length; ++i) {
+                var s = master.slaves[i];
+                quits.push({
+                    host: s.host,
+                    port: s.port,
+                    role: '从'
+                });
+            }
+            quits.push({
+                host: master.host,
+                port: master.port,
+                role: '主'
+            });
+        });
+
+        adjustMigrs.append(migrs.map(function(e) {
+            return $('<div>').addClass('form-group').append([
+                label(e.src_host + ':' + e.src_port, 2),
+                label('==>', 1),
+                label(e.dst_host + ':' + e.dst_port, 2),
+                label(e.slots.length, 2)
+            ]);
+        }));
+        adjustRemoves.append(quits.map(function(e) {
+            return $('<div>').addClass('form-group').append([
+                label(e.host + ':' + e.port, 2),
+                label(e.role, 1)
+            ]);
+        }));
+    });
+
+    $('#adjust-confirm').click(function() {
+        $('#adjust-confirm').attr('disabled', 'disabled');
+        $.post('/cluster/batch', JSON.stringify({
+            migrs: migrs,
+            quits: quits,
+            cluster_id: {{ cluster_id|tojson }}
+        }), function() {
+            window.location.reload();
+        }).error(function(e) {
+            alert('发生错误' + e.responsetext);
+            $('#adjust-confirm').removeAttr('disabled');
+        });
+    });
+}();
+</script>

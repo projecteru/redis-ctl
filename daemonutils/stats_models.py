@@ -113,7 +113,7 @@ class NodeBase(Base):
 
     def collect_stats(self, emit_func, alarm_func):
         try:
-            self._collect_stats()
+            self._collect_stats(alarm_func)
             if stats.client is not None:
                 self.send_to_influxdb(lambda p: emit_func(self.addr, p))
         except (ReplyError, SocketError, StandardError), e:
@@ -123,10 +123,12 @@ class NodeBase(Base):
             self.set_unavailable()
             self.send_alarm(alarm_func)
 
-    def _collect_stats(self):
+    def _collect_stats(self, alarm_func):
         raise NotImplementedError()
 
     def send_alarm(self, alarm_func):
+        logging.debug('Send alarm to %s suppressed %s', self.addr,
+                      self.suppress_alert)
         if self.suppress_alert != 1:
             self._send_alarm(alarm_func)
 
@@ -142,49 +144,51 @@ class RedisNodeStatus(NodeBase):
 
     def send_to_influxdb(self, emit_func):
         emit_func({
-            'used_memory': self['mem']['used_memory'],
-            'used_memory_rss': self['mem']['used_memory_rss'],
-            'connected_clients': self['conn']['connected_clients'],
-            'total_commands_processed': self['conn'][
-                'total_commands_processed'],
-            'expired_keys': self['storage']['expired_keys'],
-            'evicted_keys': self['storage']['evicted_keys'],
-            'keyspace_hits': self['storage']['keyspace_hits'],
-            'keyspace_misses': self['storage']['keyspace_misses'],
-            'used_cpu_sys': self['cpu']['used_cpu_sys'],
-            'used_cpu_user': self['cpu']['used_cpu_user'],
+            'used_memory': self['used_memory'],
+            'used_memory_rss': self['used_memory_rss'],
+            'connected_clients': self['connected_clients'],
+            'total_commands_processed': self['total_commands_processed'],
+            'expired_keys': self['expired_keys'],
+            'evicted_keys': self['evicted_keys'],
+            'keyspace_hits': self['keyspace_hits'],
+            'keyspace_misses': self['keyspace_misses'],
+            'used_cpu_sys': self['used_cpu_sys'],
+            'used_cpu_user': self['used_cpu_user'],
             'response_time': self['response_time'],
         })
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
-    def _collect_stats(self):
+    def _collect_stats(self, alarm_func):
         t = Talker(self.details['host'], self.details['port'], CONNECT_TIMEOUT)
         try:
-            node_info = _info_slots(t)
             details = _info_detail(t)
-            node_info['mem'] = {
+            cluster_enabled = details.get('cluster_enabled') == '1'
+            node_info = {'cluster_enabled': cluster_enabled}
+            if details.get('cluster_enabled') == '1':
+                node_info.update(_info_slots(t))
+            node_info.update({
                 'used_memory': int(details['used_memory']),
                 'used_memory_rss': int(details['used_memory_rss']),
                 'used_memory_human': details['used_memory_human'],
-            }
-            node_info['mem']['maxmemory'] = int(details['maxmemory'])
-            node_info['cpu'] = {
+            })
+            node_info['maxmemory'] = int(details['maxmemory'])
+            node_info.update({
                 'used_cpu_sys': float(details['used_cpu_sys']),
                 'used_cpu_user': float(details['used_cpu_user']),
                 'uptime_in_seconds': int(details['uptime_in_seconds']),
-            }
-            node_info['conn'] = {
+            })
+            node_info.update({
                 'connected_clients': int(details['connected_clients']),
                 'total_commands_processed': int(
                     details['total_commands_processed']),
-            }
-            node_info['storage'] = {
+            })
+            node_info.update({
                 'expired_keys': int(details['expired_keys']),
                 'evicted_keys': int(details['evicted_keys']),
                 'keyspace_hits': int(details['keyspace_hits']),
                 'keyspace_misses': int(details['keyspace_misses']),
                 'aof_enabled': details['aof_enabled'] == '1',
-            }
+            })
             node_info['response_time'] = details['response_time']
             node_info['version'] = details['redis_version']
             node_info['stat'] = True
@@ -203,14 +207,15 @@ class RedisNodeStatus(NodeBase):
         from models.cluster_plan import get_balance_plan_by_addr
 
         if (eru_client is None
+                or not self.details['cluster_enabled']
                 or not self.details['stat']
                 or len(self.details['slots']) == 0
                 or self.details['slots_migrating']):
             return
-        maxmem = self.details['mem'].get('maxmemory')
+        maxmem = self.details.get('maxmemory')
         if maxmem is None or maxmem == 0:
             return
-        if self.details['mem']['used_memory'] < maxmem * 9 / 10:
+        if self.details['used_memory'] < maxmem * 9 / 10:
             return
 
         host, port = self.addr.split(':')
@@ -220,7 +225,7 @@ class RedisNodeStatus(NodeBase):
 
         logging.info('Attempt to deploy node for %s due to memory drained;'
                      ' used memory %d / %d max memory', self.addr,
-                     self.details['mem']['used_memory'], maxmem)
+                     self.details['used_memory'], maxmem)
         auto_balance.add_node_to_balance_for(
             host, int(port), plan, self.details['slots'])
 
@@ -234,10 +239,10 @@ class ProxyStatus(NodeBase):
 
     def send_to_influxdb(self, emit_func):
         emit_func({
-            'mem_buffer_alloc': self['mem']['mem_buffer_alloc'],
-            'connected_clients': self['conn']['connected_clients'],
-            'completed_commands': self['conn']['completed_commands'],
-            'total_process_elapse': self['conn']['total_process_elapse'],
+            'mem_buffer_alloc': self['mem_buffer_alloc'],
+            'connected_clients': self['connected_clients'],
+            'completed_commands': self['completed_commands'],
+            'total_process_elapse': self['total_process_elapse'],
             'command_elapse': self['command_elapse'],
             'remote_cost': self['remote_cost'],
             'used_cpu_sys': self['used_cpu_sys'],
@@ -245,7 +250,7 @@ class ProxyStatus(NodeBase):
         })
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
-    def _collect_stats(self):
+    def _collect_stats(self, alarm_func):
         t = Talker(self.details['host'], self.details['port'], CONNECT_TIMEOUT)
         try:
             now = time.time()
@@ -258,20 +263,19 @@ class ProxyStatus(NodeBase):
             conns = sum([int(c) for c in st['clients_count'].split(',')])
             mem_buffer_alloc = sum([int(m) for m in
                                     st['mem_buffer_alloc'].split(',')])
-
+            cluster_ok = st.get('cluster_ok') != '0'
             self.details.update({
-                'stat': True,
+                'stat': cluster_ok,
                 'threads': st['threads'],
                 'version': st['version'],
                 'used_cpu_sys': float(st.get('used_cpu_sys', 0)),
                 'used_cpu_user': float(st.get('used_cpu_user', 0)),
-                'conn': {
-                    'connected_clients': conns,
-                    'completed_commands': int(st['completed_commands']),
-                    'total_process_elapse': float(st['total_process_elapse']),
-                },
-                'mem': {'mem_buffer_alloc': mem_buffer_alloc},
+                'connected_clients': conns,
+                'completed_commands': int(st['completed_commands']),
+                'total_process_elapse': float(st['total_process_elapse']),
+                'mem_buffer_alloc': mem_buffer_alloc,
                 'read_slave': st.get('read_slave') == '1',
+                'cluster_ok': cluster_ok,
             })
 
             if 'last_command_elapse' in st:
@@ -287,7 +291,11 @@ class ProxyStatus(NodeBase):
             else:
                 self.details['remote_cost'] = 0
 
-            self.set_available(self.details['command_elapse'])
+            if cluster_ok:
+                self.set_available(self.details['command_elapse'])
+            else:
+                self.send_alarm(alarm_func)
+                self.set_unavailable()
         finally:
             t.close()
 

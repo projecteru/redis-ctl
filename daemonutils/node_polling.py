@@ -8,7 +8,7 @@ import file_ipc
 import stats
 from config import NODES_EACH_THREAD
 from stats_models import RedisNodeStatus, ProxyStatus
-from models.base import db
+from models.base import db, commit_session
 from models.polling_stat import PollingStat
 
 
@@ -94,7 +94,7 @@ class NodeStatCollector(threading.Thread):
         proxies = _load_from(ProxyStatus, poll['proxies'])
         # commit because `get_by` may create new nodes
         # to reattach session they must be persisted
-        db.session.commit()
+        commit_session()
 
         all_nodes = nodes + proxies
         random.shuffle(all_nodes)
@@ -112,7 +112,7 @@ class NodeStatCollector(threading.Thread):
                 n.add_to_db()
 
         save_polling_stat(nodes, proxies)
-        db.session.commit()
+        commit_session()
         logging.debug('Total %d nodes, %d proxies', len(nodes), len(proxies))
 
         try:

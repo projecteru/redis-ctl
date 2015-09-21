@@ -4,106 +4,64 @@
 
 {% block head %}
 <script src='/static/js/eru_container.js'></script>
-<style>
-.select2-container { display: inline-block }
-</style>
 {% endblock %}
 
 {% block body %}
-<div>
-    <h4 style='text-align: right;'>Eru地址：{{ eru_url|e }}</h4>
-    <div>
-      <div class='row'>
-        <div class='col-xs-3'>
-          <select id='pod-list' class="select-primary" data-select-style='select-default'>
-              <option value=''>选择机房</option>
-              {% for p in pods %}
-                <option value='{{ p.name|e }}'>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
-              {% endfor %}
-          </select>
-        </div>
-          <div style='margin-left: 1em; display: inline-block'>
-            <div class='row demo-samples'>
-              <div style='float:left'>
-                  <button class='check-group check-group-info' id='specify-host-check' style='margin-right: 13px; padding-top: 10px; padding-bottom: 10px;'>指定机器</button>
-              </div>
-              <div style='float: right; display: none' id='host-panel'>
-                <span id='host-list-container'></span>
-                <button class='check-opt check-group check-group-info' id='netmode-host' style='margin-left: 13px; padding-top: 10px; padding-bottom: 10px;'>以 HOST 网络模型部署</button>
-              </div>
-            </div>
-          </div>
+<div class='form-horizontal form-submit'>
+    <div class='from-group'>
+      <h4 style='text-align: right;'>Eru地址：{{ eru_url|e }}</h4>
+    </div>
+    <div class='from-group'>
+      <div class='col-sm-3'>
+        <select id='pod-list' class='form-control'>
+            <option value=''>选择机房</option>
+            {% for p in pods %}
+              <option value='{{ p.name|e }}'>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
+            {% endfor %}
+        </select>
+      </div>
+      {{ checkbox('指定机器', size=2, color='info', id='specify-host-check') }}
+      <div class='col-sm-3' style='display: none' id='host-list-container'></div>
+      <div class='col-sm-3' style='display: none' id='host-panel'>
+        <button class='check-opt check-group check-group-info' id='netmode-host'>HOST 网络模型部署</button>
       </div>
     </div>
+</div>
 
-    <div id='node-create-panel' style=' margin-top: 0.5em; display: none'>
-      <div class="panel panel-primary">
-        <table class='table'>
-            <tr>
-                <td style='width: 9em'>创建节点</td>
-                <td>
-                  <div class='col-xs-2' style="padding-left: 0px;">
-                    <button id='aof-enable' class='check-opt check-group check-group-info'>启用 AOF</button>
-                  </div>
-                  <div class='col-xs-2' style="padding-left: 0px;">
-                    <button class='check-opt check-group check-group-info check-group-checked' id='use-cluster-enable'>集群模式</button>
-                  </div>  
-                  <div class='col-xs-5'>
-                    <div class='input-group'>
-                      <span class='input-group-addon'>指定端口</span>
-                      <input type='text' id='port-node' class='form-control' placeholder='6379' />
-                    </div>
-                  </div>
-                </td>
-                <td>
-                    <button class='btn btn-primary' onclick='requestEruNode(this)'>申请 ERU 节点</button>
-                    <br>
-                    <span style='display: none' id='node-error' class='label label-danger'></span>
-                </td>
-            </tr>
+<hr style='clear: both'>
 
-            <tr>
-                <td>创建代理</td>
-                <td>
-                  <div class='row mbl'>
-                    <div class= 'col-xs-5'>
-                      <select id='cluster-select' class='select-primary' data-select-style='select-default'>
-                        <option value=''>选择集群</option>
-                        {% for c in clusters if c.nodes|length > 0 %}
-                        <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} 个节点</option>
-                        {% endfor %}
-                      </select>
-                    </div>
-                    <div class='col-xs-5'>
-                      <select id='threads-select' class='select-primary' data-select-style='select-default'>
-                        <option value=''>线程数</option>
-                        <option value='2'>2 线程</option>
-                        <option value='4'>4 线程</option>
-                        <option value='8'>8 线程</option>
-                        <option value='16'>16 线程</option>
-                        <option value='24'>24 线程</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class='row'>
-                    <div class='col-xs-2'>
-                      <button id='read-slave' class='check-opt check-group check-group-info'>只读</button>
-                    </div>
-                    <div class='col-xs-5'>
-                      <div class='input-group'>
-                        <span class='input-group-addon'>指定端口</span>
-                        <input type='text' id='port-proxy' class='form-control' placeholder='8889' />
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                    <button class='btn btn-primary' onclick='requestEruProxy(this)' style="margin-top: 4px;">申请 ERU 代理</button>
-                    <span style='display: none' id='proxy-error' class='label label-danger'></span>
-                </td>
-            </tr>
-        </table>
-      </div>
+<div id='node-create-panel' style='margin-top: 0.5em; display: none' class='form-horizontal form-submit'>
+    <div class='form-group'>
+        {{ label('创建节点', size=1) }}
+        {{ checkbox('启用 AOF', size=2, id='aof-enable', color='info', cls=['check-opt']) }}
+        {{ checkbox('集群模式', size=2, id='use-cluster-enable', color='info', checked=true, cls=['check-opt']) }}
+        {{ input(offset=3, size=2, id='port-node', placeholder='6379', addon='指定端口') }}
+        {{ button('创建 ERU 节点', size=2, id='create-node-btn', color='primary') }}
+    </div>
+
+    <div class='form-group'>
+        {{ label('创建代理', size=1) }}
+        <div class= 'col-xs-4'>
+          <select id='cluster-select' class='form-control'>
+            <option value=''>选择集群</option>
+            {% for c in clusters if c.nodes|length > 0 %}
+            <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} 个节点</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class='col-xs-2'>
+          <select id='threads-select' class='form-control'>
+            <option value=''>线程数</option>
+            <option value='2'>2 线程</option>
+            <option value='4'>4 线程</option>
+            <option value='8'>8 线程</option>
+            <option value='16'>16 线程</option>
+            <option value='24'>24 线程</option>
+          </select>
+        </div>
+        {{ checkbox('只读', size=1, id='read-slave', color='info', cls=['check-opt']) }}
+        {{ input(size=2, id='port-proxy', placeholder='8889', addon='指定端口') }}
+        {{ button('创建 ERU 代理', size=2, id='create-proxy-btn', color='primary') }}
     </div>
 </div>
 
@@ -124,21 +82,20 @@
 </div>
 
 <script>
-$('#pod-list').change(function(pod){
-        $('#node-create-panel').show();
-        var selectHost = $('<select>').data('select-style', 'select-default');
-        $('#host-list-container').html('').append(selectHost);
-        $('#host-list-container').find('select').toggleClass('select-primary');
-        $("select").select2({dropdownCssClass: 'dropdown-inverse'});
-        $.get('/eru/list_hosts/' + pod.val, {}, function(r) {
-            $.each(r, function(i, e) {
-                selectHost.append($('<option>').val(e.name).text(e.name + ' - ' + e.addr))
-            });
+$('#pod-list').change(function() {
+    $('#node-create-panel').show();
+    var selectHost = $('<select>').addClass('form-control');
+    $('#host-list-container').html('').append(selectHost);
+    $.get('/eru/list_hosts/' + $('#pod-list').val(), {}, function(r) {
+        $.each(r, function(i, e) {
+            selectHost.append($('<option>').val(e.name).text(e.name + ' - ' + e.addr))
         });
+    });
 });
 $('#specify-host-check').enableLabelCheck({
     onClick: function(e) {
         $('#host-panel').toggle(e.prop('checked'));
+        $('#host-list-container').toggle(e.prop('checked'));
     }
 });
 
@@ -150,32 +107,31 @@ function useHostMode() {
     return $('#netmode-host').prop('checked');
 }
 
-$("select").select2({dropdownCssClass: 'dropdown-inverse'});
 $('#cluster-select').change(function(){width: 280});
 $('#threads-select').change(function(){width: 180});
 
-function displayErrorLabel(btn, label, msg) {
+function displayErrorMsg(btn, msg) {
     btn.removeAttr('disabled');
-    label.show().text(msg);
+    alert(msg);
 }
 
-function displayError(btn, label, e) {
+function displayError(btn, e) {
     var err = e.responseJSON || {};
     if (err.reason === 'eru fail' && err.detail === 'Not enough core resources') {
-        return displayErrorLabel(btn, label, '指定机器的资源不足');
+        return displayErrorMsg(btn, '指定机器的资源不足');
     }
     if (err.reason === 'exists') {
-        return displayErrorLabel(btn, label, '该地址的节点或代理已经存在');
+        return displayErrorMsg(btn, '该地址的节点或代理已经存在');
     }
-    displayErrorLabel(btn, label, '错误: ' + e.responseText);
+    displayErrorMsg(btn, '错误: ' + e.responseText);
 }
 
-function requestEruNode(btn) {
-    $(btn).attr('disabled', 'disabled');
+$('#create-node-btn').click(function() {
+    var btn = $(this).attr('disabled', 'disabled');
     $('#node-error').hide();
     var port = parseInt($('#port-node').val() || 6379);
-    if (!(6300 <= port && port <= 6399)) {
-        return displayErrorLabel($(btn), $('#node-error'), '端口范围应该在 6300-6399 之间');
+    if (!(6000 <= port && port <= 7999)) {
+        return displayErrorMsg(btn, '端口范围应该在 6000-7999 之间');
     }
     $.ajax({
         url: '/nodes/create/eru_node',
@@ -189,23 +145,25 @@ function requestEruNode(btn) {
             port: port
         },
         success: function(r) {
-            $(btn).removeAttr('disabled');
+            btn.removeAttr('disabled');
             $('#eru-nodes').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
                     ).append($('<td>').text(r.version.slice(0, 7))
                     ).append($('<td>').text(r.host)
                     ).append($('<td>').text(r.created)
                     ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.address + '/' + port).text(r.address))
+                    ).append($('<td>')
                     ).append($('<td>').append(deleteButton(r.container_id, 'node'))
                     ));
         },
         error: function(e) {
-            displayError($(btn), $('#node-error'), e);
+            displayError(btn, e);
         }
     });
-}
+});
 
-function requestEruProxy(btn) {
+$('#create-proxy-btn').click(function () {
+    var btn = $(this);
     var clusterId = $('#cluster-select').val();
     if (!clusterId) {
         return;
@@ -215,11 +173,11 @@ function requestEruProxy(btn) {
         return;
     }
     var port = parseInt($('#port-proxy').val() || 8889);
-    if (!(8800 <= port && port <= 8899)) {
-        return displayErrorLabel($(btn), $('#proxy-error'), '端口范围应该在 8800-8899 之间');
+    if (!(8000 <= port && port <= 9999)) {
+        return displayErrorMsg(btn, '端口范围应该在 8000-9999 之间');
     }
 
-    $(btn).attr('disabled', 'disabled');
+    btn.attr('disabled', 'disabled');
     $('#node-error').hide();
     $.ajax({
         url: '/nodes/create/eru_proxy',
@@ -234,7 +192,7 @@ function requestEruProxy(btn) {
             port: port
         },
         success: function(r) {
-            $(btn).removeAttr('disabled');
+            btn.removeAttr('disabled');
             $('#eru-proxies').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
                     ).append($('<td>').text(r.version.slice(0, 7))
@@ -245,18 +203,14 @@ function requestEruProxy(btn) {
                     ));
         },
         error: function(e) {
-            displayError($(btn), $('#proxy-error'), e);
+            displayError(btn, e);
         }
     });
-}
+});
 
 function deleteButton(containerId, type) {
-    var toggleNext = $('<button>').addClass('btn').text('下线容器').click(
-            function() {$(this).next().toggle();});
-    var offline = $('<button>').addClass('btn').addClass('btn-danger').hide().text(
-        '确定').data('cid', containerId).data('type', type);
-    offline.click(delContainer);
-    return [toggleNext, offline];
+    return $('<button>').addClass('btn').addClass('btn-danger').text(
+        '下线容器').data('cid', containerId).data('type', type).click(delContainer);
 }
 
 $('.check-opt').enableLabelCheck();

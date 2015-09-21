@@ -8,12 +8,11 @@
         {% endif %}
     </td>
     <td>
-        {% set mem = node.detail.mem %}
-        {% if node.stat and mem %}
-        {{ mem.used_memory_human }}
-            {% if mem.maxmemory %}
-            / {{ mem.maxmemory|filesizeformat }}
-            <span class='label label-success'>{{ (mem.used_memory * 100 / mem.maxmemory)|round(2) }}%</span>
+        {% if node.stat %}
+        {{ node.detail.used_memory_human }}
+            {% if node.detail.maxmemory %}
+            / {{ node.detail.maxmemory|filesizeformat }}
+            <span class='label label-success'>{{ (node.detail.used_memory * 100 / node.detail.maxmemory)|round(2) }}%</span>
             {% else %}
             | <span class='label label-primary'>最大值未设置</span>
             {% endif %}
@@ -47,7 +46,7 @@
     </td>
     <td>
         {% if stats_enabled %}
-        <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 <i class='fa fa-external-link'></i></a>
+        <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 {{ icon('line-chart') }}</a>
         {% endif %}
         <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
         关闭报警

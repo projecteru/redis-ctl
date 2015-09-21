@@ -6,6 +6,7 @@
       <th>宿主地址</th>
       <th>创建时间</th>
       <th>地址</th>
+      <th>集群模式</th>
       <th>下线容器</th>
     </tr>
   </thead>
@@ -17,12 +18,12 @@
       <td>{{ n.eru_info.host|e }}</td>
       <td>{{ n.eru_info.created|e }}</td>
       <td><a href='/nodep/{{ n.host|e }}/{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
+      <td>{{ n.detail.cluster_enabled }}</td>
       <td>
         {% if n.assignee_id %}
         集群在役中
         {% else %}
-        <button class='btn toggle-next'>下线容器</button>
-        <button class='btn btn-danger btn-del-container' data-type='node' data-cid={{ n.eru_container_id|tojson }}>确定</button>
+        {{ button('下线容器', color='danger', cls=['btn-del-container'], data={'type': 'node', 'cid': n.eru_container_id}) }}
         {% endif %}
       </td>
     <tr>

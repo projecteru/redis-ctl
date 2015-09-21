@@ -1,0 +1,12 @@
+{% extends 'components/grid-group.html' %}
+
+{% block content %}
+<div class='control-label'>
+    <span class='{{ ' '.join(cls) }}'
+        {% if id %}id='{{ id }}'{% endif %}
+        {% for k, v in data.iteritems() %}data-{{ k }}="{{ v }}"{% endfor %}
+        >
+        {{ text|e }}
+    </span>
+</div>
+{% endblock %}

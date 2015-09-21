@@ -65,7 +65,7 @@ $('#commandConsole').on('show.bs.modal', function(event) {
 
     function send(cmd) {
         $.ajax({
-            url: '/exec_command',
+            url: '/cmd/exec',
             type: 'POST',
             data: {
                 host: host,

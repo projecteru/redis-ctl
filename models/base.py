@@ -11,6 +11,14 @@ def init_db(app):
     db.create_all()
 
 
+def commit_session():
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
 class Base(db.Model):
     __abstract__ = True
     __table_args__ = {'mysql_charset': 'utf8'}

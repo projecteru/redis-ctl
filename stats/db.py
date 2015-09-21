@@ -35,8 +35,6 @@ class Client(object):
             return
         self.socket.close()
         self.stream.close()
-        self.socket = None
-        self.stream = None
 
     def __del__(self):
         self.close()

@@ -8,12 +8,11 @@
 <link rel='stylesheet' type='text/css' href='/static/css/components.css'>
 <link rel='stylesheet' type='text/css' href='/static/css/flat-ui.min.css'>
 <link rel='stylesheet' type='text/css' href='/static/vendor/bootstrap.min.css'>
-<script src='/static/js/vendor/jquery.min.js'></script>
+<script src='/static/js/jquery.min.js'></script>
 <script src='/static/js/flat-ui.min.js'></script>
 <script src='/static/js/common.js'></script>
 <script src='/static/js/application.js'></script>
 <script src='/static/js/components.js'></script>
-<script src='/static/js/slidetoggle.js'></script>
 <script>
 function selectHash() {
     var e = document.getElementById(window.location.hash.slice(1));
@@ -47,7 +46,6 @@ $(document).ready(function() {
             <li><a class='nav-link' href='/nodes/manage/eru'><i class='fa fa-cube'></i> 容器节点管理</a></li>
             <li><a class='nav-link' href='/cluster/tasks/list_all'><i class='fa fa-tasks'></i> 集群任务</a></li>
             <li><a class='nav-link' href='/stats/pollings'><i class='fa fa-calendar'></i> 轮询记录</a></li>
-            <li><a class='nav-link' href='/stats/statistics'><i class='fa fa-bar-chart'></i> 请求数监控</a></li>
         </ul>
     </div>
 </header>
@@ -57,7 +55,7 @@ $(document).ready(function() {
 <footer style="margin-top: 0px;">
     <div class='main-width'>
         <span style='float: right'>
-            &copy; HunanTV Platform developers - ver0.8.1-2015-09-18
+            &copy; HunanTV Platform developers - ver0.8.2-2015-12-29
             <a href='https://github.com/HunanTV/redis-ctl'><i class='fa fa-github'></i></a>
         </span>
     </div>

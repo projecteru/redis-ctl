@@ -1,35 +1,27 @@
-<div class='modal fade bs-example-modal-lg' id='clusterAutoDiscover' tabindex='-1' role='dialog' aria-labelledby='clusterAutoDiscoverTitle' aria-hidden='true'>
-    <div class='modal-dialog modal-lg'>
-        <div class='modal-content'>
-            <div class='modal-header'>
-                <button type='button' class='close' data-dismiss='modal' aria-label='Close'><span aria-hidden='true'>&times;</span></button>
-                <h4 class='modal-title' id='clusterAutoDiscoverTitle'>集群自动发现</h4>
-            </div>
-            <div class='modal-body'>
-              <span id='clusterDiscoverLoaderPlaceholder'></span>
-              <div class="panel panel-default">
-                <table class='table' id='clusterDiscoverNodes' style='display: none'>
-                    <thead>
-                        <tr>
-                            <th>地址</th>
-                            <th>角色</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody style='text-align: center'></tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan='3' id='clusterDiscoverControls'>
-                                <button class='btn btn-primary' id='discoverAutoAddNodes'>注册这些节点并加入集群</button>
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-              </div>
-            </div>
-        </div>
-    </div>
+{% import 'blocks/modal.html' as modal %}
+
+{{ modal.head('clusterAutoDiscover', '集群自动发现') }}
+<span id='clusterDiscoverLoaderPlaceholder'></span>
+<div class="panel panel-default">
+  <table class='table' id='clusterDiscoverNodes' style='display: none'>
+      <thead>
+          <tr>
+              <th>地址</th>
+              <th>角色</th>
+              <th></th>
+          </tr>
+      </thead>
+      <tbody style='text-align: center'></tbody>
+      <tfoot>
+          <tr>
+              <td colspan='3' id='clusterDiscoverControls'>
+                  {{ button('注册这些节点并加入集群', id='discoverAutoAddNodes') }}
+              </td>
+          </tr>
+      </tfoot>
+  </table>
 </div>
+{{ modal.tail() }}
 
 <script>
 $('#clusterAutoDiscover').on('show.bs.modal', function(event) {

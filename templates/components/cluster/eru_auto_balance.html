@@ -1,14 +1,10 @@
 <div>
-    {% set plan = cluster.balance_plan or {} %}
-
-    <button id='balance-plan-check' class='check-group check-group-info {{ 'check-group-checked' if plan.pod else '' }}'>启用自动扩容</button>
-
     <div id='balance-plan' {% if not plan.pod %}style='display: none'{% endif %}>
         <div style='margin-top: 1em'>
             用于自动申请节点的机房:
             <select id='pod-list' data-select-style='select-default'>
             {% for p in pods %}
-                <option value='{{ p.name|e }}' {% if plan and plan.pod == p.name %}selected='selected'{% endif %}>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
+                <option value='{{ p.name|e }}' {% if plan.pod == p.name %}selected='selected'{% endif %}>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
             {% endfor %}
             </select>
             指定分配容器的机器
@@ -43,11 +39,6 @@
 
 <script>
 -function() {
-    $('#balance-plan-check').enableLabelCheck({
-        onClick: function(btn) {
-            $('#balance-plan').toggle(btn.prop('checked'));
-        }
-    });
     $('#aof-enable').enableLabelCheck();
     $('#pod-list').enableLabelSelect({
         width: 320,

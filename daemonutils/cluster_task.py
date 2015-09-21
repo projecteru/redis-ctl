@@ -5,6 +5,10 @@ import traceback
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
+from models.base import db, commit_session
+from models.task import ClusterTask, TaskStep
+import models.task
+
 
 class TaskRunner(threading.Thread):
     def __init__(self, app, task_id, step_id):
@@ -14,8 +18,6 @@ class TaskRunner(threading.Thread):
         self.step_id = step_id
 
     def run(self):
-        from models.base import db
-        from models.task import ClusterTask, TaskStep
         with self.app.app_context():
             task = ClusterTask.query.get(self.task_id)
             if task is None:
@@ -31,12 +33,12 @@ class TaskRunner(threading.Thread):
                 logging.info('Execute step %d', step.id)
                 if not step.execute():
                     task.fail('Step fails')
-                    db.session.commit()
+                    commit_session()
                     return
                 lock = task.acquired_lock()
                 lock.step = None
                 db.session.add(lock)
-                db.session.commit()
+                commit_session()
                 task.check_completed()
             except (StandardError, SQLAlchemyError), e:
                 logging.exception(e)
@@ -44,12 +46,10 @@ class TaskRunner(threading.Thread):
                 task.exec_error = traceback.format_exc()
                 task.completion = datetime.now()
                 db.session.add(task)
-                db.session.commit()
+                commit_session()
 
 
 def try_create_exec_thread_by_task(t, app):
-    from models.base import db
-
     t.check_completed()
     if t.completion is not None:
         return None
@@ -78,9 +78,8 @@ def try_create_exec_thread_by_task(t, app):
         db.session.add(lock)
 
     try:
-        db.session.commit()
+        commit_session()
     except IntegrityError:
-        db.session.rollback()
         return None
 
     logging.debug('Run task %d', t.id)
@@ -95,15 +94,12 @@ class TaskPoller(threading.Thread):
         self.interval = interval
 
     def _shot(self):
-        import models.task
         for task in models.task.undone_tasks():
             t = try_create_exec_thread_by_task(task, self.app)
             if t is not None:
                 t.start()
 
     def run(self):
-        import models.task
-        from models.base import db
         commit = False
         while True:
             logging.debug('Run tasks')

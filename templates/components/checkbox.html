@@ -1,0 +1,11 @@
+{% extends 'components/grid-group.html' %}
+
+{% block content %}
+<button
+    class='check-group check-group-{{ color }} {% if checked %}check-group-checked{% endif %} {{ ' '.join(cls) }}'
+    {% if id %}id='{{ id }}'{% endif %}
+    {% for k, v in data.iteritems() %}data-{{ k }}="{{ v }}"{% endfor %}
+    >
+    {{ text|e }}
+</button>
+{% endblock %}

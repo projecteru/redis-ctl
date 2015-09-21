@@ -43,7 +43,7 @@ $('#max-mem-slide').slider({
 
 $('#max-mem-confirm').click(function() {
     $.ajax({
-        url: '/nodes/set_max_mem',
+        url: '/cmd/set_max_mem',
         type: 'POST',
         data: {
             host: {{ host|tojson }},

@@ -36,11 +36,6 @@ hr {
     background-color: #fc8;
 }
 
-input:not([type]), input[type='text'] {
-    min-width: 400px;
-    padding: 0.5em;
-}
-
 th {
     padding: 4px;
 }
@@ -122,4 +117,8 @@ th {
 
 .migrating-only .node-stable {
     display: none;
+}
+
+.row button {
+    width: 100%;
 }
