@@ -188,6 +188,16 @@ $('#shutdown-cluster').click(function() {
               <div class="col-xs-4">
                 <button class='btn btn-primary' data-toggle='modal' data-target='#clusterAutoDiscover'>集群自动发现</button>
               </div>
+              <div class="col-xs-4">
+                <button class='btn btn-primary' data-toggle='modal' data-target='#exportNodes'>节点地址列表</button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+</div>
+
 <script>
 -function() {
     var tbody = $('#cluster-nodes');
@@ -283,15 +293,7 @@ $('#shutdown-cluster').click(function() {
     });
 }();
 </script>
-              <div class="col-xs-4">
-                <button class='btn btn-primary' data-toggle='modal' data-target='#exportNodes'>节点地址列表</button>
-              </div>
-            </div>
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-</div>
+
 {{ render_template('components/cluster/export-nodes.html') }}
 <div class="panel panel-primary">
   <div class="panel-heading panel-heading-hide-content" id='proxies'>代理设置</div>
@@ -393,165 +395,21 @@ $('#new-proxy-btn').click(function() {
 
 <div class="panel panel-primary">
   <div class="panel-heading panel-heading-hide-content">设置自动扩容</div>
-
-{% if not eru_client %}
-<span class='label label-danger'>没有设定 ERU 地址</span>
-{% else %}
-<div>
-    ERU 地址: {{ eru_client.url|e }}
-    {% set pods = eru_client.list_pods() %}
-
-    {% if pods|length == 0 %}
-    |
-    ERU 没有可用的机房
-    {% else %}
-    |
-    集群自动扩容在集群节点内存容量使用超过 90% 时自动申请新节点并迁移数据.
-
-    {% set plan = cluster.balance_plan or {} %}
-
-    <button id='balance-plan-check' class='check-group check-group-info {{ 'check-group-checked' if plan.pod else '' }}'>启用自动扩容</button>
-
-    <div id='balance-plan' {% if not plan.pod %}style='display: none'{% endif %}>
-        <div style='margin-top: 1em'>
-            用于自动申请节点的机房:
-            <select id='pod-list' data-select-style='select-default'>
-                {% for p in pods %}
-                <option value='{{ p.name|e }}' {% if plan and plan.pod == p.name %}selected='selected'{% endif %}>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
-                {% endfor %}
-            </select>
-            指定分配容器的机器
-            <select id='master-host-list' class='host-selector' data-select-style='select-default'>
-                <option value='-'>随机为主节点分配容器</option>
-            </select>
-        </div>
-        <div style='margin-top: 1em'>
-            配备从节点
-            <span id='slave-count' style='display: inline-block; margin: 0 8px 0 8px; width: 200px;'></span>
-            {% set slave_count = plan.slaves|length if plan.slaves else 0 %}
-            <span id='slave-count-display'>{{ slave_count }}</span> 个
-
-            {% for i in range(plan_max_slaves) %}
-            <div class='slave-host-panel' style='{% if i >= slave_count %}display: none;{% endif %}margin: 1em'>
-                从节点 #{{ i }}
-                <select class='host-selector' data-select-style='select-default'>
-                    <option value='-'>随机为此从节点分配容器</option>
-                </select>
-            </div>
-            {% endfor %}
-        </div>
-        <button style='margin: 1em 0 1em 0' id='aof-enable' class='check-group check-group-info {% if plan.aof %}check-group-checked{% endif %}'> 所有节点启用 AOF</button>
-    </div>
-
-    <div>
-        <button class='btn btn-primary' id='plan-confirm'>确认</button>
-        <span class='label label-danger' id='plan-error' style='display: none'></span>
-        <span class='label label-success' id='plan-ok' style='display: none'>已经设置</span>
-    </div>
-
-<script>
--function() {
-    $('#balance-plan-check').enableLabelCheck({
-        onClick: function(btn) {
-            $('#balance-plan').toggle(btn.prop('checked'));
-        }
-    });
-    $('#aof-enable').enableLabelCheck();
-    $('#pod-list').enableLabelSelect({
-        width: 320,
-        onChange: function(pod) {
-            listHostsForPod(pod, []);
-        }
-    });
-
-    function listHostsForPod(pod, preSelectedHosts) {
-        $('.host-selector option').filter(function() {return this.value != '-'}).remove();
-        var hostSelects = $('.host-selector');
-        $.get('/eru/list_hosts/' + pod, {}, function(r) {
-            hostSelects.each(function(i, e) {
-                var selector = $(this);
-                var preSelect = preSelectedHosts[i] || {};
-                $.each(r, function(i, e) {
-                    var opt = $('<option>').val(e.name).text(e.name + ' - ' + e.addr);
-                    selector.append(opt);
-                    if (e.name === preSelect.host) {
-                        opt.prop('selected', true);
-                    }
-                });
-                selector.enableLabelSelect({width: 280});
-            });
-        });
-    }
-
-    {% if plan.pod %}
-    listHostsForPod({{ plan.pod|tojson }}, {{ ([{'host': plan.host}] + plan.slaves)|tojson }});
-    {% else %}
-    listHostsForPod({{ pods[0].name|tojson }}, []);
-    {% endif %}
-
-    $('#slave-count').slider({
-        range: 'min',
-        min: 0,
-        max: {{ plan_max_slaves|tojson }},
-        value: {{ slave_count|tojson }},
-        slide: function(event, ui) {
-            $('#slave-count-display').text(ui.value);
-        },
-        change: function(event, ui) {
-            $(this).data('value', ui.value);
-            $('.slave-host-panel').hide().slice(0, ui.value).show();
-        }
-    }).data('value', {{ slave_count|tojson }});
-
-    $('#plan-confirm').click(function() {
-        var btn = $(this).attr('disabled', 'disabled');
-        var errorLabel = $('#plan-error').hide();
-        var okLabel = $('#plan-ok').hide();
-        if (!$('#balance-plan-check').prop('checked')) {
-            return $.ajax({
-                url: '/cluster/del_balance_plan',
-                type: 'POST',
-                data: {cluster: {{ cluster.id|tojson }} },
-                success: function() {
-                    btn.removeAttr('disabled');
-                    okLabel.show();
-                },
-                error: function(e) {
-                    btn.removeAttr('disabled');
-                    errorLabel.show().text('发生错误: ' + e.responseText);
-                }
-            });
-        }
-
-        var slaveCount = $('#slave-count').data('value');
-        var slaves = $('.slave-host-panel select').slice(0, slaveCount).map(function() {
-            return $(this).val() == '-' ? '' : $(this).val();
-        }).toArray().join(',');
-        $.ajax({
-            url: '/cluster/set_balance_plan',
-            type: 'POST',
-            data: {
-                pod: $('#pod-list').val(),
-                aof: $('#aof-enable').prop('checked') ? 1 : 0,
-                master_host: $('#master-host-list').val() === '-' ? '' : $('#master-host-list').val(),
-                slave_count: slaveCount,
-                slaves: slaves,
-                cluster: {{ cluster.id|tojson }}
-            },
-            success: function() {
-                btn.removeAttr('disabled');
-                okLabel.show();
-            },
-            error: function(e) {
-                btn.removeAttr('disabled');
-                errorLabel.show().text('发生错误: ' + e.responseText);
-            }
-        })
-    });
-}();
-</script>
-    {% endif %}
-{% endif %}
+  <div>
+  {% if not eru_client %}
+      没有设定 Eru 地址
+  {% else %}
+      ERU 地址: {{ eru_client.url|e }}
+      {%- set pods = eru_client.list_pods() %}
+      {%- if pods|length == 0 %}
+          Eru 没有可用的机房
+      {%- else %}
+          集群自动扩容在集群节点内存容量使用超过 90% 时自动申请新节点并迁移数据.
+          {{ render_template('components/cluster/eru_auto_balance.html', pods=pods,
+                             cluster=cluster, plan_max_slaves=plan_max_slaves) }}
+      {%- endif %}
+  {% endif %}
+  </div>
 </div>
 
 <div class="panel panel-primary">
@@ -559,8 +417,7 @@ $('#new-proxy-btn').click(function() {
     后台任务
     <a href='/cluster/tasks/list/{{ cluster.id }}' style='color:white; float: right;'>查看更多任务</a>
   </div>
-{{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
+  {{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
 </div>
 
-</div>
 {% endblock %}

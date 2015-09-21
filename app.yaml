@@ -1,0 +1,11 @@
+appname: "redis-ctl"
+entrypoints:
+    web:
+        cmd: "python main.py"
+        ports:
+            - "5000/tcp"
+    daemon:
+        cmd: "python daemon.py"
+    releaselock:
+        cmd: "python release_task_lock.py"
+build: "pip install -r requirements.txt"
