@@ -44,12 +44,12 @@ class Client(object):
         try:
             self._write([{
                 'metric': metric,
-                'endpoint': '%s-%s' % (self.prefix, name),
+                'endpoint': self.prefix,
                 'timestamp': now,
                 'step': 30,
                 'value': val,
                 'counterType': 'GAUGE',
-                'tags': 'service=redisctl',
+                'tags': 'service=redisctl&addr=' + name,
             } for metric, val in fields.iteritems()])
         except IOError as e:
             logging.error('Fail to write points for %s as %s', name, e.message)
@@ -90,8 +90,8 @@ class Client(object):
             'end': end,
             'cf': aggf,
             'endpoint_counters': [{
-                'endpoint': '%s-%s' % (self.prefix, node),
-                'counter': field + '/service=redisctl',
+                'endpoint': self.prefix,
+                'counter': field + '/service=redisctl&addr=' + node,
             }],
         })).json()[0]['Values']
         if r is None:
@@ -107,8 +107,8 @@ class Client(object):
             'end': end,
             'cf': 'MAX',
             'endpoint_counters': [{
-                'endpoint': '%s-%s' % (self.prefix, node),
-                'counter': 'completed_commands/service=redisctl',
+                'endpoint': self.prefix,
+                'counter': field + '/service=redisctl&addr=' + node,
             }],
         })).json()[0]['Values']
         if r:
