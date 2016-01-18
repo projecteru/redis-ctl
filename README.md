@@ -55,4 +55,4 @@ The programs don't use redis to do the communication, however, because they are 
 Usage
 ===
 
-For web interface usage, please read [here (CN)](https://github.com/HunanTV/redis-ctl/wiki/Web-%E7%95%8C%E9%9D%A2%E4%BD%BF%E7%94%A8)
+For web interface usage, please read [here (CN)](https://github.com/HunanTV/redis-ctl/wiki/WebUI)
