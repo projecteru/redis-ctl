@@ -4,6 +4,7 @@
 <button
     class='btn btn-{{ color }} {{ ' '.join(cls) }}'
     {% if id %}id='{{ id }}'{% endif %}
+    {% if lcl %}data-localize='{{ lcl }}'{% endif %}
     {% for k, v in data.iteritems() %}data-{{ k }}="{{ v }}"{% endfor %}
     >
     {% if icon %}{{ icon }}{% endif %}

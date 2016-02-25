@@ -15,7 +15,7 @@ $(document).ready(function() {
             host: btn.data('host'),
             port: btn.data('port')
         }, function() {
-            btn.parent().html('节点已被移除');
+            btn.parent().html(_('节点已被移除'));
             $('button,.panel-div').remove();
         });
     });

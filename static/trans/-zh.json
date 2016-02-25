@@ -1,0 +1,11 @@
+{
+    "task-type-0": "修复迁移状态",
+    "task-type-1": "迁移槽位",
+    "task-type-2": "扩容",
+    "task-type-3": "添加从节点",
+    "task-type-4": "移除节点",
+    "task-type-5": "自动扩容",
+    "task-type-6": "批量操作",
+
+    "": ""
+}

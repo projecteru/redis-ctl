@@ -8,6 +8,7 @@
 
 <input type='text' class='form-control {{ ' '.join(cls) }}'
     {% if id %}id='{{ id }}'{% endif %}
+    {% if lcl %}data-localize='{{ lcl }}'{% endif %}
     {% if readonly %}readonly='readonly'{% endif %}
     {% for k, v in data.iteritems() %}data-{{ k }}="{{ v }}"{% endfor %}
     value='{{ value|e }}' placeholder='{{ placeholder|e }}'>

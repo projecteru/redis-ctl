@@ -4,6 +4,7 @@
 <div class='control-label'>
     <span class='{{ ' '.join(cls) }}'
         {% if id %}id='{{ id }}'{% endif %}
+        {% if lcl %}data-localize='{{ lcl }}'{% endif %}
         {% for k, v in data.iteritems() %}data-{{ k }}="{{ v }}"{% endfor %}
         >
         {{ text|e }}

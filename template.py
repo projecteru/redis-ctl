@@ -100,14 +100,26 @@ def g_icon(icon, color=None):
 
 
 @_global
-def g_label(text, size=2, offset=0, id=None, cls=None, data=None):
+def g_label(text, size=2, offset=0, id=None, cls=None, data=None, lcl=None):
+    if lcl is None and id is not None:
+        lcl = 'lbl-' + id
     return component('label', text=text, size=size, offset=offset, id=id,
-                     cls=cls or [], data=data or {})
+                     cls=cls or [], data=data or {}, lcl=lcl)
+
+
+@_global
+def g_hint(text, size=2, offset=0, id=None, cls=None, data=None, lcl=None):
+    if lcl is None and id is not None:
+        lcl = 'lbl-' + id
+    return component('hint', text=text, size=size, offset=offset, id=id,
+                     cls=cls or [], data=data or {}, lcl=lcl)
 
 
 @_global
 def g_input(size=2, offset=0, id=None, cls=None, value=None, placeholder=None,
-            addon=None, readonly=False, data=None):
+            addon=None, readonly=False, data=None, lcl=None):
+    if lcl is None and id is not None:
+        lcl = 'input-' + id
     return component('input', size=size, offset=offset, id=id, cls=cls or [],
                      value=value or '', placeholder=placeholder or '',
                      addon=addon, readonly=readonly, data=data or {})
@@ -115,17 +127,22 @@ def g_input(size=2, offset=0, id=None, cls=None, value=None, placeholder=None,
 
 @_global
 def g_button(text, size=2, offset=0, color='default', id=None, cls=None,
-             icon=None, data=None):
+             icon=None, data=None, lcl=None):
+    if lcl is None and id is not None:
+        lcl = 'button-' + id
     return component('button', text=text, size=size, offset=offset, id=id,
-                     color=color, cls=cls or [], icon=icon, data=data or {})
+                     color=color, cls=cls or [], icon=icon, data=data or {},
+                     lcl=lcl)
 
 
 @_global
 def g_checkbox(text, size=2, offset=0, color='default', checked=False,
-               id=None, cls=None, data=None):
+               id=None, cls=None, data=None, lcl=None):
+    if lcl is None and id is not None:
+        lcl = 'checkbox-' + id
     return component('checkbox', text=text, size=size, offset=offset,
                      color=color, checked=checked, id=id, cls=cls or [],
-                     data=data or {})
+                     data=data or {}, lcl=lcl)
 
 
 def render(filename, **kwargs):

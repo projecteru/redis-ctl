@@ -15,14 +15,14 @@ th { text-align: center; }
 
 {% block body %}
 <div class="panel panel-success">
-  <div class="panel-heading panel-heading-hide-content"><strong>集群信息</strong></div>
+  <div class="panel-heading panel-heading-hide-content"><strong data-localize='clusters-info'>集群信息</strong></div>
   <table class='table'>
     <thead>
       <tr>
         <th rowspan='2'>#</th>
-        <th rowspan='2' style="width: 320px;">描述</th>
-        <th rowspan='2'>节点数</th>
-        <th colspan='5'>代理</th>
+        <th rowspan='2' style='width: 320px;' data-localize='cluster-descr'>描述</th>
+        <th rowspan='2' data-localize='cluster-nodes-count'>节点数</th>
+        <th colspan='5' data-localize='cluster-proxies'>代理</th>
         <th>SLA</th>
         <th></th>
       </tr>
@@ -38,14 +38,14 @@ th { text-align: center; }
   <div class="panel-heading panel-heading-hide-content">
     <div class="row">
       <div class='col-xs-4' style="margin-top: 10px;">
-        <strong style="">节点信息</strong>
+        <strong data-localize='nodes-info'>节点信息</strong>
       </div>
       <div class='col-xs-4' style="float:right">
         <select class="select-primary" id="selectmenu">
-          <option value='all'>显示全部节点</option>
-          <option value='error'>只显示出错节点</option>
-          <option value='noalert'>忽略报警节点</option>
-          <option value='migrating'>显示槽位正在迁移的节点</option>
+          <option value='all' data-localize='opt-all-nodes'>显示全部节点</option>
+          <option value='error' data-localize='opt-error-only'>只显示出错节点</option>
+          <option value='noalert' data-localize='opt-noalert-only'>忽略报警节点</option>
+          <option value='migrating' data-localize='opt-migrating-only'>显示槽位正在迁移的节点</option>
         </select>
       </div>
     </div>
@@ -77,11 +77,11 @@ $(function() {
   <table id='nodes-area' class='table'>
     <thead>
       <tr>
-        <th>节点</th>
-        <th>内存</th>
+        <th data-localize='node-addr'>节点</th>
+        <th data-localize='node-memory-usage'>内存</th>
         <th>SLA</th>
-        <th>集群信息</th>
-        <th>基本操作</th>
+        <th data-localize='node-cluster'>集群信息</th>
+        <th data-localize='node-ops'>基本操作</th>
       </tr>
     </thead>
     <tbody>
@@ -92,17 +92,19 @@ $(function() {
   </table>
 </div>
 <div class="panel panel-success form-horizontal">
-  <div class="panel-heading panel-heading-hide-content" style='margin-bottom: 1em'><strong>注册新节点</strong></div>
+  <div class="panel-heading panel-heading-hide-content" style='margin-bottom: 1em'><strong data-localize='register-node'>注册新节点</strong></div>
   <div class='form-group'>
-      {{ label('节点地址', offset=2) }}
-      {{ input(size=6, placeholder='IP 地址, 或域名', id='add-nodes-host') }}
+      {{ label('节点地址', lcl='register-node-host') }}
+      {{ input(size=6, id='add-nodes-host') }}
+      {{ hint('IP 地址, 或域名', size=4, lcl='register-host-hint') }}
   </div>
   <div class='form-group'>
-      {{ label('节点端口号', offset=2) }}
-      {{ input(size=6, placeholder='端口号, 或范围 (如6370 / 6000-6020)', id='add-nodes-port') }}
+      {{ label('节点端口号', lcl='register-node-port') }}
+      {{ input(size=6, id='add-nodes-port') }}
+      {{ hint('IP 地址, 端口号, 或范围 (如 6370 / 6000-6020)', size=4, lcl='register-port-hint') }}
   </div>
   <div class='form-group'>
-      {{ button('注册这些节点', size=2, offset=4, id='add-nodes', color='primary') }}
+      {{ button('注册这些节点', size=2, offset=2, id='add-nodes', color='primary') }}
       <div class='col-xs-2'>
           <span id='add-node-info'></span>
       </div>
@@ -126,7 +128,7 @@ $('#add-nodes').click(function() {
     }
     if (isNaN(portBegin) || isNaN(portEnd)) {
         $('#add-nodes-port').focus();
-        return errorSpan.text('不正确的端口范围格式');
+        return errorSpan.text(_('不正确的端口范围格式'));
     }
 
     -function addNode(host, portBegin, portEnd) {
@@ -139,7 +141,7 @@ $('#add-nodes').click(function() {
         }, function() {
             addNode(host, portBegin + 1, portEnd);
         });
-        errorSpan.text('正在注册 :' + portBegin + '...');
+        errorSpan.text(_('正在注册') + ' :' + portBegin + '...');
     }($('#add-nodes-host').val(), portBegin, portEnd);
 });
 </script>

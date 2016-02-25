@@ -80,8 +80,16 @@ class Request(object):
         except (ValueError, TypeError, AttributeError, LookupError):
             return {}
 
+    @cached_property
+    def lang(self):
+        try:
+            return self.request.headers.get(
+                'Accept-Language').split(';')[0].split('-')[0]
+        except LookupError:
+            return None
+
     def render(self, templ, **kwargs):
-        return flask.Response(template.render(templ, **kwargs))
+        return flask.Response(template.render(templ, lang=self.lang, **kwargs))
 
     def set_session(self, key, value):
         self.session[key] = value

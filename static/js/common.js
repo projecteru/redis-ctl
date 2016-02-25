@@ -24,10 +24,10 @@ $(document).ready(function() {
                 port: btn.data('port')
             },
             success: function() {
-                btn.text('此代理已被移除');
+                btn.text(_('此代理已被移除'));
             },
             error: function(e) {
-                btn.text('失败: ' + e.responseText);
+                btn.text(_('失败') + ': ' + e.responseText);
             }
         });
     })
@@ -37,4 +37,8 @@ $(document).ready(function() {
     $('.panel-heading-hide-content').click(function() {
        $(this).next().fadeToggle('slow');
     });
+
+    window._ = function(text) {
+        return window.TRANSLATIONS[text] || text;
+    };
 });

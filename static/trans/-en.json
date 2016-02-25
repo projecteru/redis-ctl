@@ -1,0 +1,37 @@
+{
+    "container-nodes-mgr": "Container Nodes",
+    "global-cluster-tasks-list": "Global Tasks",
+    "polling-stats": "Pollings",
+
+    "clusters-info": "Clusters Info",
+    "cluster-descr": "Description",
+    "cluster-nodes-count": "Redis Count",
+    "cluster-proxies": "Proxies",
+    "nodes-info": "Nodes Info",
+    "opt-all-nodes": "All nodes",
+    "opt-error-only": "Nodes not reachable",
+    "opt-noalert-only": "Nodes with alert turned off",
+    "opt-migrating-only": "Nodes with migrating slots",
+
+    "node-addr": "Address",
+    "node-memory-usage": "Memory Usage",
+    "node-cluster": "Cluster",
+    "node-ops": "",
+
+    "register-node": "Register Redis",
+    "register-node-host": "Host",
+    "register-node-port": "Port",
+    "register-host-hint": "IP or domain name",
+    "register-port-hint": "Port number or range, like 6379, 6000-6020",
+    "button-add-nodes": "Register",
+
+    "task-type-0": "Fix migrating",
+    "task-type-1": "Migrate",
+    "task-type-2": "Add master",
+    "task-type-3": "Add slave",
+    "task-type-4": "Remove Redis",
+    "task-type-5": "Auto expanding",
+    "task-type-6": "Bulk ops",
+
+    "": ""
+}

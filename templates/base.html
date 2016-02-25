@@ -9,10 +9,14 @@
 <link rel='stylesheet' type='text/css' href='/static/css/flat-ui.min.css'>
 <link rel='stylesheet' type='text/css' href='/static/vendor/bootstrap.min.css'>
 <script src='/static/js/jquery.min.js'></script>
+<script src='/static/js/jquery.localize.min.js'></script>
 <script src='/static/js/flat-ui.min.js'></script>
 <script src='/static/js/common.js'></script>
 <script src='/static/js/application.js'></script>
 <script src='/static/js/components.js'></script>
+{% if lang %}
+<script src='/static/trans/{{ lang }}.js'></script>
+{% endif %}
 <script>
 function selectHash() {
     var e = document.getElementById(window.location.hash.slice(1));
@@ -43,9 +47,9 @@ $(document).ready(function() {
     </div>
     <div class='collapse navbar-collapse'>
         <ul class='nav navbar-nav navbar-right'>
-            <li><a class='nav-link' href='/nodes/manage/eru'><i class='fa fa-cube'></i> 容器节点管理</a></li>
-            <li><a class='nav-link' href='/cluster/tasks/list_all'><i class='fa fa-tasks'></i> 集群任务</a></li>
-            <li><a class='nav-link' href='/stats/pollings'><i class='fa fa-calendar'></i> 轮询记录</a></li>
+            <li><a class='nav-link' href='/nodes/manage/eru'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>容器节点管理</span></a></li>
+            <li><a class='nav-link' href='/cluster/tasks/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>集群任务</span></a></li>
+            <li><a class='nav-link' href='/stats/pollings'><i class='fa fa-calendar'></i> <span data-localize='polling-stats'>轮询记录</span></a></li>
         </ul>
     </div>
 </header>
@@ -60,3 +64,5 @@ $(document).ready(function() {
         </span>
     </div>
 </footer>
+
+<script>$('[data-localize]').localize('/static/trans/')</script>

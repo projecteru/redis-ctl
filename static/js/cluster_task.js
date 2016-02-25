@@ -1,10 +1,10 @@
 $(document).ready(function() {
     var STEP_TYPES = {
-        fix_migrate: '修复迁移状态',
-        migrate: '迁移槽位',
-        join: '添加主节点',
-        replicate: '添加从节点',
-        quit: '移除节点'
+        fix_migrate: _('修复迁移状态'),
+        migrate: _('迁移槽位'),
+        join: _('添加主节点'),
+        replicate: _('添加从节点'),
+        quit: _('移除节点')
     };
 
     var argsFormatters = {
@@ -12,16 +12,16 @@ $(document).ready(function() {
             return args.host + ':' + args.port;
         },
         migrate: function(args) {
-            return ['从 ', args.src_host, ':', args.src_port, ' 迁移 ',
-                    args.slots.length, ' 个槽位至 ', args.dst_host, ':',
-                    args.dst_port].join('');
+            return [_('从'), args.src_host + ':' + args.src_port, _('迁移'),
+                    args.slots.length, _('个槽位至'),
+                    args.dst_host + ':' + args.dst_port].join(' ');
         },
         join: function(args) {
             return args.newin_host + ':' + args.newin_port;
         },
         replicate: function(args) {
-            return ['从节点为 ', args.slave_host, ':', args.slave_port, ' 主节点为 ',
-                    args.master_host, ':', args.master_port].join('');
+            return [_('从节点为'), args.slave_host + ':' + args.slave_port, _('主节点为'),
+                    args.master_host + ':' + args.master_port].join(' ');
         },
         quit: function(args) {
             return args.host + ':' + args.port;
@@ -30,16 +30,16 @@ $(document).ready(function() {
 
     function renderStatus(status, error, completion) {
         if (status === 'pending') {
-            return $('<span>').addClass('label label-info').text('等待');
+            return $('<span>').addClass('label label-info').text(_('等待'));
         }
         if (status === 'running') {
-            return $('<span>').addClass('label label-primary').text('正在执行');
+            return $('<span>').addClass('label label-primary').text(_('正在执行'));
         }
         if (error) {
-            return [$('<span>').addClass('label label-danger').text('失败'),
+            return [$('<span>').addClass('label label-danger').text(_('失败')),
                     $('<span>').text(' ' + completion)];
         }
-        return [$('<span>').addClass('label label-success').text('完成'),
+        return [$('<span>').addClass('label label-success').text(_('完成')),
                 $('<span>').text(' ' + completion)];
     }
 
