@@ -1,39 +1,39 @@
 <div>
     <div id='balance-plan' {% if not plan.pod %}style='display: none'{% endif %}>
         <div style='margin-top: 1em'>
-            用于自动申请节点的机房:
+            <span data-localize='for-auto-application-node-room'>用于自动申请节点的机房</span>:
             <select id='pod-list' data-select-style='select-default'>
             {% for p in pods %}
-                <option value='{{ p.name|e }}' {% if plan.pod == p.name %}selected='selected'{% endif %}>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
+            <option value='{{ p.name|e }}' {% if plan.pod == p.name %}selected='selected'{% endif %}>{{ p.name|e }} - <span data-localize='machines-num'>机器数</span> {{ p.host_count|e }}</option>
             {% endfor %}
             </select>
-            指定分配容器的机器
+            <span data-localize='specifies-the-machine-dispensing-container'>指定分配容器的机器</span>
             <select id='master-host-list' class='host-selector' data-select-style='select-default'>
-                <option value='-'>随机为主节点分配容器</option>
+                <option value='-' data-localize='random-master-node-dispensing-contianer'>随机为主节点分配容器</option>
             </select>
         </div>
         <div style='margin-top: 1em'>
-            配备从节点
+            <span data-localize='with slave'>配备从节点</span>
             <span id='slave-count' style='display: inline-block; margin: 0 8px 0 8px; width: 200px;'></span>
             {% set slave_count = plan.slaves|length if plan.slaves else 0 %}
-            <span id='slave-count-display'>{{ slave_count }}</span> 个
+            <span id='slave-count-display'>{{ slave_count }}</span> <span data-localize='node-ops'>个</span>
 
             {% for i in range(plan_max_slaves) %}
             <div class='slave-host-panel' style='{% if i >= slave_count %}display: none;{% endif %}margin: 1em'>
-                从节点 #{{ i }}
+                <span data-localize='slave-node'>从节点</span> #{{ i }}
                 <select class='host-selector' data-select-style='select-default'>
-                    <option value='-'>随机为此从节点分配容器</option>
+                    <option value='-' data-localize='randomly-allocated-for-this-purpose-from-the-container-node'>随机为此从节点分配容器</option>
                 </select>
             </div>
             {% endfor %}
         </div>
-        <button style='margin: 1em 0 1em 0' id='aof-enable' class='check-group check-group-info {% if plan.aof %}check-group-checked{% endif %}'> 所有节点启用 AOF</button>
+        <button style='margin: 1em 0 1em 0' id='aof-enable' class='check-group check-group-info {% if plan.aof %}check-group-checked{% endif %}' data-localize='all-nodes-enable-AOF'> 所有节点启用 AOF</button>
     </div>
 
     <div>
-        <button class='btn btn-primary' id='plan-confirm'>确认</button>
+        <button class='btn btn-primary' id='plan-confirm' data-localize='confirm'>确认</button>
         <span class='label label-danger' id='plan-error' style='display: none'></span>
-        <span class='label label-success' id='plan-ok' style='display: none'>已经设置</span>
+        <span class='label label-success' id='plan-ok' style='display: none' data-localize='Set'>已经设置</span>
     </div>
 </div>
 

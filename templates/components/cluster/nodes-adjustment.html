@@ -3,32 +3,32 @@
 {{ modal.head('nodesAdjustment', '集群节点调整') }}
 <div class='form-horizontal form-submit' style='text-align: center'>
     <div class='form-group'>
-        <div class='col-sm-2'>节点</div>
-        <div class='col-sm-2'>当前槽位数</div>
-        <div class='col-sm-4'>调整后槽位数</div>
+        <div class='col-sm-2' data-localize='nodes'>节点</div>
+        <div class='col-sm-2' data-localize='current-slots-num'>当前槽位数</div>
+        <div class='col-sm-4' data-localize='adjusted-slots-num'>调整后槽位数</div>
     </div>
     <div class='form-group' id='adjBody'></div>
     <div class='form-group'>
-        <div class='col-sm-2 control-label'>剩余槽位数</div>
+        <div class='col-sm-2 control-label' data-localize='remain-slots-num'>剩余槽位数</div>
         <div class='col-sm-1'>
             <label id='rest-slots'>16384</label>
         </div>
         {{ button('预览迁移', id='adjust-preview', color='info') }}
-        <div class='col-sm-2'><span class='label label-default'>预览前需要分配所有槽位</span></div>
+        <div class='col-sm-2'><span class='label label-default' data-localize='all-need-to-allocate-slots-preview'>预览前需要分配所有槽位</span></div>
         {{ button('平分槽位', id='adjust-avg-slots') }}
     </div>
     <div class='form-group' style='text-align: center' id='adjust-migrs-parent'>
         <hr>
         <div class='form-group' style='font-weight: bold'>
-            <div class='col-sm-2'>迁移来源</div>
+            <div class='col-sm-2' data-localize='migration-source'>迁移来源</div>
             <div class='col-sm-1'></div>
-            <div class='col-sm-2'>迁移目标</div>
-            <div class='col-sm-2'>槽位数量</div>
+            <div class='col-sm-2' data-localize='migration-destination'>迁移目标</div>
+            <div class='col-sm-2' data-localize='slots-num'>槽位数量</div>
         </div>
         <div id='adjust-migrs'></div>
         <div class='form-group' style='font-weight: bold'>
-            <div class='col-sm-2'>移除节点</div>
-            <div class='col-sm-1'>角色</div>
+            <div class='col-sm-2' data-localize='remove-node'>移除节点</div>
+            <div class='col-sm-1' data-localize='character'>角色</div>
         </div>
         <div id='adjust-quits'></div>
         <div class='form-group'>

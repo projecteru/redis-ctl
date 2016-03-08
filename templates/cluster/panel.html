@@ -20,40 +20,40 @@
 
 {% block body %}
 <div class="panel panel-primary">
-  <div class="panel-heading panel-heading-hide-content">基本设置</div>
+  <div class="panel-heading panel-heading-hide-content" data-localize='basic-settings'>基本设置</div>
   <table style='width: 100%' class='table'>
     <tr>
-      <td class='label-cell'>集群 ID</td>
+      <td class='label-cell' data-localize='cluster-id'>集群 ID</td>
       <td>{{ cluster.id }}</td>
     </tr>
     <tr>
-      <td class='label-cell'>集群描述</td>
+      <td class='label-cell' data-localize='cluster-description'>集群描述</td>
       <td>
           <input id='cluster-descr-inp' value="{{ cluster.description|e }}">
           <button class='btn btn-primary' id='cluster-set-descr'>改</button>
       </td>
     </tr>
     <tr>
-      <td class='label-cell'>代理数</td>
+      <td class='label-cell' data-localize='proxy-num'>代理数</td>
       <td>{{ cluster.proxies|length }}</td>
     </tr>
     <tr>
-      <td class='label-cell'>节点数</td>
+      <td class='label-cell' data-localize='nodes-num'>节点数</td>
       <td>{{ cluster.nodes|length }}</td>
     </tr>
     <tr>
-      <td class='label-cell'>操作</td>
+      <td class='label-cell' data-localize='operating'>操作</td>
       <td>
-        <button class='btn btn-primary' id='cluster-fix-migrating'>修复槽位迁移</button>
-        <button class='btn btn-primary' id='cluster-enable-all-nodes-alert' data-suppress='1'>打开所有节点的报警</button>
-        <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert' data-suppress='0'>关闭所有节点的报警</button>
+        <button class='btn btn-primary' id='cluster-fix-migrating' data-localize='cluster-fix-migrating'>修复槽位迁移</button>
+        <button class='btn btn-primary' id='cluster-enable-all-nodes-alert' data-suppress='1' data-localize='cluster-enable-all-nodes-alert'>打开所有节点的报警</button>
+        <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert' data-suppress='0' data-localize='cluster-suppress-all-nodes-alert'>关闭所有节点的报警</button>
         <div style='margin: 1em'></div>
-        <button class='btn btn-info' id='cluster-enable-all-nodes-aof' data-aof='yes'>打开所有节点的 AOF</button>
-        <button class='btn btn-danger' id='cluster-disable-all-nodes-aof' data-aof='no'>关闭所有节点的 AOF</button>
+        <button class='btn btn-info' id='cluster-enable-all-nodes-aof' data-aof='yes' data-localize='cluster-enable-all-nodes-aof'>打开所有节点的 AOF</button>
+        <button class='btn btn-danger' id='cluster-disable-all-nodes-aof' data-aof='no' data-localize='cluster-disable-all-nodes-aof'>关闭所有节点的 AOF</button>
 
       {% if cluster.nodes|length == 1 %}
         <div style='margin: 1em'></div>
-        <button class='btn btn-danger' id='shutdown-cluster'>重置最后一个节点并关闭集群</button>
+        <button class='btn btn-danger' id='shutdown-cluster' data-localize='shutdown-cluster'>重置最后一个节点并关闭集群</button>
       {% endif %}
       </td>
     </tr>
@@ -76,14 +76,14 @@ $('#cluster-set-descr').click(function() {
             btn.removeAttr('disabled');
         },
         error: function(e) {
-            btn.text('失败: ' + e.responseText);
+            btn.text(_('失败') + ': ' + e.responseText);
         }
     });
 });
 
 $('#cluster-fix-migrating').click(function() {
     var btn = $(this);
-    btn.attr('disabled', 'disabled').text('请稍候');
+    btn.attr('disabled', 'disabled').text(_('请稍候'));
     $.ajax({
         url: '/cluster/recover_migrate',
         type: 'POST',
@@ -94,14 +94,14 @@ $('#cluster-fix-migrating').click(function() {
             window.location.reload();
         },
         error: function(e) {
-            btn.text('失败: ' + e.responseText);
+            btn.text(_('失败') + ': ' + e.responseText);
         }
     });
 });
 
 $('#cluster-enable-all-nodes-alert,#cluster-suppress-all-nodes-alert').click(function() {
     var btn = $(this);
-    btn.attr('disabled', 'disabled').text('请稍候');
+    btn.attr('disabled', 'disabled').text(_('请稍候'));
     $.ajax({
         url: '/cluster/suppress_all_nodes_alert',
         type: 'POST',
@@ -113,14 +113,14 @@ $('#cluster-enable-all-nodes-alert,#cluster-suppress-all-nodes-alert').click(fun
             window.location.reload();
         },
         error: function(e) {
-            btn.text('失败: ' + e.responseText);
+            btn.text(_('失败') + ': ' + e.responseText);
         }
     });
 });
 
 $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function() {
     var btn = $(this);
-    btn.attr('disabled', 'disabled').text('请稍候');
+    btn.attr('disabled', 'disabled').text(_('请稍候'));
     $.ajax({
         url: '/cluster/set_all_nodes_aof',
         type: 'POST',
@@ -132,14 +132,14 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
             window.location.reload();
         },
         error: function(e) {
-            btn.text('失败: ' + e.responseText);
+            btn.text(_('失败') + ': ' + e.responseText);
         }
     });
 });
 
 $('#shutdown-cluster').click(function() {
     var btn = $(this);
-    btn.attr('disabled', 'disabled').text('正在验证数据已清空并关闭集群');
+    btn.attr('disabled', 'disabled').text(_('正在验证数据已清空并关闭集群'));
     $.ajax({
         url: '/cluster/shutdown',
         type: 'POST',
@@ -147,35 +147,35 @@ $('#shutdown-cluster').click(function() {
             cluster_id: {{ cluster.id|tojson }}
         },
         success: function() {
-            btn.text('集群已经关闭, 此页面已经失效');
+            btn.text(_('集群已经关闭') + ',' + _('此页面已经失效'));
         },
         error: function(e) {
             if (!e.responseJSON) {
-                return btn.text('失败: 未知错误');
+                return btn.text(_('失败') + ':' + _('未知错误'));
             }
             if (e.responseJSON.reason === 'not empty') {
-                return btn.text('此节点中还有数据, 请手动清理后重试');
+                return btn.text(_('此节点中还有数据') + ',' + _('请手动清理后重试'));
             }
             if (e.responseJSON.reason === 'More than 1 nodes in cluster.') {
-                return btn.text('集群中有其他节点, 请使用自动发现刷新节点列表');
+                return btn.text(_('集群中有其他节点') + ',' + _('请使用自动发现刷新节点列表'));
             }
-            btn.text('失败: ' + e.responseText);
+            btn.text(_('失败') + ': ' + e.responseText);
         }
     });
 });
 </script>
 
 <div class="panel panel-primary">
-    <div class="panel-heading panel-heading-hide-content">节点</div>
+    <div class="panel-heading panel-heading-hide-content" data-localize='nodes'>节点</div>
     <table class='table'>
       <thead>
         <tr>
-          <th>节点 ID</th>
-          <th>地址</th>
-          <th>内存</th>
-          <th>持久化</th>
-          <th>角色</th>
-          <th>槽位数量</th>
+          <th data-localize='nodes-id'>节点 ID</th>
+          <th data-localize='address'>地址</th>
+          <th data-localize='RAM'>内存</th>
+          <th data-localize='persistence'>持久化</th>
+          <th data-localize='character'>角色</th>
+          <th data-localize='slots-num'>槽位数量</th>
         </tr>
       </thead>
       <tbody id='cluster-nodes' style='text-align: center'></tbody>
@@ -226,7 +226,7 @@ $('#shutdown-cluster').click(function() {
             return [
                 $('<td>').append('-'),
                 $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
-                $('<td>').attr('colspan', 4).text('尚未获取节点详细信息')
+                $('<td>').attr('colspan', 4).text(_('尚未获取节点详细信息'))
             ];
         }
 
@@ -294,14 +294,14 @@ $('#shutdown-cluster').click(function() {
 {{ render_template('components/cluster/nodes-adjustment.html', cluster_id=cluster.id) }}
 
 <div class="panel panel-primary">
-  <div class="panel-heading panel-heading-hide-content" id='proxies'>代理</div>
+  <div class="panel-heading panel-heading-hide-content" id='proxies' data-localize='proxy'>代理</div>
   <div class='form-horizontal' style='text-align: center'>
   {%- for proxy in cluster.proxies %}
     <div class='form-group' id='proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
         <div class='col-sm-2'>
             <label>{{ proxy.host|e }}:{{ proxy.port }}</label>
             {%- if proxy.details.read_slave %}
-            <span class='label label-info'>只读</span>
+            <span class='label label-info' data-localize='read-only'>只读</span>
             {% endif %}
             {%- if proxy.eru_deployed %}{{ icon('cube') }}{% endif %}
         </div>
@@ -333,7 +333,7 @@ $('#shutdown-cluster').click(function() {
     </div>
   {% endfor %}
     <div class='form-group'>
-        <div class='col-xs-2 control-label'>注册新集群代理</div>
+        <div class='col-xs-2 control-label' data-localize='reg-cluster-agent'>注册新集群代理</div>
         {{ input(size=4, id='new-proxy-addr', placeholder='地址, 如 127.0.0.1:8889') }}
         {{ button('注册', size=2, id='new-proxy-btn', color='primary') }}
         <div class='col-sm-2'>
@@ -358,20 +358,20 @@ $('.sync-remotes-btn').click(function() {
 $('#new-proxy-btn').click(function() {
     var addr = $('#new-proxy-addr').val();
     if (!addr) {
-        return $('#new-proxy-error').show().text('请输入一个地址');
+        return $('#new-proxy-error').show().text(_('请输入一个地址'));
     }
     var host_port = addr.split(':');
     if (host_port.length != 2) {
-        return $('#new-proxy-error').show().text('地址格式不正确');
+        return $('#new-proxy-error').show().text(_('地址格式不正确'));
     }
 
     var port = parseInt(host_port[1]);
     if (isNaN(port) || !host_port[0]) {
-        return $('#new-proxy-error').show().text('地址格式不正确');
+        return $('#new-proxy-error').show().text(_('地址格式不正确'));
     }
 
     var btn = $(this);
-    btn.attr('disabled', 'disabled').text('请稍候');
+    btn.attr('disabled', 'disabled').text(_('请稍候'));
     $.ajax({
         url: '/cluster/register_proxy',
         type: 'POST',
@@ -384,7 +384,7 @@ $('#new-proxy-btn').click(function() {
             window.location.reload();
         },
         error: function(e) {
-            btn.text('失败: ' + e.responseText);
+            btn.text(_('失败') + ': ' + e.responseText);
         }
     });
 });
@@ -393,7 +393,7 @@ $('#new-proxy-btn').click(function() {
 {{ render_template('components/command_console.html') }}
 
 <div class="panel panel-primary">
-  <div class="panel-heading panel-heading-hide-content">设置自动扩容</div>
+  <div class="panel-heading panel-heading-hide-content" data-localize='set-auto-expansion'>设置自动扩容</div>
   <div>
   {% if not eru_client %}
       没有设定 Eru 地址
@@ -422,8 +422,8 @@ $('#new-proxy-btn').click(function() {
 
 <div class="panel panel-primary">
   <div class="panel-heading panel-heading-hide-content">
-    后台任务
-    <a href='/cluster/tasks/list/{{ cluster.id }}' style='color:white; float: right;'>查看更多任务</a>
+    <span data-localize='background-task'>后台任务</span>
+    <a href='/cluster/tasks/list/{{ cluster.id }}' style='color:white; float: right;' data-localize='more-task'>查看更多任务</a>
   </div>
   {{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
 </div>

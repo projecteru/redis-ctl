@@ -24,12 +24,12 @@
     <td>{{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%</td>
     <td>
     {% if stats_enabled %}
-        <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}'>状态历史 {{ icon('line-chart') }}</a>
+        <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}' data-localize='history'>状态历史 {{ icon('line-chart') }}</a>
     {% endif %}
     </td>
     </tr><tr {{ row_cls }}>
     {% endfor %}
 {% else %}
-<td colspan='7'>没有代理</td>
+<td colspan='7' data-localize='no-agent'>没有代理</td>
 {% endif %}
 </tr>

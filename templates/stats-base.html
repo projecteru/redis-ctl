@@ -141,11 +141,11 @@ function statistics(gMetricsDatum, uri, host, port, fields) {
 
 {% block body %}
 <select id='select-interval' data-select-style='select-info'>
-    <option value='1:4'>最近 4 小时的数据</option>
-    <option value='2:12'>最近 12 小时的数据</option>
-    <option value='3:24' selected='selected'>最近 1 天的数据</option>
-    <option value='8:48'>最近 2 天的数据</option>
-    <option value='15:72'>最近 3 天的数据</option>
+    <option value='1:4' data-localize='last-4h-of-data'>最近 4 小时的数据</option>
+    <option value='2:12' data-localize='last-12h-of-data'>最近 12 小时的数据</option>
+    <option value='3:24' selected='selected' data-localize='last-1day-of-data'>最近 1 天的数据</option>
+    <option value='8:48' data-localize='last-2days-of-data'>最近 2 天的数据</option>
+    <option value='15:72' data-localize='last-3days-of-data'>最近 3 天的数据</option>
 </select>
 <script>
 $('#select-interval').enableLabelSelect({

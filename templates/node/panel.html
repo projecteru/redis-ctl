@@ -26,80 +26,80 @@
     <div class="panel-heading">{{ node.host|e }}:{{ node.port }}</div>
     <table class='table'>
     <tr>
-        <th>节点 ID</th>
+        <th data-localize='nodes-id'>节点 ID</th>
         <td>{{ detail.node_id|e }}</td>
     </tr>
     <tr>
-        <th>版本</th>
+        <th data-localize='version'>版本</th>
         <td>{{ detail.version }}</td>
     </tr>
     <tr>
-        <th>内存</th>
+        <th data-localize='node-memory-usage'>内存</th>
         <td>
         {% if detail %}
             <span>
                 {{ detail.used_memory|filesizeformat }} / {{ detail.maxmemory|filesizeformat if detail.maxmemory != 0 else '未设置最大值' }}
             </span>
-            <button class='btn btn-inverse' data-toggle='modal' data-target='#nodeMemSetting'>设置</button>
+            <button class='btn btn-inverse' data-toggle='modal' data-target='#nodeMemSetting' data-localize='setting'>设置</button>
             {{ render_template('components/node/memory-setting.html', host=node.host, port=node.port,
                                max_mem=detail.maxmemory, used_mem=detail.used_memory, mem_limit=max_mem_limit) }}
         {% else %}
-        等待轮询
+        <span data-localize='wait-poll'>等待轮询
         {% endif %}
         </td>
     </tr>
   {%- if node.eru_deployed %}
     <tr>
-        <th>部署</th>
-        <td><i class='fa fa-cube'></i> ERU 容器</td>
+        <th data-localize='deploy'>部署</th>
+        <td><i class='fa fa-cube'></i><span data-localize='ERU-container'> ERU 容器</td>
     </tr>
     {%- if node.eru_info %}
     <tr>
-        <td>ERU 容器 ID</td>
+        <td data-localize='ERU-cantainerID'>ERU 容器 ID</td>
         <td>
             <span>{{ node.eru_container_id|e }}</span>
           {%- if not node.eru_info.is_alive %}
-            <button class='btn btn-info btn-revive-container' data-cid='{{ node.eru_container_id|e }}'>复活此容器</button>
+            <button class='btn btn-info btn-revive-container' data-cid='{{ node.eru_container_id|e }}' data-localize='container-res'>复活此容器</button>
           {%- endif %}
         </td>
     </tr>
     <tr>
-        <td>ERU 容器创建时间</td>
+        <td data-localize='create-contianer-time'>ERU 容器创建时间</td>
         <td>{{ node.eru_info.created|e }}</td>
     </tr>
     <tr>
-        <td>ERU 宿主机地址</td>
+        <td data-localize='host-address'>ERU 宿主机地址</td>
         <td>{{ node.eru_info.host|e }}</td>
     </tr>
     {%- endif %}
   {%- endif %}
     <tr>
-        <th>统计</th>
+        <th data-localize='statistics'>统计</th>
         <td>
             {% if not (detail and detail.stat) %}
-            等待轮询采集数据
+            <span data-localize='wait-poll-data-collection'>等待轮询采集数据
             {% else %}
             <table class='table status-table'>
                 <caption>CPU</caption>
                 <tr>
-                    <td>用户态累计</td>
+                    <td data-localize='accumulated-user-mode'>用户态累计</td>
                     <td>{{ detail.used_cpu_user }}</td>
                 </tr>
                 <tr>
-                    <td>内核态累计</td>
+                    <td data-localize='accumulated-kernel-mode'>内核态累计</td>
                     <td>{{ detail.used_cpu_sys }}</td>
                 </tr>
                 <tr>
-                    <td>总运行时间</td>
+                    <td data-localize='total-running-time'>总运行时间</td>
                     <td>{{ detail.uptime_in_seconds }}</td>
                 </tr>
                 <tr>
-                    <td>平均 CPU 占用率</td>
+                    <td data-localize='average-occupancy-rate-cpu'>平均 CPU 占用率</td>
                     <td>{{ ((detail.used_cpu_user + detail.used_cpu_sys) / detail.uptime_in_seconds * 100)|round(2) }}%</td>
                 </tr>
             </table>
             <table class='table status-table'>
-                <caption>存储</caption>
+                <caption data-localize='save'>存储</caption>
                 <tr>
                     <td>Keyspace hits</td>
                     <td>{{ detail.keyspace_hits }}</td>
@@ -118,13 +118,13 @@
                 </tr>
             </table>
             <table class='table status-table'>
-                <caption>内存</caption>
+                <caption data-localize="node-memory-usage">内存</caption>
                 <tr>
-                    <td>已使用内存</td>
+                    <td data-localize='used-memory'>已使用内存</td>
                     <td>{{ detail.used_memory|filesizeformat }}</td>
                 </tr>
                 <tr>
-                    <td>常驻集</td>
+                    <td data-localize='permanent-collection'>常驻集</td>
                     <td>{{ detail.used_memory_rss|filesizeformat }}</td>
                 </tr>
             </table>
@@ -137,7 +137,7 @@
     <div class='form-group'>
         {%- if stats_enabled %}
         <div class='col-xs-2'>
-            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'>状态历史 {{ icon('line-chart') }}</a>
+            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn' data-localize='history'>状态历史 {{ icon('line-chart') }}</a>
         </div>
         {% endif %}
 
@@ -160,42 +160,42 @@
 
 <table class='table'>
     <tr>
-        <th>所属集群</th>
+        <th data-localize='view-cluster'>所属集群</th>
         <td><a target='_blank' href='/clusterp/{{ node.assignee.id }}'>{{ node.assignee.description|e }} <i class='fa fa-external-link'></i></a></td>
     </tr>
     <tr>
-        <th>槽位数</th>
+        <th data-localize='slots-num'>槽位数</th>
         <td>{{ detail.slots|length }}</td>
     </tr>
 </table>
 
 <div>
-    <button class='btn panel-btn btn-primary' id='quit-cluster-btn' data-bind='quit-cluster'>退出集群</button>
-    <button class='btn panel-btn btn-primary' id='migrating-slots-btn' data-bind='migrating-slots'>迁出槽位</button>
-    <button class='btn btn-info' style='display: none' id='quit-cluster-force'>此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联</button>
+    <button class='btn panel-btn btn-primary' id='quit-cluster-btn' data-bind='quit-cluster' data-localize='quit-cluster'>退出集群</button>
+    <button class='btn panel-btn btn-primary' id='migrating-slots-btn' data-bind='migrating-slots' data-localize='move-slot'>迁出槽位</button>
+    <button class='btn btn-info' style='display: none' id='quit-cluster-force' data-localize='message'>此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联</button>
 </div>
 
 <div class='panel-div' id='quit-cluster'>
-    <span class='loading-cluster-info'>正在加载集群信息...</span>
-    <button class='btn btn-info' style='display: none' id='quit-cluster-replica'>确定退出</button>
+    <span class='loading-cluster-info' data-localize='loading'>正在加载集群信息...</span>
+    <button class='btn btn-info' style='display: none' id='quit-cluster-replica' data-localize='ok-to-quit'>确定退出</button>
     <table class='table' style='display: none'>
-        <caption><h2>退出集群 - 迁出该节点上的所有槽位才能退出</h2></caption>
+        <caption><h2 data-localize='exit-message'>退出集群 - 迁出该节点上的所有槽位才能退出</h2></caption>
         <thead>
             <tr>
-                <th>编号</th>
-                <th>地址</th>
-                <th>槽位数</th>
-                <th>迁出至此节点的槽位数</th>
-                <th>迁移后的槽位数</th>
+                <th data-localize='number'>编号</th>
+                <th data-localize='address'>地址</th>
+                <th data-localize='slot-num'>槽位数</th>
+                <th data-localize='this-point-node-num-slots-to-move-out'>迁出至此节点的槽位数</th>
+                <th data-localize='after-migration-num'>迁移后的槽位数</th>
             </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
             <tr>
                 <td colspan='5'>
-                    <button class='btn' id='avg-migr-slots-btn'>平均分配迁出的槽位</button>
-                    <button class='btn btn-danger' id='quit-cluster-confirm'>迁移全部槽位并退出集群</button>
-                    <span id='slots-remain-err' style='visibility: hidden' class='label label-warning invalid-migrating-label'>退出集群前节点槽位必须完全迁出</span>
+                    <button class='btn' id='avg-migr-slots-btn' data-localize='average-allocation-out-of-slot'>平均分配迁出的槽位</button>
+                    <button class='btn btn-danger' id='quit-cluster-confirm' data-localize='quit-cluster-confirm'>迁移全部槽位并退出集群</button>
+                    <span id='slots-remain-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='slots-remain-err'>退出集群前节点槽位必须完全迁出</span>
                 </td>
             </tr>
         </tfoot>
@@ -203,23 +203,23 @@
 </div>
 
 <div class='panel-div' id='migrating-slots'>
-    <span class='loading-cluster-info'>正在加载集群信息...</span>
+    <span class='loading-cluster-info' data-localize='loading'>正在加载集群信息...</span>
     <table class='table' style='display: none'>
         <thead>
             <tr>
-                <th>编号</th>
-                <th>地址</th>
-                <th>槽位数</th>
-                <th>迁出至此节点的槽位数</th>
-                <th>迁移后的槽位数</th>
+                <th data-localize='number'>编号</th>
+                <th data-localize='address'>地址</th>
+                <th data-localize='slots-num'>槽位数</th>
+                <th data-localize='this-point-node-num-slots-to-move-out'>迁出至此节点的槽位数</th>
+                <th data-localize='after-migration-num'>迁移后的槽位数</th>
             </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
             <tr>
                 <td colspan='5'>
-                    <button id='migrating-slots-confirm' class='btn btn-primary'>迁移</button>
-                    <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label'>槽位不足</span>
+                    <button id='migrating-slots-confirm' class='btn btn-primary' data-localize='move'>迁移</button>
+                    <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='lack-of-slots'>槽位不足</span>
                 </td>
             </tr>
         </tfoot>
@@ -478,19 +478,19 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
 {{ render_template('components/node/autodiscover.html', host=node.host, port=node.port) }}
 
 <div class='panel-div' id='start-cluster'>
-    集群描述: <input id='start-cluster-descr'>
-    <button class='btn btn-primary' id='start-cluster-confirm'>启动</button>
+    <span data-localize='cluster-description'>集群描述: <input id='start-cluster-descr'>
+    <button class='btn btn-primary' id='start-cluster-confirm' data-localize='start'>启动</button>
 </div>
 
 <div class='panel-div' id='join-cluster'>
-    <span id='loading-cluster-list'>正在加载集群列表...</span>
+    <span id='loading-cluster-list' data-localize='loading'>正在加载集群列表...</span>
     <select id='select-cluster' data-select-style='select-default'>
-        <option value=''>选择集群</option>
+        <option value='' data-localize='choose-cluster'>选择集群</option>
     </select>
-    <button class='btn btn-primary' id='join-cluster-confirm'>加入成为主节点</button>
-    -- 或 --
+    <button class='btn btn-primary' id='join-cluster-confirm' data-localize='join-cluster-confirm'>加入成为主节点</button>
+    -- <span data-localize='or'>或</span> --
     <select id='select-master' data-select-style='select-default' data-default-text='选择主节点'></select>
-    <button class='btn btn-primary' id='replicate-confirm'>以此主节点的副本加入</button>
+    <button class='btn btn-primary' id='replicate-confirm' data-localize='replicate-confirm'>以此主节点的副本加入</button>
 </div>
 
 <script>

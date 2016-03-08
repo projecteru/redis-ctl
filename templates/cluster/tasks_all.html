@@ -13,10 +13,10 @@
     <div class="pagination pagination-info">
     <ul>
         {% if page != 0 %}
-        <li><a href='/cluster/tasks/list_all'> 首页</a></li>
-        <li class='previous'><a href='/cluster/tasks/list_all/{{ page - 1 }}'> 上一页</a></li>
+        <li><a href='/cluster/tasks/list_all' data-localize='home'> 首页</a></li>
+        <li class='previous'><a href='/cluster/tasks/list_all/{{ page - 1 }}' data-localize='previous'> 上一页</a></li>
         {% endif %}
-        <li class='next'><a href='/cluster/tasks/list_all/{{ page + 1 }}'>下一页 </a></li>
+        <li class='next'><a href='/cluster/tasks/list_all/{{ page + 1 }}' data-localize='next-page'>下一页 </a></li>
     </ul>
     </div>
 </nav>

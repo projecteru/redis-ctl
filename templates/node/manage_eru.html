@@ -9,21 +9,21 @@
 {% block body %}
 <div class='form-horizontal form-submit'>
     <div class='from-group'>
-      <h4 style='text-align: right;'>Eru地址：{{ eru_url|e }}</h4>
+        <h4 style='text-align: right;'><span data-localize='Eru-address'>Eru地址</span>：{{ eru_url|e }}</h4>
     </div>
     <div class='from-group'>
       <div class='col-sm-3'>
         <select id='pod-list' class='form-control'>
-            <option value=''>选择机房</option>
+            <option value='' data-localize='select-server-room'>选择机房</option>
             {% for p in pods %}
-              <option value='{{ p.name|e }}'>{{ p.name|e }} - 机器数 {{ p.host_count|e }}</option>
+            <option value='{{ p.name|e }}'>{{ p.name|e }} - <span data-localize='server-num'>机器数</span> {{ p.host_count|e }}</option>
             {% endfor %}
         </select>
       </div>
       {{ checkbox('指定机器', size=2, color='info', id='specify-host-check') }}
       <div class='col-sm-3' style='display: none' id='host-list-container'></div>
       <div class='col-sm-3' style='display: none' id='host-panel'>
-        <button class='check-opt check-group check-group-info' id='netmode-host'>HOST 网络模型部署</button>
+        <button class='check-opt check-group check-group-info' id='netmode-host' data-localize='HOST-network-model-deployment'>HOST 网络模型部署</button>
       </div>
     </div>
 </div>
@@ -43,20 +43,20 @@
         {{ label('创建代理', size=1) }}
         <div class= 'col-xs-4'>
           <select id='cluster-select' class='form-control'>
-            <option value=''>选择集群</option>
+            <option value='' data-localize='select-the-cluster'>选择集群</option>
             {% for c in clusters if c.nodes|length > 0 %}
-            <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} 个节点</option>
+            <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} <span data-localize='node-num'>个节点</option>
             {% endfor %}
           </select>
         </div>
         <div class='col-xs-2'>
           <select id='threads-select' class='form-control'>
-            <option value=''>线程数</option>
-            <option value='2'>2 线程</option>
-            <option value='4'>4 线程</option>
-            <option value='8'>8 线程</option>
-            <option value='16'>16 线程</option>
-            <option value='24'>24 线程</option>
+            <option value='' data-localize='threads'>线程数</option>
+            <option value='2' data-localize='threads-2'>2 线程</option>
+            <option value='4' data-localize='threads-4'>4 线程</option>
+            <option value='8' data-localize='threads-8'>8 线程</option>
+            <option value='16' data-localize='threads-16'>16 线程</option>
+            <option value='24' data-localize='threads-24'>24 线程</option>
           </select>
         </div>
         {{ checkbox('只读', size=1, id='read-slave', color='info', cls=['check-opt']) }}
@@ -67,16 +67,16 @@
 
 <div class="panel panel-primary">
   <div class="panel-heading">
-    新增节点
-    <a href='/nodes/manage/eru/nodes' style='color:white; float: right;'>查看 Eru 节点列表</a>
+    <span data-localize='add-nodes'> 新增节点</span>
+    <a href='/nodes/manage/eru/nodes' style='color:white; float: right;' data-localize='node-list-of-eru'>查看 Eru 节点列表</a>
   </div>
   {{ render_template('components/node/list_eru_node.html', nodes=[]) }}
 </div>
 
 <div class="panel panel-primary">
   <div class="panel-heading">
-    新增代理
-    <a href='/nodes/manage/eru/proxies' style='color:white; float: right;'>查看 Eru 代理列表</a>
+    <span data-localize='add-agent'>新增代理</span>
+    <a href='/nodes/manage/eru/proxies' style='color:white; float: right;' data-localize='agent-list-of-eru'>查看 Eru 代理列表</a>
   </div>
   {{ render_template('components/node/list_eru_proxy.html', proxies=[]) }}
 </div>

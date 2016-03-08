@@ -13,18 +13,18 @@
   <div class="pagination pagination-info">
   <ul>
     {% if page != 0 %}
-    <li><a href='/nodes/manage/eru/proxies'> 首页</a></li>
-    <li class='previous'><a href='/nodes/manage/eru/proxies/{{ page - 1 }}'> 上一页</a></li>
+    <li><a href='/nodes/manage/eru/proxies' data-localize='home'> 首页</a></li>
+    <li class='previous'><a href='/nodes/manage/eru/proxies/{{ page - 1 }}' data-localize='previous'> 上一页</a></li>
     {% endif %}
-    <li class='next'><a href='/nodes/manage/eru/proxies/{{ page + 1 }}'>下一页 </a></li>
-    <li><a href='/nodes/manage/eru/'>Eru 管理页</a></li>
+    <li class='next'><a href='/nodes/manage/eru/proxies/{{ page + 1 }}' data-localize='next-page'>下一页 </a></li>
+    <li><a href='/nodes/manage/eru/' data-localize='eru-manage'>Eru 管理页</a></li>
   </ul>
   </div>
 </nav>
 {% endblock %}
 
 <div class="panel panel-primary">
-  <div class="panel-heading">现有代理</div>
+  <div class="panel-heading" data-localize='existing-agent'>现有代理</div>
   {{ render_template('components/node/list_eru_proxy.html', proxies=proxies) }}
 </div>
 
