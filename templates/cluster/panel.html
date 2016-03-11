@@ -170,11 +170,11 @@ $('#shutdown-cluster').click(function() {
     <table class='table'>
       <thead>
         <tr>
-          <th data-localize='nodes-id'>节点 ID</th>
+          <th data-localize='node-id'>节点 ID</th>
           <th data-localize='address'>地址</th>
-          <th data-localize='RAM'>内存</th>
+          <th data-localize='node-memory-usage'>内存</th>
           <th data-localize='persistence'>持久化</th>
-          <th data-localize='character'>角色</th>
+          <th data-localize='role'>角色</th>
           <th data-localize='slots-num'>槽位数量</th>
         </tr>
       </thead>
@@ -183,9 +183,9 @@ $('#shutdown-cluster').click(function() {
         <tr>
           <td>      
             <div class="row">
-                {{ button('集群自动发现', 4, offset=1, data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}) }}
-                {{ button('节点地址列表', 4, data={'toggle': 'modal', 'target': '#exportNodes'}) }}
-                {{ button('节点调整', 3, data={'toggle': 'modal', 'target': '#nodesAdjustment'}) }}
+                {{ button('集群自动发现', 4, offset=1, data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
+                {{ button('节点地址列表', 4, data={'toggle': 'modal', 'target': '#exportNodes'}, lcl='btn-list-nodes') }}
+                {{ button('节点调整', 3, data={'toggle': 'modal', 'target': '#nodesAdjustment'}, lcl='btn-bulk-migr') }}
             </div>
           </td>
         </tr>
@@ -253,14 +253,14 @@ $('#shutdown-cluster').click(function() {
 
         function makeMasterRow(n) {
             var row = makeBaseCells(n);
-            row.push($('<td>').text('主').css('color', '#004'));
+            row.push($('<td>').text(_('主')).css('color', '#004'));
             row.push($('<td>').text(n.slots ? n.slots.length : 0));
             return $('<tr>').addClass('master-row').append(row).data('host', n.host).data('port', n.port);
         }
 
         function makeSlaveRow(n) {
             var row = makeBaseCells(n);
-            row.push($('<td>').text('从').css('color', '#044'));
+            row.push($('<td>').text(_('从 ')).css('color', '#044'));
             row.push($('<td>').text('-'));
             return $('<tr>').addClass('slave-row').append(row).data('host', n.host).data('port', n.port);
         }
@@ -294,7 +294,7 @@ $('#shutdown-cluster').click(function() {
 {{ render_template('components/cluster/nodes-adjustment.html', cluster_id=cluster.id) }}
 
 <div class="panel panel-primary">
-  <div class="panel-heading panel-heading-hide-content" id='proxies' data-localize='proxy'>代理</div>
+  <div class="panel-heading panel-heading-hide-content" id='proxies' data-localize='proxies'>代理</div>
   <div class='form-horizontal' style='text-align: center'>
   {%- for proxy in cluster.proxies %}
     <div class='form-group' id='proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
@@ -315,27 +315,27 @@ $('#shutdown-cluster').click(function() {
             </label>
         </div>
 
-        {{ button('发送指令', size=1, data={'toggle': 'modal', 'target': '#commandConsole', 'host': proxy.host, 'port': proxy.port}) }}
+        {{ button('发送指令', size=1, data={'toggle': 'modal', 'target': '#commandConsole', 'host': proxy.host, 'port': proxy.port}, lcl='btn-direct-command') }}
         {{ button('INFO', size=1, cls=['info-btn'], data={'type': 'proxy', 'host': proxy.host, 'port': proxy.port}) }}
-        {{ button('同步槽位', size=1, cls=['sync-remotes-btn'], data={'host': proxy.host, 'port': proxy.port}) }}
+        {{ button('同步槽位', size=1, cls=['sync-remotes-btn'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-sync-slots-map') }}
 
         {%- if proxy.eru_deployed %}
-          {{ button('下线此代理容器', size=2, color='danger', cls=['btn-del-container'], data={'type': 'proxy', 'cid': proxy.eru_container_id}) }}
+          {{ button('下线此代理容器', size=2, color='danger', cls=['btn-del-container'], data={'type': 'proxy', 'cid': proxy.eru_container_id}, lcl='btn-stop-proxy-container') }}
           {%- if proxy.eru_info and not proxy.eru_info.is_alive %}
-            {{ button('复活', size=1, color='info', cls=['btn-revive-container'], data={'cid': proxy.eru_container_id}) }}
+            {{ button('复活', size=1, color='info', cls=['btn-revive-container'], data={'cid': proxy.eru_container_id}, lcl='btn-revive') }}
           {%- endif %}
         {%- else %}
-          {{ button('从监视面板移除', size=2, color='danger', cls=['delete-proxy-btn'], data={'host': proxy.host, 'port': proxy.port}) }}
+          {{ button('从监视面板移除', size=2, color='danger', cls=['delete-proxy-btn'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-remove') }}
         {%- endif %}
 
         {{ checkbox('关闭报警', size=2, color='danger', cls=['check-suppress-alert', 'check-group-checked' if proxy.suppress_alert else ''],
-                    data={'ntype': 'proxy', 'host': proxy.host, 'port': proxy.port}) }}
+                    data={'ntype': 'proxy', 'host': proxy.host, 'port': proxy.port}, lcl='btn-disable-alarm') }}
     </div>
   {% endfor %}
     <div class='form-group'>
-        <div class='col-xs-2 control-label' data-localize='reg-cluster-agent'>注册新集群代理</div>
-        {{ input(size=4, id='new-proxy-addr', placeholder='地址, 如 127.0.0.1:8889') }}
-        {{ button('注册', size=2, id='new-proxy-btn', color='primary') }}
+        <div class='col-xs-2 control-label' data-localize='reg-cluster-proxy'>注册新集群代理</div>
+        {{ input(size=4, id='new-proxy-addr', placeholder='example: 127.0.0.1:8889') }}
+        {{ button('注册', size=2, id='new-proxy-btn', color='primary', lcl='button-add-nodes') }}
         <div class='col-sm-2'>
           <span class='label label-danger' id='new-proxy-error' style='display: none'></span>
         </div>
@@ -396,16 +396,18 @@ $('#new-proxy-btn').click(function() {
   <div class="panel-heading panel-heading-hide-content" data-localize='set-auto-expansion'>设置自动扩容</div>
   <div>
   {% if not eru_client %}
-      没有设定 Eru 地址
+      <span data-localize='text-no-eru'>没有设定 Eru 地址</span>
   {% else %}
-      ERU 地址: {{ eru_client.url|e }}
+      <span data-localize='text-eru-addr'>ERU 地址</span>: {{ eru_client.url|e }}
       {%- set pods = eru_client.list_pods() %}
       {%- if pods|length == 0 %}
-          Eru 没有可用的机房
+          <span data-localize='text-no-eru-pod'>Eru 没有可用的机房</span>
       {%- else %}
           {% set plan = cluster.balance_plan or {} %}
-          集群自动扩容在集群节点内存容量使用超过 90% 时自动申请新节点并迁移数据.
-          <button id='balance-plan-check' class='check-group check-group-info {{ 'check-group-checked' if plan.pod else '' }}'>启用自动扩容</button>
+          <span data-localize='text-auto-expand'>集群自动扩容在集群节点内存容量使用超过 90% 时自动申请新节点并迁移数据.</span>
+          <button id='balance-plan-check' class='check-group check-group-info {{ 'check-group-checked' if plan.pod else '' }}'>
+              <span data-localize='btn-enable-auto-expand'>启用自动扩容</span>
+          </button>
           <script>
           $('#balance-plan-check').enableLabelCheck({
               onClick: function(btn) {

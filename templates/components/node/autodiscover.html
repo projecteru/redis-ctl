@@ -7,7 +7,7 @@
       <thead>
           <tr>
               <th data-localize='address'>地址</th>
-              <th data-localize='charater'>角色</th>
+              <th data-localize='role'>角色</th>
               <th></th>
           </tr>
       </thead>
@@ -15,7 +15,7 @@
       <tfoot>
           <tr>
               <td colspan='3' id='clusterDiscoverControls'>
-                  {{ button('注册这些节点并加入集群', id='discoverAutoAddNodes') }}
+                  {{ button('注册这些节点并加入集群', id='discoverAutoAddNodes', lcl='commit-auto-discover') }}
               </td>
           </tr>
       </tfoot>
@@ -29,7 +29,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
     if (pl.length === 0) {
         return;
     }
-    pl.text('正在载入集群信息...');
+    pl.text(_('正在载入集群信息') + '...');
     $.ajax({
         url: '/cluster/autodiscover',
         type: 'GET',
@@ -39,7 +39,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
         },
         success: function(r) {
             if (!r.cluster_discovered) {
-                return pl.text('节点不在集群中');
+                return pl.text(_('节点不在集群中'));
             }
             pl.remove();
             var tbody = $('#clusterDiscoverNodes').show().find('tbody');
@@ -47,10 +47,10 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
             $.each(r.nodes, function(i, e) {
                 var row = $('<tr>'
                     ).append($('<td>').text(e.host + ':' + e.port)
-                    ).append($('<td>').text(e.role == 'master' ? '主' : '从')
+                    ).append($('<td>').text(e.role == 'master' ? _('主') : _('从 '))
                     );
                 if (e.known) {
-                    row.append($('<td>').text('已注册'));
+                    row.append($('<td>').text(_('已注册')));
                 } else {
                     row.addClass('row-unknown').append($('<td>').addClass('unknown-td'));
                     row.data('host', e.host).data('port', e.port);
@@ -74,7 +74,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
                             },
                             error: function(r) {
                                 console.error(r);
-                                btn.text('失败: ' + r.responseText);
+                                btn.text(_('失败') + ': ' + r.responseText);
                             }
                         });
                     }
@@ -84,7 +84,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
                         port: row.data('port')
                     }, function() {
                         row.removeClass('row-unknown');
-                        row.find('.unknown-td').text('已注册');
+                        row.find('.unknown-td').text(_('已注册'));
                         addNode(rows, index + 1);
                     });
                 }($('.row-unknown'), 0);
@@ -92,7 +92,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
         },
         error: function(r) {
             console.error(r);
-            pl.text('错误 ');
+            pl.text(_('失败') + ': ');
             pl.append(r.responseJSON.reason);
         }
     });

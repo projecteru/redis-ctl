@@ -14,7 +14,7 @@
             / {{ node.detail.maxmemory|filesizeformat }}
             <span class='label label-success'>{{ (node.detail.used_memory * 100 / node.detail.maxmemory)|round(2) }}%</span>
             {% else %}
-            | <span class='label label-primary' data-localize='max-is-not-set'>最大值未设置</span>
+            | <span class='label label-primary' data-localize='max-memory-not-set'>最大值未设置</span>
             {% endif %}
         {% else %}
         <p class='slave' style='text-align: center' data-localize='wait-poll'>等待轮询</p>
@@ -29,24 +29,28 @@
                 {% if cluster is none %}
                 <span class='label label-success' data-localize='ready'>就绪</span>
                 {% else %}
-                <span class='label label-primary' data-localize='in-service'>在役</span>
+                <span class='label label-primary' data-localize='serving'>在役</span>
                 |
                 <a href='#cluster-{{ cluster.id }}'>#{{ cluster.id }}</a>
                 |
-                {{ '从' if node.detail.slave else '主' }}
+                  {% if node.detail.slave %}
+                  <span data-localize='slave'>从</span>
+                  {% else %}
+                  <span data-localize='master'>主</span>
+                  {% endif %}
                 {% endif %}
             {% else %}
                 <span class='label label-danger'><i class='fa fa-exclamation-triangle'></i></span>
             {% endif %}
 
             {% if node.detail.slots_migrating %}
-            <span class='label label-warning' data-localize='move'>有槽位正在迁移</span>
+            <span class='label label-warning' data-localize='migrating'>有槽位正在迁移</span>
             {% endif %}
         {% endif %}
     </td>
     <td>
         {% if stats_enabled %}
-        <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn' data-localize='history'>状态历史 {{ icon('line-chart') }}</a>
+        <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'><span data-localize='history'>状态历史</span> {{ icon('line-chart') }}</a>
         {% endif %}
         <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
         关闭报警

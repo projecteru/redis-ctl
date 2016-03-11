@@ -13,9 +13,9 @@
         <div class='col-sm-1'>
             <label id='rest-slots'>16384</label>
         </div>
-        {{ button('预览迁移', id='adjust-preview', color='info') }}
-        <div class='col-sm-2'><span class='label label-default' data-localize='all-need-to-allocate-slots-preview'>预览前需要分配所有槽位</span></div>
-        {{ button('平分槽位', id='adjust-avg-slots') }}
+        {{ button('预览迁移', id='adjust-preview', color='info', lcl='btn-preview') }}
+        <div class='col-sm-4'><span class='label label-default' data-localize='msg-cannot-preview'>预览前需要分配所有槽位</span></div>
+        {{ button('平分槽位', id='adjust-avg-slots', lcl='btn-equalize') }}
     </div>
     <div class='form-group' style='text-align: center' id='adjust-migrs-parent'>
         <hr>
@@ -27,12 +27,12 @@
         </div>
         <div id='adjust-migrs'></div>
         <div class='form-group' style='font-weight: bold'>
-            <div class='col-sm-2' data-localize='remove-node'>移除节点</div>
-            <div class='col-sm-1' data-localize='character'>角色</div>
+            <div class='col-sm-2' data-localize='removed-node'>移除节点</div>
+            <div class='col-sm-1' data-localize='role'>角色</div>
         </div>
         <div id='adjust-quits'></div>
         <div class='form-group'>
-            {{ button('确认以上任务', offset=1, id='adjust-confirm', color='primary') }}
+            {{ button('确认以上任务', offset=1, id='adjust-confirm', color='primary', lcl='confirm') }}
         </div>
     </div>
 </div>
@@ -66,7 +66,7 @@
                         .data('host', node.host)
                         .data('port', node.port)),
                 $('<div>').addClass('col-sm-offset-1 col-sm-2').append(
-                    $('<button>').text('移除此节点')
+                    $('<button>').text(_('移除此节点'))
                         .addClass('form-control check-group check-group-danger rm-control'))
             ]);
         }
@@ -175,20 +175,20 @@
         function label(what, n) {
             return $('<div>').addClass('col-sm-' + n).text(what);
         }
-        $('.slot-control:disabled').each(function(_, e) {
+        $('.slot-control:disabled').each(function(__, e) {
             var master = allMasters[$(e).data('masterIndex')];
             for (var i = 0; i < master.slaves.length; ++i) {
                 var s = master.slaves[i];
                 quits.push({
                     host: s.host,
                     port: s.port,
-                    role: '从'
+                    role: _('从 ')
                 });
             }
             quits.push({
                 host: master.host,
                 port: master.port,
-                role: '主'
+                role: _('主')
             });
         });
 
@@ -217,7 +217,7 @@
         }), function() {
             window.location.reload();
         }).error(function(e) {
-            alert('发生错误' + e.responsetext);
+            alert(_('失败') + ': ' + e.responsetext);
             $('#adjust-confirm').removeAttr('disabled');
         });
     });

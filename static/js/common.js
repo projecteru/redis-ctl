@@ -37,8 +37,8 @@ $(document).ready(function() {
     $('.panel-heading-hide-content').click(function() {
        $(this).next().fadeToggle('slow');
     });
-
-    window._ = function(text) {
-        return window.TRANSLATIONS[text] || text;
-    };
 });
+
+window._ = function(text) {
+    return window.TRANSLATIONS[text] || text;
+};
