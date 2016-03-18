@@ -10,6 +10,21 @@ MYSQL_USERNAME = os.getenv('MYSQL_USERNAME', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
 MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'redisctl')
 
+ERU_URL = os.getenv('ERU_URL', None)
+ERU_GROUP = os.getenv('ERU_GROUP', 'group')
+ERU_NETWORK = os.getenv('ERU_NETWORK', 'net')
+
+LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
+LOG_FILE = os.getenv('LOG_FILE', '')
+LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
+
+DEBUG = int(os.getenv('DEBUG', 0))
+POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', 10))
+PERMDIR = os.getenv('PERMDIR', tempfile.gettempdir())
+NODE_MAX_MEM = int(os.getenv('NODE_MAX_MEM', 2048 * 1000 * 1000))
+NODES_EACH_THREAD = int(os.getenv('NODES_EACH_THREAD', 10))
+REDIS_CONNECT_TIMEOUT = int(os.getenv('REDIS_CONNECT_TIMEOUT', 5))
+
 OPEN_FALCON = {
     'host_query': os.getenv('OPEN_FALCON_HOST_QUERY', ''),
     'host_write': os.getenv('OPEN_FALCON_HOST_WRITE', ''),
@@ -22,21 +37,6 @@ ALGALON = {
     'csrf_token': os.getenv('ALGALON_CSRF_TOKEN', ''),
     'dsn': os.getenv('ALGALON_DSN', ''),
 }
-
-ERU_URL = os.getenv('ERU_URL', None)
-ERU_GROUP = os.getenv('ERU_GROUP', 'group')
-ERU_NETWORK = os.getenv('ERU_NETWORK', 'net')
-
-LOG_LEVEL = getattr(logging, os.getenv('LOG_LEVEL', 'info').upper())
-LOG_FILE = os.getenv('LOG_FILE', '')
-LOG_FORMAT = os.getenv('LOG_FORMAT', '%(levelname)s:%(asctime)s:%(message)s')
-
-DEBUG = int(os.getenv('DEBUG', 0))
-POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', 10))
-PERMDIR = os.getenv('ERU_PERMDIR', tempfile.gettempdir())
-NODE_MAX_MEM = int(os.getenv('NODE_MAX_MEM', 2048 * 1000 * 1000))
-NODES_EACH_THREAD = int(os.getenv('NODES_EACH_THREAD', 10))
-REDIS_CONNECT_TIMEOUT = int(os.getenv('REDIS_CONNECT_TIMEOUT', 5))
 
 try:
     from override_config import *

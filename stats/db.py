@@ -84,14 +84,14 @@ class Client(object):
             raise IOError(response.get('error'))
         return response.get('result')
 
-    def query(self, node, field, aggf, span, end, interval):
+    def query(self, name, field, aggf, span, end, interval):
         r = requests.post(self.query_uri, data=json.dumps({
             'start': end - span,
             'end': end,
             'cf': aggf,
             'endpoint_counters': [{
                 'endpoint': self.prefix,
-                'counter': field + '/service=redisctl&addr=' + node,
+                'counter': field + '/service=redisctl&addr=' + name,
             }],
         })).json()[0]['Values']
         if r is None:
@@ -100,19 +100,3 @@ class Client(object):
             r = r[::len(r) / POINT_LIMIT + 1]
         return [[x['timestamp'], x['value']]
                 for x in r if x['value'] is not None]
-
-    def query_request(self, node, end):
-        r = requests.post(self.query_uri, data=json.dumps({
-            'start': end - 12000,
-            'end': end,
-            'cf': 'MAX',
-            'endpoint_counters': [{
-                'endpoint': self.prefix,
-                'counter': field + '/service=redisctl&addr=' + node,
-            }],
-        })).json()[0]['Values']
-        if r:
-            for i in range(1, len(r)):
-                m = r[-i]
-                if m['value']:
-                    return m['value']

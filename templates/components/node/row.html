@@ -52,7 +52,7 @@
         {% if stats_enabled %}
         <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'><span data-localize='history'>状态历史</span> {{ icon('line-chart') }}</a>
         {% endif %}
-        <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}'>
+        <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}' data-localize='btn-disable-alarm'>
         关闭报警
         </button>
         {% if node.detail.slots_migrating %}

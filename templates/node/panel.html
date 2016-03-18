@@ -1,6 +1,6 @@
 {% extends './base.html' %}
 
-{% block title %}节点控制面板{% endblock %}
+{% block title %}Node Panel - {{ node.host|e }}:{{ node.port }}{% endblock %}
 
 {% block head %}
 <script src='/static/js/eru_container.js'></script>
@@ -410,7 +410,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
         },
         success: function(r) {
             if (r.myself.role === 'slave') {
-                $('.loading-cluster-info').text('此节点是从节点');
+                $('.loading-cluster-info').text(_('im_slave'));
                 return $('#quit-cluster-replica').click(function() {
                     var btn = $(this).attr('disabled', 'disabled');
                     $.ajax({
@@ -425,7 +425,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
                             return window.location.reload();
                         },
                         error: function(r) {
-                            btn.text('失败: ' + r.responseText);
+                            btn.text(_('failed') + ': ' + r.responseText);
                         }
                     });
                 }).show();
@@ -446,7 +446,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
                             return window.location.reload();
                         },
                         error: function(r) {
-                            btn.text('失败: ' + r.responseText);
+                            btn.text(_('failed') + ': ' + r.responseText);
                         }
                     });
                 }).show();
@@ -475,16 +475,16 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
 {% else %}
 
 <div style='margin-bottom: 1em' class='row'>
-    {{ button('集群自动发现', size=2, data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}) }}
-    {{ button('启动集群', size=2, id='start-cluster-btn', cls=['panel-btn'], data={'bind': 'start-cluster'}) }}
-    {{ button('加入集群', size=2, id='join-cluster-btn', cls=['panel-btn'], data={'bind': 'join-cluster'}) }}
+    {{ button('集群自动发现', size=2, data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
+    {{ button('启动集群', size=2, id='start-cluster-btn', cls=['panel-btn'], data={'bind': 'start-cluster'}, lcl='start-cluster') }}
+    {{ button('加入集群', size=2, id='join-cluster-btn', cls=['panel-btn'], data={'bind': 'join-cluster'}, lcl='join-cluster') }}
 </div>
 
 {{ render_template('components/node/autodiscover.html', host=node.host, port=node.port) }}
 
 <div class='panel-div' id='start-cluster'>
-    <span data-localize='cluster-description'>集群描述: <input id='start-cluster-descr'>
-    <button class='btn btn-primary' id='start-cluster-confirm' data-localize='start'>启动</button>
+    <span data-localize='cluster-description'>集群描述</span>: <input id='start-cluster-descr'>
+    <button class='btn btn-primary' id='start-cluster-confirm' data-localize='start-cluster'>启动</button>
 </div>
 
 <div class='panel-div' id='join-cluster'>

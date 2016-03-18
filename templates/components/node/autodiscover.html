@@ -47,7 +47,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
             $.each(r.nodes, function(i, e) {
                 var row = $('<tr>'
                     ).append($('<td>').text(e.host + ':' + e.port)
-                    ).append($('<td>').text(e.role == 'master' ? _('主') : _('从 '))
+                    ).append($('<td>').text(e.role == 'master' ? _('master') : _('slave'))
                     );
                 if (e.known) {
                     row.append($('<td>').text(_('已注册')));

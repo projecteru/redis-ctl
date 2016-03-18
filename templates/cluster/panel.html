@@ -253,14 +253,14 @@ $('#shutdown-cluster').click(function() {
 
         function makeMasterRow(n) {
             var row = makeBaseCells(n);
-            row.push($('<td>').text(_('主')).css('color', '#004'));
+            row.push($('<td>').text(_('master')).css('color', '#004'));
             row.push($('<td>').text(n.slots ? n.slots.length : 0));
             return $('<tr>').addClass('master-row').append(row).data('host', n.host).data('port', n.port);
         }
 
         function makeSlaveRow(n) {
             var row = makeBaseCells(n);
-            row.push($('<td>').text(_('从 ')).css('color', '#044'));
+            row.push($('<td>').text(_('slave')).css('color', '#044'));
             row.push($('<td>').text('-'));
             return $('<tr>').addClass('slave-row').append(row).data('host', n.host).data('port', n.port);
         }

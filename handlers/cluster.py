@@ -198,13 +198,17 @@ def batch_tasks(request):
 
     task = models.task.ClusterTask(
         cluster_id=c.id, task_type=models.task.TASK_TYPE_BATCH)
+    has_step = False
     for n in request.post_json.get('migrs', []):
+        has_step = True
         task.add_step(
             'migrate', src_host=n['src_host'], src_port=n['src_port'],
             dst_host=n['dst_host'], dst_port=n['dst_port'], slots=n['slots'])
     for n in request.post_json.get('quits', []):
+        has_step = True
         task.add_step('quit', cluster_id=c.id, host=n['host'], port=n['port'])
-    db.session.add(task)
+    if has_step:
+        db.session.add(task)
 
 
 @base.post_async('/cluster/replicate')

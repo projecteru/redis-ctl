@@ -67,13 +67,13 @@ $(document).ready(function() {
             return $('<span>').text(parseInt(val).toLocaleString());
         },
         aof_enabled: function(val) {
-            return $('<span>').addClass('label label-default').text(val === '0' ? '否' : '是');
+            return $('<span>').addClass('label label-default').text(val === '0' ? _('disabled') : _('enabled'));
         },
         role: function(val) {
-            return $('<span>').addClass('label label-default').text(val === 'master' ? '主' : '从');
+            return $('<span>').addClass('label label-default').text(val === 'master' ? _('master') : _('slave'));
         },
         cluster_enabled: function(val) {
-            return $('<span>').addClass('label label-default').text(val === '1' ? '开启' : '关闭');
+            return $('<span>').addClass('label label-default').text(val === '1' ? _('enabled') : _('disabled'));
         }
     };
 
@@ -136,9 +136,9 @@ $(document).ready(function() {
             case 'myself':
                 return lb.addClass('label-default').text('Myself');
             case 'master':
-                return lb.addClass('label-primary').text('主');
+                return lb.addClass('label-primary').text(_('master'));
             case 'slave':
-                return lb.addClass('label-info').text('从');
+                return lb.addClass('label-info').text(_('slave'));
             case 'fail':
                 return lb.addClass('label-danger').text('F');
             default:

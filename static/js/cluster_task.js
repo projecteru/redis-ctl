@@ -1,20 +1,11 @@
 $(document).ready(function() {
-    var STEP_TYPES = {
-        fix_migrate: _('修复迁移状态'),
-        migrate: _('迁移槽位'),
-        join: _('添加主节点'),
-        replicate: _('添加从节点'),
-        quit: _('移除节点')
-    };
-
     var argsFormatters = {
         fix_migrate: function(args) {
             return args.host + ':' + args.port;
         },
         migrate: function(args) {
-            return [_('从'), args.src_host + ':' + args.src_port, _('迁移'),
-                    args.slots.length, _('个槽位至'),
-                    args.dst_host + ':' + args.dst_port].join(' ');
+            return [_('from'), args.src_host + ':' + args.src_port, _('migrate_out'),
+                    args.slots.length, _('slots_to'), args.dst_host + ':' + args.dst_port].join(' ');
         },
         join: function(args) {
             return args.newin_host + ':' + args.newin_port;
@@ -58,7 +49,7 @@ $(document).ready(function() {
                 $.each(r, function(i, e) {
                     $('#taskDetailSteps').append($('<tr>'
                         ).append($('<td>').text(e.id)
-                        ).append($('<td>').text(STEP_TYPES[e.command])
+                        ).append($('<td>').text(_('task_step_' + e.command))
                         ).append($('<td>').append(argsFormatters[e.command](e.args))
                         ).append($('<td>').append(e.start_time)
                         ).append($('<td>').append(renderStatus(e.status, e.exec_error, e.completion))

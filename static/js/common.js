@@ -39,6 +39,7 @@ $(document).ready(function() {
     });
 });
 
+window.TRANSLATIONS = window.TRANSLATIONS || {};
 window._ = function(text) {
     return window.TRANSLATIONS[text] || text;
 };
