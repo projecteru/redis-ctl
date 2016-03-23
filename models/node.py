@@ -5,10 +5,6 @@ from eruhttp import EruException
 from base import db, Base
 from cluster import Cluster
 
-STATUS_ONLINE = 0
-STATUS_MISSING = -1
-STATUS_BROKEN = -2
-
 
 class RedisNode(Base):
     __tablename__ = 'redis_node'
@@ -30,11 +26,11 @@ class RedisNode(Base):
 
     @cached_property
     def eru_info(self):
-        import eru_utils
-        if eru_utils.eru_client is None or not self.eru_deployed:
+        from flask import g
+        if g.container_client is None or not self.eru_deployed:
             return None
         try:
-            return eru_utils.eru_client.get_container(self.eru_container_id)
+            return g.container_client.get_container(self.eru_container_id)
         except EruException as e:
             logging.exception(e)
             return {
@@ -52,7 +48,7 @@ def get_by_host_port(host, port):
 def list_eru_nodes(offset, limit):
     return db.session.query(RedisNode).filter(
         RedisNode.eru_container_id != None).order_by(
-        RedisNode.id.desc()).offset(offset).limit(limit).all()
+            RedisNode.id.desc()).offset(offset).limit(limit).all()
 
 
 def list_all_nodes():
@@ -81,6 +77,11 @@ def delete_eru_instance(eru_container_id):
     db.session.delete(i)
 
 
+def get_eru_by_container_id(eru_container_id):
+    return db.session.query(RedisNode).filter(
+        RedisNode.eru_container_id == eru_container_id).first()
+
+
 def delete_free_instance(host, port):
     node = db.session.query(RedisNode).filter(
         RedisNode.host == host,
@@ -88,15 +89,3 @@ def delete_free_instance(host, port):
         RedisNode.assignee_id == None).with_for_update().first()
     if node is not None:
         db.session.delete(node)
-
-
-def pick_and_launch(host, port, cluster_id, start_cluster):
-    logging.info('Launching cluster for [ %d ]', cluster_id)
-    node = db.session.query(RedisNode).filter(
-        RedisNode.host == host, RedisNode.port == port,
-        RedisNode.assignee_id == None).first()
-    if node is None:
-        raise ValueError('no such node')
-    start_cluster(node.host, node.port)
-    node.assignee_id = cluster_id
-    db.session.add(node)

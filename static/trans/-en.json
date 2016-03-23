@@ -2,7 +2,7 @@
     "master": "Master",
     "slave": "Slave",
 
-    "container-nodes-mgr": "Container Nodes",
+    "container-nodes-mgr": "Containerizing",
     "global-cluster-tasks-list": "All Tasks",
     "polling-stats": "Pollings",
 
@@ -12,8 +12,8 @@
     "cluster-proxies": "Proxies",
     "nodes-info": "Nodes Info",
     "opt-all-nodes": "All nodes",
-    "opt-error-only": "Nodes not reachable",
-    "opt-noalert-only": "Nodes with alert turned off",
+    "opt-error-only": "Nodes Unreachable",
+    "opt-noalert-only": "Nodes with alarm disabled",
     "opt-migrating-only": "Nodes with migrating slots",
 
     "node-addr": "Address",
@@ -43,8 +43,10 @@
     "basic-settings": "Basic settings",
     "cluster-id": "Cluster ID",
     "cluster-description": "Cluster description",
-    "proxy-num": "Number of proxies ",
-    "nodes-num": "Number of nodes",
+    "cluster-set-descr": "Update",
+    "cluster-creation": "Creation",
+    "proxy-num": "Number of proxies",
+    "nodes-num": "Number of Redis",
     "operating": "Ops",
     "cluster-fix-migrating": "Fix slots migration",
     "cluster-enable-all-nodes-alert": "Enable all nodes alarm",
@@ -154,7 +156,13 @@
     "task-type-3": "Add slave",
     "task-type-4": "Remove Redis",
     "task-type-5": "Auto expanding",
-    "task-type-6": "Bulk ops",
+    "task-type-6": "Batch ops",
+    "task-type-7": "Launch",
+
+    "event-type-0": "Create",
+    "event-type-1": "Remove",
+    "event-type-2": "Config",
+    "event-type-3": "Command",
 
     "container-id": "Container ID",
     "mirrored-version": "Mirrored version",

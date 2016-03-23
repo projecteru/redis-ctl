@@ -2,10 +2,7 @@ import time
 import logging
 import random
 import threading
-from socket import error as SocketError
 
-import file_ipc
-import stats
 from config import NODES_EACH_THREAD
 from stats_models import RedisNodeStatus, ProxyStatus
 from models.base import db, commit_session
@@ -13,37 +10,25 @@ from models.polling_stat import PollingStat
 
 
 class Poller(threading.Thread):
-    def __init__(self, nodes, algalon_client):
+    def __init__(self, nodes):
         threading.Thread.__init__(self)
         self.daemon = True
         self.nodes = nodes
         logging.debug('Poller %x distributed %d nodes',
                       id(self), len(self.nodes))
-        self.algalon_client = algalon_client
 
     def run(self):
         for node in self.nodes:
-            logging.debug('Poller %x collect for %s:%d',
-                          id(self), node['host'], node['port'])
-            node.collect_stats(self._emit_data, self._send_alarm)
-
-    def _send_alarm(self, message, trace):
-        if self.algalon_client is not None:
-            self.algalon_client.send_alarm(message, trace)
-
-    def _emit_data(self, addr, points):
-        try:
-            stats.client.write_points(addr, points)
-        except (SocketError, stats.StatisticError, StandardError), e:
-            logging.exception(e)
+            node.collect_stats()
 
 CACHING_NODES = {}
 
 
-def _load_from(cls, nodes):
+def _load_from(cls, app, nodes):
     def update_node_settings(node, file_settings):
         node.suppress_alert = file_settings.get('suppress_alert')
         node.balance_plan = file_settings.get('balance_plan')
+        node.app = app
 
     r = []
     for n in nodes:
@@ -81,25 +66,23 @@ def save_polling_stat(nodes, proxies):
 
 
 class NodeStatCollector(threading.Thread):
-    def __init__(self, app, interval, algalon_client):
+    def __init__(self, app, interval):
         threading.Thread.__init__(self)
         self.daemon = True
         self.app = app
         self.interval = interval
-        self.algalon_client = algalon_client
 
     def _shot(self):
-        poll = file_ipc.read_poll()
-        nodes = _load_from(RedisNodeStatus, poll['nodes'])
-        proxies = _load_from(ProxyStatus, poll['proxies'])
+        poll = self.app.polling_targets()
+        nodes = _load_from(RedisNodeStatus, self.app, poll['nodes'])
+        proxies = _load_from(ProxyStatus, self.app, poll['proxies'])
         # commit because `get_by` may create new nodes
         # to reattach session they must be persisted
         commit_session()
 
         all_nodes = nodes + proxies
         random.shuffle(all_nodes)
-        pollers = [Poller(all_nodes[i: i + NODES_EACH_THREAD],
-                          self.algalon_client)
+        pollers = [Poller(all_nodes[i: i + NODES_EACH_THREAD])
                    for i in xrange(0, len(all_nodes), NODES_EACH_THREAD)]
         for p in pollers:
             p.start()
@@ -114,12 +97,8 @@ class NodeStatCollector(threading.Thread):
         save_polling_stat(nodes, proxies)
         commit_session()
         logging.debug('Total %d nodes, %d proxies', len(nodes), len(proxies))
-
-        try:
-            file_ipc.write_details({n.addr: n.details for n in nodes},
-                                   {p.addr: p.details for p in proxies})
-        except StandardError, e:
-            logging.exception(e)
+        self.app.write_polling_details({n.addr: n.details for n in nodes},
+                                       {p.addr: p.details for p in proxies})
 
     def run(self):
         with self.app.app_context():

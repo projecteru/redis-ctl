@@ -1,5 +1,13 @@
 $(document).ready(function() {
     var argsFormatters = {
+        launch: function(args) {
+            var result = [];
+            for (var i = 0; i < args.host_port_list.length; ++i) {
+                var a = args.host_port_list[i];
+                result.push(a.host + ':' + a.port);
+            }
+            return result.join(' | ');
+        },
         fix_migrate: function(args) {
             return args.host + ':' + args.port;
         },
@@ -21,16 +29,16 @@ $(document).ready(function() {
 
     function renderStatus(status, error, completion) {
         if (status === 'pending') {
-            return $('<span>').addClass('label label-info').text(_('等待'));
+            return $('<span>').addClass('label label-info').text(_('awaiting'));
         }
         if (status === 'running') {
-            return $('<span>').addClass('label label-primary').text(_('正在执行'));
+            return $('<span>').addClass('label label-primary').text(_('processing'));
         }
         if (error) {
-            return [$('<span>').addClass('label label-danger').text(_('失败')),
+            return [$('<span>').addClass('label label-danger').text(_('failed')),
                     $('<span>').text(' ' + completion)];
         }
-        return [$('<span>').addClass('label label-success').text(_('完成')),
+        return [$('<span>').addClass('label label-success').text(_('completed')),
                 $('<span>').text(' ' + completion)];
     }
 
@@ -40,7 +48,7 @@ $(document).ready(function() {
         $('#taskDetailLoaderPlaceholder').show();
         $('#taskDetailContent').hide();
         $.ajax({
-            url: '/cluster/task/steps',
+            url: '/task/steps',
             type: 'GET',
             data: {id: taskId},
             success: function(r) {

@@ -8,13 +8,14 @@
             <th data-localize='task-creation'>创建时间</th>
             <th data-localize='task-status'>执行状态</th>
             <th data-localize='task-detail'>详情</th>
+            <th data-localize='task-creator'>Creator</th>
         </tr>
     </thead>
     <tbody style='text-align: center'>
     {% for task in tasks %}
         <tr>
             <td>{{ task.id }}</td>
-            <td><a href='/clusterp/{{ task.cluster_id }}'>#{{ task.cluster_id }}</a></td>
+            <td><a href='/cluster/panel/{{ task.cluster_id }}'>#{{ task.cluster_id }}</a></td>
             <td data-localize='task-type-{{ task.task_type }}'>{{ task.task_type }}</td>
             <td>{{ task.creation|strftime }}</td>
             <td>
@@ -33,6 +34,11 @@
             </td>
             <td>
                 <button class='btn btn-success' data-toggle='modal' data-target='#taskDetail' data-taskid='{{ task.id }}' data-localize='task-detail'>查看详情</button>
+            </td>
+            <td>
+                {% autoescape false %}
+                    {{ render_user(task.user_id) }}
+                {% endautoescape %}
             </td>
         </tr>
     {% endfor %}

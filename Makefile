@@ -53,24 +53,25 @@ clean:
 	-find . -type f -name "*.pyc" -exec rm -f "{}" \;
 
 start-test:clean-test
-	sleep 1
-	echo "$$REDIS_CLUSTER_NODE_CONF_A" | $(REDIS_SERVER) -
-	echo "$$REDIS_CLUSTER_NODE_CONF_B" | $(REDIS_SERVER) -
-	echo "$$REDIS_CLUSTER_NODE_CONF_C" | $(REDIS_SERVER) -
-	sleep 5
+	@echo "Wait several seconds for Redis cluster ready"
+	@sleep 1
+	@echo "$$REDIS_CLUSTER_NODE_CONF_A" | $(REDIS_SERVER) -
+	@echo "$$REDIS_CLUSTER_NODE_CONF_B" | $(REDIS_SERVER) -
+	@echo "$$REDIS_CLUSTER_NODE_CONF_C" | $(REDIS_SERVER) -
+	@sleep 5
 
 clean-test:stop-test
-	rm -f /tmp/redis_cluster_node*.conf
-	rm -f dump.rdb appendonly.aof
+	@rm -f /tmp/redis_cluster_node*.conf
+	@rm -f dump.rdb appendonly.aof
 
 stop-test:
-	test -e /tmp/redis_cluster_node_a.pid && kill `cat /tmp/redis_cluster_node_a.pid` || true
-	test -e /tmp/redis_cluster_node_b.pid && kill `cat /tmp/redis_cluster_node_b.pid` || true
-	test -e /tmp/redis_cluster_node_c.pid && kill `cat /tmp/redis_cluster_node_c.pid` || true
-	rm -f /tmp/redis_cluster_node_*.conf
+	@test -e /tmp/redis_cluster_node_a.pid && kill `cat /tmp/redis_cluster_node_a.pid` || true
+	@test -e /tmp/redis_cluster_node_b.pid && kill `cat /tmp/redis_cluster_node_b.pid` || true
+	@test -e /tmp/redis_cluster_node_c.pid && kill `cat /tmp/redis_cluster_node_c.pid` || true
+	@rm -f /tmp/redis_cluster_node_*.conf
 
 test:start-test
-	python -m unittest discover -s test/ -p "*.py"
-	make stop-test
+	@python -m unittest discover -s test/ -p "*.py"
+	@make stop-test
 	@echo "================="
 	@echo "| Test done \o/ |"

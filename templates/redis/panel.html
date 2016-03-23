@@ -38,16 +38,18 @@
         <td>
         {% if detail %}
             <span>
-                {{ detail.used_memory|filesizeformat }}
-                {% if detail.maxmemory != 0 %}
+                {{ detail.get('used_memory', 0)|filesizeformat }}
+                {% if detail.get('maxmemory', 0) != 0 %}
                   / {{ detail.maxmemory|filesizeformat }}
                 {% else %}
                   (<span data-localize='max-memory-not-set'>未设置最大值</span>)
                 {% endif %}
             </span>
             <button class='btn btn-inverse' data-toggle='modal' data-target='#nodeMemSetting' data-localize='setting'>设置</button>
-            {{ render_template('components/node/memory-setting.html', host=node.host, port=node.port,
-                               max_mem=detail.maxmemory, used_mem=detail.used_memory, mem_limit=max_mem_limit) }}
+            {% autoescape false %}
+                {{ render('components/node/memory-setting.html', host=node.host, port=node.port,
+                          max_mem=detail.maxmemory, used_mem=detail.used_memory, mem_limit=max_mem_limit) }}
+            {% endautoescape %}
         {% else %}
         <span data-localize='wait-poll'>等待轮询</span>
         {% endif %}
@@ -126,11 +128,11 @@
                 <caption data-localize="node-memory-usage">内存</caption>
                 <tr>
                     <td data-localize='used-memory'>已使用内存</td>
-                    <td>{{ detail.used_memory|filesizeformat }}</td>
+                    <td>{{ detail.get('used_memory', 0)|filesizeformat }}</td>
                 </tr>
                 <tr>
                     <td data-localize='mem-rss'>常驻集</td>
-                    <td>{{ detail.used_memory_rss|filesizeformat }}</td>
+                    <td>{{ detail.get('used_memory_rss', 0)|filesizeformat }}</td>
                 </tr>
             </table>
             {% endif %}
@@ -166,7 +168,7 @@
 <table class='table'>
     <tr>
         <th data-localize='belonging-cluster'>所属集群</th>
-        <td><a target='_blank' href='/clusterp/{{ node.assignee.id }}'>{{ node.assignee.description|e }} <i class='fa fa-external-link'></i></a></td>
+        <td><a target='_blank' href='/cluster/panel/{{ node.assignee.id }}'>{{ node.assignee.description|e }} <i class='fa fa-external-link'></i></a></td>
     </tr>
     <tr>
         <th data-localize='slots-num'>槽位数</th>
@@ -306,7 +308,7 @@ $('#quit-cluster-confirm').click(function() {
     });
 
     $.ajax({
-        url: '/cluster/quit',
+        url: '/task/quit',
         type: 'POST',
         data: JSON.stringify({
             host: {{ node.host|tojson }},
@@ -317,7 +319,7 @@ $('#quit-cluster-confirm').click(function() {
             return window.location.reload();
         },
         error: function(r) {
-            btn.parent().text('失败: ' + r.responseText);
+            btn.parent().text(_('failed') + ': ' + r.responseText);
         }
     });
 });
@@ -344,7 +346,7 @@ $('#migrating-slots-confirm').click(function() {
         }
 
         $.ajax({
-            url: '/cluster/migrate_slots',
+            url: '/task/migrate_slots',
             type: 'POST',
             data: {
                 src_host: {{ node.host|tojson }},
@@ -357,7 +359,7 @@ $('#migrating-slots-confirm').click(function() {
                 return window.location.reload();
             },
             error: function(r) {
-                btn.parent().text('失败: ' + r.responseText);
+                btn.parent().text(_('failed') + ': ' + r.responseText);
             }
         });
         sliceStart += migrCount;
@@ -414,7 +416,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
                 return $('#quit-cluster-replica').click(function() {
                     var btn = $(this).attr('disabled', 'disabled');
                     $.ajax({
-                        url: '/cluster/quit',
+                        url: '/task/quit',
                         type: 'POST',
                         data: JSON.stringify({
                             host: {{ node.host|tojson }},
@@ -435,7 +437,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
                 return $('#quit-cluster-force').click(function() {
                     var btn = $(this).attr('disabled', 'disabled');
                     $.ajax({
-                        url: '/cluster/quit',
+                        url: '/task/quit',
                         type: 'POST',
                         data: JSON.stringify({
                             host: {{ node.host|tojson }},
@@ -466,7 +468,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
             $('.node-info input').blur(updateSlotsResult);
         },
         error: function(r) {
-            $('.loading-cluster-info').text('失败: ' + r.responseText);
+            $('.loading-cluster-info').text(_('failed') + ': ' + r.responseText);
         }
     });
 });
@@ -480,7 +482,9 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
     {{ button('加入集群', size=2, id='join-cluster-btn', cls=['panel-btn'], data={'bind': 'join-cluster'}, lcl='join-cluster') }}
 </div>
 
-{{ render_template('components/node/autodiscover.html', host=node.host, port=node.port) }}
+{% autoescape false %}
+    {{ render('components/node/autodiscover.html', host=node.host, port=node.port) }}
+{% endautoescape %}
 
 <div class='panel-div' id='start-cluster'>
     <span data-localize='cluster-description'>集群描述</span>: <input id='start-cluster-descr'>
@@ -518,18 +522,20 @@ $('#start-cluster-confirm').click(function() {
         descr: $('#start-cluster-descr').val()
     }, function(r) {
         $.ajax({
-            url: '/cluster/launch',
+            url: '/task/launch',
             type: 'POST',
-            data: {
-                host: {{ node.host|tojson }},
-                port: {{ node.port|tojson }},
-                cluster_id: r
-            },
+            data: JSON.stringify({
+                nodes: [{
+                    host: {{ node.host|tojson }},
+                    port: {{ node.port|tojson }},
+                }],
+                cluster: r
+            }),
             success: function() {
                 window.location.reload();
             },
             error: function(r) {
-                btn.parent().text('失败: ' + r.responseText);
+                btn.parent().text(_('failed') + ': ' + r.responseText);
             }
         });
     });
@@ -574,14 +580,15 @@ $('#join-cluster-btn').click(function() {
                             }
                         },
                         error: function(r) {
-                            console.error('失败: ' + r.responseText);
+                            console.log(r);
+                            alert(_('failed') + ': ' + r.responseText);
                         }
                     });
                 }
             });
         },
         error: function(r) {
-            $('#loading-cluster-list').text('失败: ' + r.responseText);
+            $('#loading-cluster-list').text(_('failed') + ': ' + r.responseText);
         }
     });
 });
@@ -601,7 +608,7 @@ $('#join-cluster-confirm').click(function() {
     $('#join-cluster button').attr('disabled', 'disabled');
     btn.text('请稍候');
     $.ajax({
-        url: '/cluster/join',
+        url: '/task/join',
         type: 'POST',
         data: {
             host: {{ node.host|tojson }},
@@ -612,7 +619,7 @@ $('#join-cluster-confirm').click(function() {
             window.location.reload();
         },
         error: function(r) {
-            btn.parent().text('失败: ' + r.responseText);
+            btn.parent().text(_('failed') + ': ' + r.responseText);
         }
     });
 });
@@ -626,7 +633,7 @@ $('#replicate-confirm').click(function() {
     var btn = $(this);
     btn.text('请稍候');
     $.ajax({
-        url: '/cluster/replicate',
+        url: '/task/replicate',
         type: 'POST',
         data: {
             master_host: opt.host,
@@ -638,7 +645,7 @@ $('#replicate-confirm').click(function() {
             window.location.reload();
         },
         error: function(r) {
-            btn.parent().text('失败: ' + r.responseText);
+            btn.parent().text(_('failed') + ': ' + r.responseText);
         }
     });
 });
@@ -655,7 +662,9 @@ $(document).ready(function() {
     });
 });
 </script>
-{{ render_template('components/command_console.html') }}
+{% autoescape false %}
+    {{ render('components/command_console.html') }}
+{% endautoescape %}
 
 {% include 'components/info_console.html' %}
 {% endblock %}

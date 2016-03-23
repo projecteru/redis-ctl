@@ -21,10 +21,10 @@ class Proxy(Base):
 
     @cached_property
     def eru_info(self):
-        import eru_utils
-        if eru_utils.eru_client is None or not self.eru_deployed:
+        from flask import g
+        if g.container_client is None or not self.eru_deployed:
             return None
-        return eru_utils.eru_client.get_container(self.eru_container_id)
+        return g.container_client.get_container(self.eru_container_id)
 
     @cached_property
     def cluster(self):
@@ -76,7 +76,7 @@ def list_all():
 def list_eru_proxies(offset, limit):
     return db.session.query(Proxy).filter(
         Proxy.eru_container_id != None).order_by(
-        Proxy.id.desc()).offset(offset).limit(limit).all()
+            Proxy.id.desc()).offset(offset).limit(limit).all()
 
 
 def list_ip():

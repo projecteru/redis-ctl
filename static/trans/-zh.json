@@ -1,4 +1,6 @@
 {
+    "cluster-creation": "创建时间",
+
     "task-type-0": "修复迁移状态",
     "task-type-1": "迁移槽位",
     "task-type-2": "扩容",
@@ -6,6 +8,17 @@
     "task-type-4": "移除节点",
     "task-type-5": "自动扩容",
     "task-type-6": "批量操作",
+
+    "event-type-0": "添加",
+    "event-type-1": "移除",
+    "event-type-2": "配置",
+    "event-type-3": "执行指令",
+
+    "audit-nodes": "节点事件",
+
+    "cont-no-pod-available": "没有可用的容器资源组",
+    "cont-no-pod-available-x": "可用的容器服务部署在",
+    "cont-no-pod-available-y": "但它没有给出可用的容器资源组; 请检查容器服务, 然后刷新此页面",
 
     "": ""
 }

@@ -1,7 +1,9 @@
 import os
 import logging
 import tempfile
+from werkzeug.utils import import_string
 
+APP_CLASS = os.getenv('APP_CLASS', 'app.RedisCtl')
 SERVER_PORT = int(os.getenv('SERVER_PORT', 5000))
 
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
@@ -46,10 +48,4 @@ except ImportError:
 SQLALCHEMY_DATABASE_URI = 'mysql://%s:%s@%s:%d/%s' % (
     MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE)
 
-
-def init_logging():
-    args = {'level': LOG_LEVEL}
-    if LOG_FILE:
-        args['filename'] = LOG_FILE
-    args['format'] = LOG_FORMAT
-    logging.basicConfig(**args)
+App = import_string(APP_CLASS)

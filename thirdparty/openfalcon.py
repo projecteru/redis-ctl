@@ -84,7 +84,7 @@ class Client(object):
             raise IOError(response.get('error'))
         return response.get('result')
 
-    def query(self, name, field, aggf, span, end, interval):
+    def query_field(self, name, field, aggf, span, end, interval):
         r = requests.post(self.query_uri, data=json.dumps({
             'start': end - span,
             'end': end,
@@ -100,3 +100,9 @@ class Client(object):
             r = r[::len(r) / POINT_LIMIT + 1]
         return [[x['timestamp'], x['value']]
                 for x in r if x['value'] is not None]
+
+    def query(self, name, fields, span, end, interval):
+        result = {}
+        for f, a in fields.iteritems():
+            result[f] = self.query_field(name, f, a, span, end, interval)
+        return result

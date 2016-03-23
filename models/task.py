@@ -19,6 +19,7 @@ TASK_TYPE_REPLICATE = 3
 TASK_TYPE_QUIT = 4
 TASK_TYPE_AUTO_BALANCE = 5
 TASK_TYPE_BATCH = 6
+TASK_TYPE_LAUNCH = 7
 
 
 class ClusterTask(Base):
@@ -30,6 +31,7 @@ class ClusterTask(Base):
     task_type = db.Column(db.Integer, nullable=False)
     exec_error = db.Column(DB_TEXT_TYPE)
     completion = db.Column(db.DateTime, index=True)
+    user_id = db.Column(db.Integer, index=True)
 
     @cached_property
     def completed(self):

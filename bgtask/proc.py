@@ -13,6 +13,12 @@ from models.cluster import remove_empty_cluster
 #     or False if it needs a second run
 # Particularly, slots migrating task may need several runs
 
+def _launch(command, host_port_list):
+    redistrib.command.start_cluster_on_multi(
+        {(a['host'], a['port']) for a in host_port_list})
+    return True
+
+
 def _fix_migrating(_, host, port):
     redistrib.command.fix_migrating(host, port)
     return True
@@ -84,6 +90,7 @@ def _migrate_slots(command, src_host, src_port, dst_host, dst_port, slots,
 
 
 TASK_MAP = {
+    'launch': _launch,
     'fix_migrate': _fix_migrating,
     'migrate': _migrate_slots,
     'join': _join,

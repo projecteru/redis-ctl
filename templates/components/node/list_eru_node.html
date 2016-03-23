@@ -17,8 +17,14 @@
       <td>{{ n.eru_info.version|e }}</td>
       <td>{{ n.eru_info.host|e }}</td>
       <td>{{ n.eru_info.created|e }}</td>
-      <td><a href='/nodep/{{ n.host|e }}/{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
-      <td>{{ n.detail.cluster_enabled }}</td>
+      <td><a href='/redis/panel/{{ n.host|e }}/{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
+      <td>
+          {% if n.detail %}
+            {{ n.detail.cluster_enabled }}
+          {% else %}
+            -
+          {% endif %}
+      </td>
       <td>
         {% if n.assignee_id %}
         集群在役中

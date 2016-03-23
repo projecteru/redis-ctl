@@ -9,7 +9,7 @@
 {% block body %}
 <div class='form-horizontal form-submit'>
     <div class='from-group'>
-        <h4 style='text-align: right;'><span data-localize='Eru-address'>Eru地址</span>：{{ eru_url|e }}</h4>
+        <h4 style='text-align: right;'><span data-localize='Eru-address'>Eru地址</span>：{{ g.container_client.url|e }}</h4>
     </div>
     <div class='from-group'>
       <div class='col-sm-3'>
@@ -68,17 +68,21 @@
 <div class="panel panel-primary">
   <div class="panel-heading">
     <span data-localize='add-nodes'> 新增节点</span>
-    <a href='/nodes/manage/eru/nodes' style='color:white; float: right;' data-localize='node-list-of-eru'>查看 Eru 节点列表</a>
+    <a href='/containerize/nodes/' style='color:white; float: right;' data-localize='node-list-of-eru'>查看 Eru 节点列表</a>
   </div>
-  {{ render_template('components/node/list_eru_node.html', nodes=[]) }}
+  {% autoescape false %}
+    {{ render('components/node/list_eru_node.html', nodes=[]) }}
+  {% endautoescape %}
 </div>
 
 <div class="panel panel-primary">
   <div class="panel-heading">
     <span data-localize='add-agent'>新增代理</span>
-    <a href='/nodes/manage/eru/proxies' style='color:white; float: right;' data-localize='agent-list-of-eru'>查看 Eru 代理列表</a>
+    <a href='/containerize/proxies/' style='color:white; float: right;' data-localize='agent-list-of-eru'>查看 Eru 代理列表</a>
   </div>
-  {{ render_template('components/node/list_eru_proxy.html', proxies=[]) }}
+  {% autoescape false %}
+    {{ render('components/node/list_eru_proxy.html', proxies=[]) }}
+  {% endautoescape %}
 </div>
 
 <script>
@@ -86,7 +90,7 @@ $('#pod-list').change(function() {
     $('#node-create-panel').show();
     var selectHost = $('<select>').addClass('form-control');
     $('#host-list-container').html('').append(selectHost);
-    $.get('/eru/list_hosts/' + $('#pod-list').val(), {}, function(r) {
+    $.get('/containerize/list_hosts/' + $('#pod-list').val(), {}, function(r) {
         $.each(r, function(i, e) {
             selectHost.append($('<option>').val(e.name).text(e.name + ' - ' + e.addr))
         });
@@ -134,7 +138,7 @@ $('#create-node-btn').click(function() {
         return displayErrorMsg(btn, '端口范围应该在 6000-7999 之间');
     }
     $.ajax({
-        url: '/nodes/create/eru_node',
+        url: '/containerize/create_redis',
         type: 'POST',
         data: {
             pod: $('#pod-list').val(),
@@ -151,7 +155,7 @@ $('#create-node-btn').click(function() {
                     ).append($('<td>').text(r.version.slice(0, 7))
                     ).append($('<td>').text(r.host)
                     ).append($('<td>').text(r.created)
-                    ).append($('<td>').append($('<a>').attr('href', '/nodep/' + r.address + '/' + port).text(r.address))
+                    ).append($('<td>').append($('<a>').attr('href', '/redis/panel/' + r.address + '/' + port).text(r.address))
                     ).append($('<td>')
                     ).append($('<td>').append(deleteButton(r.container_id, 'node'))
                     ));
@@ -180,7 +184,7 @@ $('#create-proxy-btn').click(function () {
     btn.attr('disabled', 'disabled');
     $('#node-error').hide();
     $.ajax({
-        url: '/nodes/create/eru_proxy',
+        url: '/containerize/create_proxy',
         type: 'POST',
         data: {
             pod: $('#pod-list').val(),
@@ -198,7 +202,7 @@ $('#create-proxy-btn').click(function () {
                     ).append($('<td>').text(r.version.slice(0, 7))
                     ).append($('<td>').text(r.host)
                     ).append($('<td>').text(r.created)
-                    ).append($('<td>').append($('<a>').attr('href', '/clusterp/' + clusterId).text(r.address + ':' + port))
+                    ).append($('<td>').append($('<a>').attr('href', '/cluster/panel/' + clusterId).text(r.address + ':' + port))
                     ).append($('<td>').append(deleteButton(r.container_id, 'proxy'))
                     ));
         },

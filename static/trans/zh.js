@@ -10,6 +10,7 @@ window.TRANSLATIONS = {
 
     'failed': '失败',
 
+    'task_step_launch': '创建集群',
     'task_step_fix_migrate': '修复迁移状态',
     'task_step_migrate': '迁移槽位',
     'task_step_join': '添加主节点',
@@ -20,6 +21,10 @@ window.TRANSLATIONS = {
     'slots_to': '个槽位至',
     'add_slave': '从节点为',
     'to_master': '主节点为',
+
+    'awaiting': '等待',
+    'processing': '正在执行',
+    'completed': '完成',
 
     'im_slave': '此节点是从节点',
 

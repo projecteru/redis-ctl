@@ -1,16 +1,16 @@
+import json
 import redistrib.command as comm
 
 import base
-from models.task import ClusterTask
+from models.task import ClusterTask, TASK_TYPE_LAUNCH
 
 
 class Task(base.TestCase):
     def test_execution(self):
         with self.app.test_client() as client:
-            r = client.post('/nodes/add', data={
+            r = client.post('/redis/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',
-                'mem': '1048576',
             })
             self.assertReqStatus(200, r)
             r = client.post('/cluster/add', data={
@@ -19,12 +19,15 @@ class Task(base.TestCase):
             self.assertReqStatus(200, r)
             cluster_id = r.data
 
-            r = client.post('/cluster/launch', data={
-                'cluster_id': cluster_id,
-                'host': '127.0.0.1',
-                'port': 7100,
-            })
+            r = client.post('/task/launch', data=json.dumps({
+                'cluster': cluster_id,
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 7100,
+                }],
+            }))
             self.assertReqStatus(200, r)
+            self.exec_all_tasks()
 
             task = ClusterTask(cluster_id=int(cluster_id), task_type=0)
             task.add_step(
@@ -42,9 +45,14 @@ class Task(base.TestCase):
             self.assertEqual(2, len(nodes))
             self.assertEqual(range(2, 16384), sorted(node_7100.assigned_slots))
 
-            tasks = list(self.db.session.query(ClusterTask).all())
-            self.assertEqual(1, len(tasks))
+            tasks = list(self.db.session.query(ClusterTask).order_by(
+                ClusterTask.id.asc()).all())
+            self.assertEqual(2, len(tasks))
             t = tasks[0]
+            self.assertIsNotNone(t.completion)
+            self.assertEqual(TASK_TYPE_LAUNCH, t.task_type)
+
+            t = tasks[1]
             self.assertIsNotNone(t.completion)
             self.assertIsNone(t.exec_error)
             self.assertIsNone(t.acquired_lock())
@@ -54,10 +62,9 @@ class Task(base.TestCase):
 
     def test_execution_failed(self):
         with self.app.test_client() as client:
-            r = client.post('/nodes/add', data={
+            r = client.post('/redis/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',
-                'mem': '1048576',
             })
             self.assertReqStatus(200, r)
             r = client.post('/cluster/add', data={
@@ -66,12 +73,15 @@ class Task(base.TestCase):
             self.assertReqStatus(200, r)
             cluster_id = r.data
 
-            r = client.post('/cluster/launch', data={
-                'cluster_id': cluster_id,
-                'host': '127.0.0.1',
-                'port': 7100,
-            })
+            r = client.post('/task/launch', data=json.dumps({
+                'cluster': cluster_id,
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 7100,
+                }],
+            }))
             self.assertReqStatus(200, r)
+            self.exec_all_tasks()
 
             task = ClusterTask(cluster_id=int(cluster_id), task_type=0)
             task.add_step(
@@ -95,9 +105,10 @@ class Task(base.TestCase):
             self.assertEqual(2, len(nodes))
             self.assertEqual(range(2, 16384), sorted(node_7100.assigned_slots))
 
-            tasks = list(self.db.session.query(ClusterTask).all())
-            self.assertEqual(1, len(tasks))
-            t = tasks[0]
+            tasks = list(self.db.session.query(ClusterTask).order_by(
+                ClusterTask.id.asc()).all())
+            self.assertEqual(2, len(tasks))
+            t = tasks[1]
             self.assertIsNotNone(t.completion)
             self.assertIsNotNone(t.exec_error)
             self.assertIsNone(t.acquired_lock())

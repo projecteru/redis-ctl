@@ -210,14 +210,14 @@
 
     $('#adjust-confirm').click(function() {
         $('#adjust-confirm').attr('disabled', 'disabled');
-        $.post('/cluster/batch', JSON.stringify({
+        $.post('/task/batch', JSON.stringify({
             migrs: migrs,
             quits: quits,
             cluster_id: {{ cluster_id|tojson }}
         }), function() {
             window.location.reload();
         }).error(function(e) {
-            alert(_('失败') + ': ' + e.responsetext);
+            alert(_('failed') + ': ' + e.responsetext);
             $('#adjust-confirm').removeAttr('disabled');
         });
     });

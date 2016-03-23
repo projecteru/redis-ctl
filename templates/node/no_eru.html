@@ -5,13 +5,12 @@
 {% block body %}
 
 <div style='text-align: center'>
-{% if eru_client is none %}
-  <h1 data-localize='eru-address-not-set'>未设定 Eru 地址</h1>
-  <p data-localize='not-set-message'>需要在启动时设定 Eru 地址; 如果 Eru 已经部署完毕, 需要修改配置文件或启动参数, 然后重新启动 RedisCtl 进程 (包括 daemon 进程)</p>
-{% else %}
-  <h1 data-localize='eru-no-room-available'>Eru 无可用的机房</h1>
-  <p><span data-localize='no-room-message1'>Eru 已经部署在</span> {{ eru_client.url|e }},<span data-localize='no-room-message2'> 但它没有给出可用的机房; 请检查 Eru, 然后刷新此页面即可</span></p>
-{% endif %}
+  <h1 data-localize='cont-no-pod-available'>No pod available</h1>
+  <p>
+    <span data-localize='cont-no-pod-available-x'>Containerizing service runs at</span>
+    {{ g.container_client.url|e }},
+    <span data-localize='cont-no-pod-available-y'>but it does not provide any available pod; please check the service, and refresh this page.</span>
+  </p>
 </div>
 
 {% endblock %}

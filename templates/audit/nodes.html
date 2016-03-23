@@ -1,0 +1,53 @@
+{% extends './base.html' %}
+
+{% block title %}Audit{% endblock %}
+
+{% block body %}
+
+{% block pagination %}
+<nav>
+  <div class="pagination pagination-info">
+    <ul>
+        {% if page != 0 %}
+        <li class='previous'><a href='/audit/nodes' data-localize='home'>首页</a></li>
+        <li class='previous'><a href='?page={{ page - 1 }}' data-localize='previous-page'>上一页</a></li>
+        {% endif %}
+        <li class='next'><a href='?page={{ page + 1 }}' data-localize='next-page'>下一页</a></li>
+    </ul>
+  </div>
+</nav>
+{% endblock %}
+
+<table class='table text-center'>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Address</th>
+            <th>Deploy</th>
+            <th>Type</th>
+            <th>Args</th>
+            <th>Time</th>
+            <th>User</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for e in events %}
+        <tr>
+            <td>{{ e.id }}</td>
+            <td>{{ e.host|e }}:{{ e.port }}</td>
+            <td>{{ e.event_domain|e if e.event_domain else '-' }}</td>
+            <td data-localize='event-type-{{ e.event_type }}'></td>
+            <td>{{ e.args_json|e }}</td>
+            <td>{{ e.creation|strftime }}</td>
+            <td>
+                {% autoescape false %}
+                    {{ render_user(e.user_id) }}
+                {% endautoescape %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{{ self.pagination() }}
+{% endblock %}

@@ -6,7 +6,7 @@ $(document).ready(function() {
                 root = root.parent();
             }
             root.toggleClass('alert-enabled');
-            $.post('/set_alert_status/' + self.data('ntype'), {
+            $.post('/set_alarm/' + self.data('ntype'), {
                 host: self.data('host'),
                 port: self.data('port'),
                 suppress: self.prop('checked') ? '1' : '0'

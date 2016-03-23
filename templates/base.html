@@ -14,8 +14,8 @@
 <script src='/static/js/common.js'></script>
 <script src='/static/js/application.js'></script>
 <script src='/static/js/components.js'></script>
-{% if lang %}
-<script src='/static/trans/{{ lang }}.js'></script>
+{% if lang or g.lang %}
+<script src='/static/trans/{{ lang or g.lang }}.js'></script>
 {% endif %}
 <script>
 function selectHash() {
@@ -47,9 +47,25 @@ $(document).ready(function() {
     </div>
     <div class='collapse navbar-collapse'>
         <ul class='nav navbar-nav navbar-right'>
-            <li><a class='nav-link' href='/nodes/manage/eru'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>容器节点管理</span></a></li>
-            <li><a class='nav-link' href='/cluster/tasks/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>集群任务</span></a></li>
+        {% if g.display_login_entry %}
+            <li><a class='nav-link' href='{{ login_url() }}' data-localize='login'>Login</a></li>
+        {% else %}
+            <li><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>容器节点管理</span></a></li>
+            <li><a class='nav-link' href='/task/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>集群任务</span></a></li>
             <li><a class='nav-link' href='/stats/pollings'><i class='fa fa-calendar'></i> <span data-localize='polling-stats'>轮询记录</span></a></li>
+            <li><a class='nav-link' href='/audit/nodes'><i class='fa fa-list-alt'></i> <span data-localize='audit-nodes'>Audit</span></a></li>
+
+            {#
+                To change what is displayed after user login
+                    * either override `render_me` in the App class to return a piece of HTML
+                    * or just change the template below in the <li> tag
+            #}
+            <li id='nav-current-user'>
+                {% autoescape false %}
+                    {{ render_me() }}
+                {% endautoescape %}
+            </li>
+        {% endif %}
         </ul>
     </div>
 </header>
@@ -59,7 +75,7 @@ $(document).ready(function() {
 <footer style="margin-top: 0px;">
     <div class='main-width'>
         <span style='float: right'>
-            &copy; HunanTV Platform developers - ver0.8.3-2016-03-18
+            &copy; HunanTV Platform developers - v0.9.0-2016-05-10
             <a href='https://github.com/HunanTV/redis-ctl'><i class='fa fa-github'></i></a>
         </span>
     </div>

@@ -1,16 +1,15 @@
 import logging
+from datetime import datetime
 from werkzeug.utils import cached_property
 
 from base import db, Base, DB_STRING_TYPE
-
-COL_ID = 0
-COL_DESCRIPTION = 1
 
 
 class Cluster(Base):
     __tablename__ = 'cluster'
 
     description = db.Column(DB_STRING_TYPE)
+    creation = db.Column(db.DateTime, default=datetime.now, nullable=False)
     nodes = db.relationship('RedisNode', backref='assignee')
     proxies = db.relationship('Proxy', backref='cluster')
 

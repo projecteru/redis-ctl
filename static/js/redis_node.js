@@ -1,7 +1,7 @@
 $(document).ready(function() {
     $('.fix-migrating-btn').click(function() {
         var btn = $(this);
-        $.post('/nodes/fixmigrating', {
+        $.post('/task/fix_redis', {
             host: btn.data('host'),
             port: btn.data('port')
         }, function() {
@@ -11,7 +11,7 @@ $(document).ready(function() {
 
     $('.node-deleter').click(function() {
         var btn = $(this);
-        $.post('/nodes/del', {
+        $.post('/redis/del', {
             host: btn.data('host'),
             port: btn.data('port')
         }, function() {

@@ -1,0 +1,22 @@
+{% extends './base.html' %}
+
+{% block title %}Redis Not Found{% endblock %}
+
+{% block body %}
+<p>Redis @ {{ host|e }} {{ port }} is not registered or has been removed. You may</p>
+<ul>
+    <li><a href='/'>Go back to index</a></li>
+    <li><button class='btn btn-primary' onclick='addMe()'>Register it</button></li>
+</ul>
+
+<script>
+function addMe() {
+    $.post('/redis/add', {
+        host: {{ host|tojson }},
+        port: {{ port|tojson }}
+    }, function() {
+        window.location.reload();
+    });
+}
+</script>
+{% endblock %}

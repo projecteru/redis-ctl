@@ -1,6 +1,6 @@
 {% extends './base.html' %}
 
-{% block title %}全部后台任务{% endblock %}
+{% block title %}All Tasks{% endblock %}
 
 {% block head %}
 <script src='/static/js/cluster_task.js'></script>
@@ -10,19 +10,21 @@
 
 {% block pagination %}
 <nav>
-    <div class="pagination pagination-info">
+  <div class="pagination pagination-info">
     <ul>
         {% if page != 0 %}
-        <li><a href='/cluster/tasks/list_all' data-localize='home'> 首页</a></li>
-        <li class='previous'><a href='/cluster/tasks/list_all/{{ page - 1 }}' data-localize='previous'> 上一页</a></li>
+        <li><a href='/task/list_all' data-localize='home'>首页</a></li>
+        <li class='previous'><a href='?page={{ page - 1 }}' data-localize='previous'>上一页</a></li>
         {% endif %}
-        <li class='next'><a href='/cluster/tasks/list_all/{{ page + 1 }}' data-localize='next-page'>下一页 </a></li>
+        <li class='next'><a href='?page={{ page + 1 }}' data-localize='next-page'>下一页</a></li>
     </ul>
-    </div>
+  </div>
 </nav>
 {% endblock %}
 
-{{ render_template('components/cluster/tasks.html', tasks=tasks) }}
+{% autoescape false %}
+    {{ render('components/cluster/tasks.html', tasks=tasks) }}
+{% endautoescape %}
 
 {{ self.pagination() }}
 

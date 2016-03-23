@@ -79,7 +79,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
                         });
                     }
                     var row = $(rows[index]);
-                    $.post('/nodes/add', {
+                    $.post('/redis/add', {
                         host: row.data('host'),
                         port: row.data('port')
                     }, function() {

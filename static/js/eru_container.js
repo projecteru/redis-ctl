@@ -4,7 +4,7 @@ function delContainer() {
     }
     var self = $(this).attr('disabled', 'disabled');
     $.ajax({
-        url: '/nodes/delete/eru',
+        url: '/containerize/remove',
         method: 'POST',
         data: {
             id: self.data('cid'),
@@ -14,7 +14,7 @@ function delContainer() {
             window.location.reload();
         },
         error: function(e) {
-            self.text('发生错误: ' + e.responseText);
+            self.text(_('failed') + ':' + e.responseText);
         }
     });
 }
@@ -24,14 +24,14 @@ $(document).ready(function() {
     $('.btn-revive-container').click(function () {
         var self = $(this).attr('disabled', 'disabled');
         $.ajax({
-            url: '/nodes/revive/eru',
+            url: '/containerize/revive',
             method: 'POST',
             data: {id: self.data('cid')},
             success: function() {
                 window.location.reload();
             },
             error: function(e) {
-                self.text('发生错误: ' + e.responseText);
+                self.text(_('failed') + ':' + e.responseText);
             }
         });
     });

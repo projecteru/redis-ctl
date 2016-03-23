@@ -3,6 +3,9 @@ import config
 import logging
 import json
 
+import models.node as nm
+import models.proxy as pr
+
 INSTANCE_FILE = os.path.join(config.PERMDIR, 'details.json')
 INSTANCE_INTERMEDIA_FILE = os.path.join(config.PERMDIR, 'details.tmp.json')
 
@@ -44,7 +47,6 @@ def read_poll():
 
 
 def write_nodes(nodes, proxies):
-    clusters = {}
     poll_nodes = []
     for n in nodes:
         i = {
@@ -52,8 +54,6 @@ def write_nodes(nodes, proxies):
             'port': n.port,
             'suppress_alert': n.suppress_alert,
         }
-        if n.assignee_id is not None and n.assignee_id not in clusters:
-            clusters[n.assignee_id] = n.assignee
         poll_nodes.append(i)
     write_poll(
         poll_nodes,
@@ -65,6 +65,4 @@ def write_nodes(nodes, proxies):
 
 
 def write_nodes_proxies_from_db():
-    import models.node as nm
-    import models.proxy as pr
     write_nodes(nm.list_all_nodes(), pr.list_all())

@@ -2,36 +2,46 @@ import json
 import redistrib.command as comm
 
 import base
-import file_ipc
-import daemonutils.cluster_task
 from models.base import db
 from models.proxy import Proxy
 from models.cluster import Cluster
 import models.task
-import handlers.base
 
 
 class HttpRequest(base.TestCase):
     def test_http(self):
         with self.app.test_client() as client:
-            r = client.post('/nodes/add', data={
+            self.assertEqual({'nodes': [], 'proxies': []},
+                             self.app.polling_targets())
+            r = client.post('/redis/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',
-                'mem': '1048576',
             })
             self.assertReqStatus(200, r)
+            self.assertEqual({
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 7100,
+                    'suppress_alert': 1,
+                }],
+                'proxies': [],
+            }, self.app.polling_targets())
+
             r = client.post('/cluster/add', data={
                 'descr': 'the-quick-brown-fox',
             })
             self.assertReqStatus(200, r)
             cluster_id = r.data
 
-            r = client.post('/cluster/launch', data={
-                'cluster_id': cluster_id,
-                'host': '127.0.0.1',
-                'port': 7100,
-            })
+            r = client.post('/task/launch', data=json.dumps({
+                'cluster': cluster_id,
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 7100,
+                }],
+            }))
             self.assertReqStatus(200, r)
+            self.exec_all_tasks()
 
             self.assertRaises(ValueError, comm.quit_cluster, '127.0.0.1', 7100)
             comm.shutdown_cluster('127.0.0.1', 7100)
@@ -52,10 +62,9 @@ class HttpRequest(base.TestCase):
                 'known': False,
             }, nodes[0])
 
-            r = client.post('nodes/add', data={
+            r = client.post('/redis/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',
-                'mem': '1048576',
             })
             self.assertReqStatus(200, r)
 
@@ -104,16 +113,14 @@ class HttpRequest(base.TestCase):
 
     def test_cluster_with_multiple_nodes(self):
         with self.app.test_client() as client:
-            r = client.post('/nodes/add', data={
+            r = client.post('/redis/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',
-                'mem': '1048576',
             })
             self.assertReqStatus(200, r)
-            r = client.post('/nodes/add', data={
+            r = client.post('/redis/add', data={
                 'host': '127.0.0.1',
                 'port': '7101',
-                'mem': '1048576',
             })
             self.assertReqStatus(200, r)
 
@@ -123,14 +130,17 @@ class HttpRequest(base.TestCase):
             self.assertReqStatus(200, r)
             cluster_id = r.data
 
-            r = client.post('/cluster/launch', data={
-                'cluster_id': cluster_id,
-                'host': '127.0.0.1',
-                'port': 7100,
-            })
+            r = client.post('/task/launch', data=json.dumps({
+                'cluster': cluster_id,
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 7100,
+                }],
+            }))
             self.assertReqStatus(200, r)
+            self.exec_all_tasks()
 
-            r = client.post('/cluster/join', data={
+            r = client.post('/task/join', data={
                 'cluster_id': cluster_id,
                 'host': '127.0.0.1',
                 'port': 7101,
@@ -148,7 +158,7 @@ class HttpRequest(base.TestCase):
             self.assertEqual(2, len(nodes))
             self.assertEqual(16384, len(node_7100.assigned_slots))
 
-            r = client.post('/cluster/migrate_slots', data={
+            r = client.post('/task/migrate_slots', data={
                 'src_host': '127.0.0.1',
                 'src_port': 7100,
                 'dst_host': '127.0.0.1',
@@ -169,7 +179,7 @@ class HttpRequest(base.TestCase):
             self.assertEqual(2, len(nodes))
             self.assertEqual(16380, len(node_7100.assigned_slots))
 
-            r = client.post('/cluster/quit', data=json.dumps({
+            r = client.post('/task/quit', data=json.dumps({
                 'host': '127.0.0.1',
                 'port': 7101,
                 'migratings': [{
@@ -191,23 +201,21 @@ class HttpRequest(base.TestCase):
             self.assertEqual(1, len(nodes))
             comm.shutdown_cluster('127.0.0.1', 7100)
 
-    def test_suppress_alert(self):
+    def test_set_alarm(self):
         with self.app.test_client() as client:
-            r = client.post('/nodes/add', data={
+            r = client.post('/redis/add', data={
                 'host': '127.0.0.1',
                 'port': '7100',
-                'mem': '1048576',
             })
             self.assertEqual(200, r.status_code)
 
-            r = client.post('/nodes/add', data={
+            r = client.post('/redis/add', data={
                 'host': '127.0.0.1',
                 'port': '7101',
-                'mem': '1048576',
             })
             self.assertEqual(200, r.status_code)
 
-            r = client.post('/set_alert_status/redis', data={
+            r = client.post('/set_alarm/redis', data={
                 'host': '127.0.0.1',
                 'port': '7100',
                 'suppress': '0',
@@ -234,8 +242,8 @@ class HttpRequest(base.TestCase):
             })
             self.assertEqual(200, r.status_code)
 
-            file_ipc.write_nodes_proxies_from_db()
-            with open(file_ipc.POLL_FILE, 'r') as fin:
+            self.app.write_polling_targets()
+            with open(self.app.polling_file, 'r') as fin:
                 polls = json.loads(fin.read())
 
             self.assertEqual(2, len(polls['nodes']))
@@ -262,14 +270,14 @@ class HttpRequest(base.TestCase):
             self.assertEqual(8889, n['port'])
             self.assertEqual(1, n['suppress_alert'])
 
-            r = client.post('/set_alert_status/redis', data={
+            r = client.post('/set_alarm/redis', data={
                 'host': '127.0.0.1',
                 'port': '7101',
                 'suppress': '0',
             })
             self.assertEqual(200, r.status_code)
 
-            r = client.post('/set_alert_status/redis', data={
+            r = client.post('/set_alarm/redis', data={
                 'host': '127.0.0.1',
                 'port': '7102',
                 'suppress': '0',
@@ -277,8 +285,8 @@ class HttpRequest(base.TestCase):
             self.assertEqual(400, r.status_code)
             self.assertEqual({'reason': 'no such node'}, json.loads(r.data))
 
-            file_ipc.write_nodes_proxies_from_db()
-            with open(file_ipc.POLL_FILE, 'r') as fin:
+            self.app.write_polling_targets()
+            with open(self.app.polling_file, 'r') as fin:
                 polls = json.loads(fin.read())
 
             self.assertEqual(2, len(polls['nodes']))

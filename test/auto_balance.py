@@ -4,7 +4,6 @@ import hashlib
 from daemonutils.auto_balance import add_node_to_balance_for
 import config
 import base
-import file_ipc
 import models.node
 import models.cluster
 import models.task
@@ -35,8 +34,11 @@ class AutoBalance(base.TestCase):
             self.db.session.add(c1)
             self.db.session.commit()
 
+            c0_id = c0.id
+            c1_id = c1.id
+
             r = client.post('/cluster/set_balance_plan', data={
-                'cluster': c1.id,
+                'cluster': c1_id,
                 'pod': 'pod',
                 'aof': '0',
                 'slave_count': 0,
@@ -56,7 +58,7 @@ class AutoBalance(base.TestCase):
             self.assertEqual(False, p.aof)
 
             r = client.post('/cluster/set_balance_plan', data={
-                'cluster': c0.id,
+                'cluster': c0_id,
                 'pod': 'pod',
                 'aof': '1',
                 'master_host': '10.100.1.1',
@@ -65,7 +67,7 @@ class AutoBalance(base.TestCase):
             })
             self.assertReqStatus(200, r)
             r = client.post('/cluster/del_balance_plan', data={
-                'cluster': c1.id,
+                'cluster': c1_id,
             })
             self.assertReqStatus(200, r)
             p = get_balance_plan_by_addr('10.0.0.2', 6301)
@@ -96,8 +98,8 @@ class AutoBalance(base.TestCase):
                 'pod': 'std',
                 'aof': True,
                 'slaves': [],
-            }), [2, 3, 5, 7])
-            self.assertTrue(1 in self.eru_client.deployed)
+            }), [2, 3, 5, 7], self.app)
+            self.assertTrue(1 in self.app.container_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
                 'pod': 'std',
@@ -107,9 +109,9 @@ class AutoBalance(base.TestCase):
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
-                'network': ['network:net'],
+                'network': ['network:redis'],
                 'host_name': None,
-            }, self.eru_client.deployed[1])
+            }, self.app.container_client.deployed[1])
 
             tasks = models.task.undone_tasks()
             self.assertEqual(1, len(tasks))
@@ -157,8 +159,8 @@ class AutoBalance(base.TestCase):
                 'pod': 'std',
                 'aof': True,
                 'slaves': [{}, {}],
-            }), [2, 3, 5, 7, 11, 13, 17])
-            self.assertTrue(1 in self.eru_client.deployed)
+            }), [2, 3, 5, 7, 11, 13, 17], self.app)
+            self.assertTrue(1 in self.app.container_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
                 'pod': 'std',
@@ -168,15 +170,15 @@ class AutoBalance(base.TestCase):
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
-                'network': ['network:net'],
+                'network': ['network:redis'],
                 'host_name': None,
-            }, self.eru_client.deployed[1])
-            self.assertTrue(2 in self.eru_client.deployed)
-            self.assertEqual(self.eru_client.deployed[1],
-                             self.eru_client.deployed[2])
-            self.assertTrue(3 in self.eru_client.deployed)
-            self.assertEqual(self.eru_client.deployed[1],
-                             self.eru_client.deployed[3])
+            }, self.app.container_client.deployed[1])
+            self.assertTrue(2 in self.app.container_client.deployed)
+            self.assertEqual(self.app.container_client.deployed[1],
+                             self.app.container_client.deployed[2])
+            self.assertTrue(3 in self.app.container_client.deployed)
+            self.assertEqual(self.app.container_client.deployed[1],
+                             self.app.container_client.deployed[3])
 
             tasks = models.task.undone_tasks()
             self.assertEqual(1, len(tasks))
@@ -236,8 +238,17 @@ class AutoBalance(base.TestCase):
             c.nodes.append(n)
             self.db.session.add(c)
             self.db.session.commit()
+            self.app.write_polling_targets()
 
             cluster_id = c.id
+            self.assertEqual({
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 6301,
+                    'suppress_alert': 1,
+                }],
+                'proxies': [],
+            }, self.app.polling_targets())
 
             self.replace_eru_client()
             add_node_to_balance_for('127.0.0.1', 6301, _get_balance_plan({
@@ -245,8 +256,8 @@ class AutoBalance(base.TestCase):
                 'aof': True,
                 'host': '10.0.1.173',
                 'slaves': [{}, {'host': '10.0.1.174'}],
-            }), [2, 3, 5, 7, 11, 13, 17, 19])
-            self.assertTrue(1 in self.eru_client.deployed)
+            }), [2, 3, 5, 7, 11, 13, 17, 19], self.app)
+            self.assertTrue(1 in self.app.container_client.deployed)
             self.assertDictEqual({
                 'what': 'redis',
                 'pod': 'std',
@@ -256,10 +267,10 @@ class AutoBalance(base.TestCase):
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
-                'network': ['network:net'],
+                'network': ['network:redis'],
                 'host_name': '10.0.1.173',
-            }, self.eru_client.deployed[1])
-            self.assertTrue(2 in self.eru_client.deployed)
+            }, self.app.container_client.deployed[1])
+            self.assertTrue(2 in self.app.container_client.deployed)
             self.assertEqual({
                 'what': 'redis',
                 'pod': 'std',
@@ -269,10 +280,10 @@ class AutoBalance(base.TestCase):
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
-                'network': ['network:net'],
+                'network': ['network:redis'],
                 'host_name': None,
-            }, self.eru_client.deployed[2])
-            self.assertTrue(3 in self.eru_client.deployed)
+            }, self.app.container_client.deployed[2])
+            self.assertTrue(3 in self.app.container_client.deployed)
             self.assertEqual({
                 'what': 'redis',
                 'pod': 'std',
@@ -282,9 +293,9 @@ class AutoBalance(base.TestCase):
                 'group': config.ERU_GROUP,
                 'ncontainers': 1,
                 'ncores': 1,
-                'network': ['network:net'],
+                'network': ['network:redis'],
                 'host_name': '10.0.1.174',
-            }, self.eru_client.deployed[3])
+            }, self.app.container_client.deployed[3])
 
             tasks = models.task.undone_tasks()
             self.assertEqual(1, len(tasks))
@@ -337,6 +348,27 @@ class AutoBalance(base.TestCase):
                 'slots': [2, 3, 5, 7],
             }, s.args)
 
+            self.assertEqual({
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 6301,
+                    'suppress_alert': 1,
+                }, {
+                    'host': '10.0.0.1',
+                    'port': 6379,
+                    'suppress_alert': 1,
+                }, {
+                    'host': '10.0.0.2',
+                    'port': 6379,
+                    'suppress_alert': 1,
+                }, {
+                    'host': '10.0.0.3',
+                    'port': 6379,
+                    'suppress_alert': 1,
+                }],
+                'proxies': [],
+            }, self.app.polling_targets())
+
     def test_interrupted_after_deploy_some(self):
         class EruClientLimited(base.FakeEruClientBase):
             def __init__(self, limit):
@@ -365,9 +397,9 @@ class AutoBalance(base.TestCase):
                     'pod': 'std',
                     'aof': True,
                     'slaves': [{}, {}],
-                }), [2, 3, 5, 7, 11, 13, 17])
+                }), [2, 3, 5, 7, 11, 13, 17], self.app)
 
-            self.assertEqual(0, len(self.eru_client.deployed))
+            self.assertEqual(0, len(self.app.container_client.deployed))
 
     def test_write_file_ipc(self):
         with self.app.test_client() as client:
@@ -388,14 +420,3 @@ class AutoBalance(base.TestCase):
                 'aof': '0',
             })
             self.assertReqStatus(200, r)
-
-        with open(file_ipc.POLL_FILE, 'r') as fin:
-            r = json.loads(fin.read())
-            self.assertDictEqual({
-                'nodes': [{
-                    'host': '127.0.0.1',
-                    'port': 6301,
-                    'suppress_alert': 1,
-                }],
-                'proxies': [],
-            }, r)

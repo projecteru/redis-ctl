@@ -24,26 +24,32 @@
   <table style='width: 100%' class='table'>
     <tr>
       <td class='label-cell' data-localize='cluster-id'>集群 ID</td>
-      <td>{{ cluster.id }}</td>
+      <td colspan='2'>{{ cluster.id }}</td>
     </tr>
     <tr>
       <td class='label-cell' data-localize='cluster-description'>集群描述</td>
       <td>
-          <input id='cluster-descr-inp' value="{{ cluster.description|e }}">
-          <button class='btn btn-primary' id='cluster-set-descr'>改</button>
+          <input id='cluster-descr-inp' class='form-control' value="{{ cluster.description|e }}">
+      </td>
+      <td>
+          <button class='btn btn-primary' id='cluster-set-descr' data-localize='cluster-set-descr'>改</button>
       </td>
     </tr>
     <tr>
+      <td class='label-cell' data-localize='cluster-creation'>Creation</td>
+      <td colspan='2'>{{ cluster.creation|strftime }}</td>
+    </tr>
+    <tr>
       <td class='label-cell' data-localize='proxy-num'>代理数</td>
-      <td>{{ cluster.proxies|length }}</td>
+      <td colspan='2'>{{ cluster.proxies|length }}</td>
     </tr>
     <tr>
       <td class='label-cell' data-localize='nodes-num'>节点数</td>
-      <td>{{ cluster.nodes|length }}</td>
+      <td colspan='2'>{{ cluster.nodes|length }}</td>
     </tr>
     <tr>
       <td class='label-cell' data-localize='operating'>操作</td>
-      <td>
+      <td colspan='2'>
         <button class='btn btn-primary' id='cluster-fix-migrating' data-localize='cluster-fix-migrating'>修复槽位迁移</button>
         <button class='btn btn-primary' id='cluster-enable-all-nodes-alert' data-suppress='1' data-localize='cluster-enable-all-nodes-alert'>打开所有节点的报警</button>
         <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert' data-suppress='0' data-localize='cluster-suppress-all-nodes-alert'>关闭所有节点的报警</button>
@@ -59,7 +65,9 @@
     </tr>
   </table>
 </div>
-{{ render_template('components/node/autodiscover.html', host=cluster.nodes[0].host, port=cluster.nodes[0].port) }}
+{% autoescape false %}
+    {{ render('components/node/autodiscover.html', host=cluster.nodes[0].host, port=cluster.nodes[0].port) }}
+{% endautoescape %}
 
 <script>
 $('#cluster-set-descr').click(function() {
@@ -76,7 +84,7 @@ $('#cluster-set-descr').click(function() {
             btn.removeAttr('disabled');
         },
         error: function(e) {
-            btn.text(_('失败') + ': ' + e.responseText);
+            btn.text(_('failed') + ': ' + e.responseText);
         }
     });
 });
@@ -85,7 +93,7 @@ $('#cluster-fix-migrating').click(function() {
     var btn = $(this);
     btn.attr('disabled', 'disabled').text(_('请稍候'));
     $.ajax({
-        url: '/cluster/recover_migrate',
+        url: '/task/fix_cluster',
         type: 'POST',
         data: {
             cluster_id: {{ cluster.id|tojson }}
@@ -94,7 +102,7 @@ $('#cluster-fix-migrating').click(function() {
             window.location.reload();
         },
         error: function(e) {
-            btn.text(_('失败') + ': ' + e.responseText);
+            btn.text(_('failed') + ': ' + e.responseText);
         }
     });
 });
@@ -113,7 +121,7 @@ $('#cluster-enable-all-nodes-alert,#cluster-suppress-all-nodes-alert').click(fun
             window.location.reload();
         },
         error: function(e) {
-            btn.text(_('失败') + ': ' + e.responseText);
+            btn.text(_('failed') + ': ' + e.responseText);
         }
     });
 });
@@ -132,7 +140,7 @@ $('#cluster-enable-all-nodes-aof,#cluster-disable-all-nodes-aof').click(function
             window.location.reload();
         },
         error: function(e) {
-            btn.text(_('失败') + ': ' + e.responseText);
+            btn.text(_('failed') + ': ' + e.responseText);
         }
     });
 });
@@ -151,7 +159,7 @@ $('#shutdown-cluster').click(function() {
         },
         error: function(e) {
             if (!e.responseJSON) {
-                return btn.text(_('失败') + ':' + _('未知错误'));
+                return btn.text(_('failed') + ':' + _('未知错误'));
             }
             if (e.responseJSON.reason === 'not empty') {
                 return btn.text(_('此节点中还有数据') + ',' + _('请手动清理后重试'));
@@ -159,7 +167,7 @@ $('#shutdown-cluster').click(function() {
             if (e.responseJSON.reason === 'More than 1 nodes in cluster.') {
                 return btn.text(_('集群中有其他节点') + ',' + _('请使用自动发现刷新节点列表'));
             }
-            btn.text(_('失败') + ': ' + e.responseText);
+            btn.text(_('failed') + ': ' + e.responseText);
         }
     });
 });
@@ -225,7 +233,7 @@ $('#shutdown-cluster').click(function() {
         function makeNoStatCells(n) {
             return [
                 $('<td>').append('-'),
-                $('<td>').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
+                $('<td>').append($('<a>').attr('href', ['/redis/panel', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
                 $('<td>').attr('colspan', 4).text(_('尚未获取节点详细信息'))
             ];
         }
@@ -245,7 +253,7 @@ $('#shutdown-cluster').click(function() {
         function makeBaseCells(n) {
             return [
                 $('<td>').addClass('node-id').text(n.node_id),
-                $('<td>').addClass('node-addr').append($('<a>').attr('href', ['/nodep', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
+                $('<td>').addClass('node-addr').append($('<a>').attr('href', ['/redis/panel', n.host, n.port].join('/')).text(n.host + ':' + n.port)),
                 memCell(n),
                 $('<td>').append(n.aof_enabled ? $('<span>').text('AOF').addClass('label').addClass('label-info') : '-')
             ];
@@ -290,8 +298,10 @@ $('#shutdown-cluster').click(function() {
 }();
 </script>
 
-{{ render_template('components/cluster/export-nodes.html') }}
-{{ render_template('components/cluster/nodes-adjustment.html', cluster_id=cluster.id) }}
+{% autoescape false %}
+    {{ render('components/cluster/export-nodes.html') }}
+    {{ render('components/cluster/nodes-adjustment.html', cluster_id=cluster.id) }}
+{% endautoescape %}
 
 <div class="panel panel-primary">
   <div class="panel-heading panel-heading-hide-content" id='proxies' data-localize='proxies'>代理</div>
@@ -384,22 +394,24 @@ $('#new-proxy-btn').click(function() {
             window.location.reload();
         },
         error: function(e) {
-            btn.text(_('失败') + ': ' + e.responseText);
+            btn.text(_('failed') + ': ' + e.responseText);
         }
     });
 });
 </script>
 
-{{ render_template('components/command_console.html') }}
+{% autoescape false %}
+    {{ render('components/command_console.html') }}
+{% endautoescape %}
 
 <div class="panel panel-primary">
   <div class="panel-heading panel-heading-hide-content" data-localize='set-auto-expansion'>设置自动扩容</div>
   <div>
-  {% if not eru_client %}
+  {% if not g.container_client %}
       <span data-localize='text-no-eru'>没有设定 Eru 地址</span>
   {% else %}
-      <span data-localize='text-eru-addr'>ERU 地址</span>: {{ eru_client.url|e }}
-      {%- set pods = eru_client.list_pods() %}
+      <span data-localize='text-eru-addr'>ERU 地址</span>: {{ g.container_client.url|e }}
+      {%- set pods = g.container_client.list_pods() %}
       {%- if pods|length == 0 %}
           <span data-localize='text-no-eru-pod'>Eru 没有可用的机房</span>
       {%- else %}
@@ -415,8 +427,10 @@ $('#new-proxy-btn').click(function() {
               }
           });
           </script>
-          {{ render_template('components/cluster/eru_auto_balance.html', pods=pods,
-                             cluster=cluster, plan_max_slaves=plan_max_slaves, plan=plan) }}
+          {% autoescape false %}
+              {{ render('components/cluster/eru_auto_balance.html', pods=pods,
+                        cluster=cluster, plan_max_slaves=plan_max_slaves, plan=plan) }}
+          {% endautoescape %}
       {%- endif %}
   {% endif %}
   </div>
@@ -425,9 +439,11 @@ $('#new-proxy-btn').click(function() {
 <div class="panel panel-primary">
   <div class="panel-heading panel-heading-hide-content">
     <span data-localize='background-task'>后台任务</span>
-    <a href='/cluster/tasks/list/{{ cluster.id }}' style='color:white; float: right;' data-localize='more-task'>查看更多任务</a>
+    <a href='/task/list_cluster/{{ cluster.id }}' style='color:white; float: right;' data-localize='more-task'>查看更多任务</a>
   </div>
-  {{ render_template('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
+  {% autoescape false %}
+    {{ render('components/cluster/tasks.html', tasks=cluster.get_tasks()) }}
+  {% endautoescape %}
 </div>
 
 {% include 'components/info_console.html' %}

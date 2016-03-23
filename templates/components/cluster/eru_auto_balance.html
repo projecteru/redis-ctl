@@ -50,7 +50,7 @@
     function listHostsForPod(pod, preSelectedHosts) {
         $('.host-selector option').filter(function() {return this.value != '-'}).remove();
         var hostSelects = $('.host-selector');
-        $.get('/eru/list_hosts/' + pod, {}, function(r) {
+        $.get('/containerize/list_hosts/' + pod, {}, function(r) {
             hostSelects.each(function(i, e) {
                 var selector = $(this);
                 var preSelect = preSelectedHosts[i] || {};

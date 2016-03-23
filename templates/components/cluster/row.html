@@ -1,13 +1,13 @@
 {% set info_rows = cluster.proxies|length + 1 %}
 {% set row_cls = 'class="row-odd"' if odd_row else '' %}
 <tr id='cluster-{{ cluster.id }}' {{ row_cls }}>
-    <td rowspan='{{ info_rows }}'><a href='/clusterp/{{ cluster.id }}'>{{ cluster.id }}</a></td>
-    <td rowspan='{{ info_rows }}'><a href='/clusterp/{{ cluster.id }}'>{{ cluster.description|e }}</a></td>
+    <td rowspan='{{ info_rows }}'><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.id }}</a></td>
+    <td rowspan='{{ info_rows }}'><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.description|e }}</a></td>
     <td rowspan='{{ info_rows }}'>{{ cluster.nodes|length }}</td>
 {% if cluster.proxies %}
     {% for proxy in cluster.proxies %}
     <td class='proxy-tab'>
-        <a href='/clusterp/{{ cluster.id }}#proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
+        <a href='/cluster/panel/{{ cluster.id }}#proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
             {{ proxy.host|e }}:{{ proxy.port }}
         </a>
     </td>

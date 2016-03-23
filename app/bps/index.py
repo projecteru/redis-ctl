@@ -1,17 +1,18 @@
-import base
-import file_ipc
-import stats
+from flask import render_template
 
+from app.bpbase import Blueprint
 import models.node as nm
 import models.cluster as cl
 
+bp = Blueprint('index', __name__)
 
-@base.get('/')
-def index(request):
+
+@bp.route('/')
+def index():
     nodes = nm.list_all_nodes()
     clusters = cl.list_all()
 
-    poll_result = file_ipc.read_details()
+    poll_result = bp.app.polling_result()
     node_details = poll_result['nodes']
     proxy_details = poll_result['proxies']
 
@@ -27,6 +28,5 @@ def index(request):
         n.node_id = detail.get('node_id')
         n.detail = detail
         n.stat = detail.get('stat', True)
-    return request.render(
-        'index.html', nodes=nodes, clusters=clusters,
-        stats_enabled=stats.client is not None)
+    return render_template('index.html', nodes=nodes, clusters=clusters,
+                           stats_enabled=bp.app.stats_enabled())

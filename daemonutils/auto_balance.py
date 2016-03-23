@@ -1,22 +1,21 @@
 import logging
 
-import file_ipc
-from eru_utils import deploy_node, rm_containers
 from models.base import db
 import models.node
 import models.task
+import models.audit
 
 
-def _deploy_node(pod, aof, host):
-    depl = deploy_node(pod, aof, 'macvlan', host=host)
+def _deploy_node(pod, aof, host, app):
+    depl = app.container_client.deploy_redis(pod, aof, 'macvlan', host=host)
     cid = depl['container_id']
     h = depl['address']
     models.node.create_eru_instance(h, 6379, cid)
     return cid, h
 
 
-def _rm_containers(cids):
-    rm_containers(cids)
+def _rm_containers(cids, app):
+    app.container_client.rm_containers(cids)
     for c in cids:
         try:
             models.node.delete_eru_instance(c)
@@ -24,12 +23,13 @@ def _rm_containers(cids):
             logging.exception(e)
 
 
-def _prepare_master_node(node, pod, aof, host):
-    cid, new_node_host = _deploy_node(pod, aof, host)
+def _prepare_master_node(node, pod, aof, host, app):
+    cid, new_node_host = _deploy_node(pod, aof, host, app)
     try:
         task = models.task.ClusterTask(
             cluster_id=node.assignee_id,
-            task_type=models.task.TASK_TYPE_AUTO_BALANCE)
+            task_type=models.task.TASK_TYPE_AUTO_BALANCE,
+            user_id=app.default_user_id())
         db.session.add(task)
         db.session.flush()
         logging.info(
@@ -44,31 +44,33 @@ def _prepare_master_node(node, pod, aof, host):
     except BaseException as exc:
         logging.exception(exc)
         logging.info('Remove container %s and rollback', cid)
-        _rm_containers([cid])
+        _rm_containers([cid], app)
         db.session.rollback()
         raise
 
 
-def _add_slaves(slaves, task, cluster_id, master_host, pod, aof):
+def _add_slaves(slaves, task, cluster_id, master_host, pod, aof, app):
     cids = []
+    hosts = []
     try:
         for s in slaves:
             logging.info('Auto deploy slave for master %s [task %d],'
                          ' use host %s', master_host, task.id, s.get('host'))
-            cid, new_host = _deploy_node(pod, aof, s.get('host'))
+            cid, new_host = _deploy_node(pod, aof, s.get('host'), app)
             cids.append(cid)
+            hosts.append(new_host)
             task.add_step('replicate', cluster_id=cluster_id,
                           master_host=master_host, master_port=6379,
                           slave_host=new_host, slave_port=6379)
-        return cids
+        return cids, hosts
     except BaseException as exc:
         logging.info('Remove container %s and rollback', cids)
-        _rm_containers(cids)
+        _rm_containers(cids, app)
         db.session.rollback()
         raise
 
 
-def add_node_to_balance_for(host, port, plan, slots):
+def add_node_to_balance_for(host, port, plan, slots, app):
     node = models.node.get_by_host_port(host, int(port))
     if node is None or node.assignee_id is None:
         logging.info(
@@ -82,12 +84,15 @@ def add_node_to_balance_for(host, port, plan, slots):
         return
 
     task, cid, new_host = _prepare_master_node(
-        node, plan.pod, plan.aof, plan.host)
+        node, plan.pod, plan.aof, plan.host, app)
     cids = [cid]
+    hosts = [new_host]
     try:
-        cids.extend(_add_slaves(
+        cs, hs = _add_slaves(
             plan.slaves, task, node.assignee_id,
-            new_host, plan.pod, plan.aof))
+            new_host, plan.pod, plan.aof, app)
+        cids.extend(cs)
+        hosts.extend(hs)
 
         migrating_slots = slots[: len(slots) / 2]
         task.add_step(
@@ -101,14 +106,17 @@ def add_node_to_balance_for(host, port, plan, slots):
         if lock is not None:
             logging.info('Auto balance task %d has been emit; lock id=%d',
                          task.id, lock.id)
-            file_ipc.write_nodes_proxies_from_db()
-            return
+            for h in hosts:
+                models.audit.eru_event(
+                    h, 6379, models.audit.EVENT_TYPE_CREATE,
+                    app.default_user_id(), plan.balance_plan_json)
+            return app.write_polling_targets()
         logging.info('Auto balance task fail to lock,'
                      ' discard auto balance this time.'
                      ' Delete container id=%s', cids)
-        _rm_containers(cids)
+        _rm_containers(cids, app)
     except BaseException as exc:
         logging.info('Remove container %s and rollback', cids)
-        _rm_containers(cids)
+        _rm_containers(cids, app)
         db.session.rollback()
         raise

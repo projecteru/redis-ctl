@@ -32,7 +32,7 @@ $(document).ready(function() {
                 });
             }
             callback(blocks);
-        });
+        }).error(showError);
     }
 
     var modal = $('#infoConsole');
@@ -180,7 +180,22 @@ $(document).ready(function() {
                         );
             });
             modal.modal('show');
-        });
+        }).error(showError);
     });
 });
+</script>
+
+{{ modal.head('commandError', 'Error') }}
+<div class='form-horizontal form-submit' id='command-error-body'></div>
+{{ modal.tail() }}
+
+<script>
+function showError(e) {
+    if (e.status === 400) {
+        $('#command-error-body').text(_('failed') + ': ' + e.responseJSON.reason);
+    } else if (e.status === 500) {
+        $('#command-error-body').text(e.responseText);
+    }
+    $('#commandError').modal('show');
+}
 </script>
