@@ -10,12 +10,6 @@ import daemonutils.auto_balance
 import models.base
 from app import RedisCtl
 
-try:
-    config.SQLALCHEMY_DATABASE_URI = config.TEST_SQLALCHEMY_DATABASE_URI
-except AttributeError:
-    raise ValueError('TEST_SQLALCHEMY_DATABASE_URI should be'
-                     ' specified in override_config for unittest')
-
 config.LOG_FILE = os.path.join(tempfile.gettempdir(), 'redisctlpytest')
 config.PERMDIR = os.path.join(tempfile.gettempdir(), 'redisctlpytestpermdir')
 config.POLL_INTERVAL = 0
@@ -40,6 +34,13 @@ def reset_db():
 class TestApp(RedisCtl):
     def __init__(self):
         RedisCtl.__init__(self, config)
+
+    def db_uri(self, config):
+        try:
+            return config.TEST_SQLALCHEMY_DATABASE_URI
+        except AttributeError:
+            raise ValueError('TEST_SQLALCHEMY_DATABASE_URI should be'
+                             ' specified in override_config for unittest')
 
     def replace_container_client(self, client=None):
         if client is None:

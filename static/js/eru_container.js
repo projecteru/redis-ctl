@@ -1,5 +1,5 @@
 function delContainer() {
-    if (!confirm('确定要下线此容器吗?')) {
+    if (!confirm(_('确定要下线此容器吗?'))) {
         return;
     }
     var self = $(this).attr('disabled', 'disabled');

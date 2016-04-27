@@ -16,6 +16,7 @@ blueprints = (
     'command',
     'task',
     'audit',
+    'translation',
 )
 
 
@@ -49,7 +50,7 @@ class RedisCtl(Flask):
                 self.jinja_env.filters[u[2:]] = getattr(render_utils, u)
 
         init_logging(config)
-        self.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
+        self.config['SQLALCHEMY_DATABASE_URI'] = self.db_uri(config)
         self.config_node_max_mem = config.NODE_MAX_MEM
         self.debug = config.DEBUG == 1
 
@@ -67,6 +68,11 @@ class RedisCtl(Flask):
         logging.info('Polling file: %s', self.polling_file)
         logging.info('Instance detail file: %s', self.instance_detail_file)
 
+    def db_uri(self, config):
+        return 'mysql://%s:%s@%s:%d/%s' % (
+            config.MYSQL_USERNAME, config.MYSQL_PASSWORD,
+            config.MYSQL_HOST, config.MYSQL_PORT, config.MYSQL_DATABASE)
+
     def register_blueprints(self):
         self.secret_key = os.urandom(24)
         self.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -77,6 +83,7 @@ class RedisCtl(Flask):
             self.register_blueprint(import_bp_string('statistics'))
         if self.container_enabled():
             self.register_blueprint(import_bp_string('containerize'))
+            self.register_blueprint(import_bp_string('cont_image'))
 
         for bp in self.ext_blueprints():
             self.register_blueprint(bp)
@@ -101,6 +108,9 @@ class RedisCtl(Flask):
         return None
 
     def access_ctl_user_valid(self):
+        return True
+
+    def access_ctl_user_adv(self):
         return True
 
     def login_url(self):

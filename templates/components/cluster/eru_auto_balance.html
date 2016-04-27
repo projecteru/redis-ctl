@@ -101,7 +101,7 @@
                 },
                 error: function(e) {
                     btn.removeAttr('disabled');
-                    errorLabel.show().text(_('失败') + ': ' + e.responseText);
+                    errorLabel.show().text(_('failed') + ': ' + e.responseText);
                 }
             });
         }
@@ -127,7 +127,7 @@
             },
             error: function(e) {
                 btn.removeAttr('disabled');
-                errorLabel.show().text(_('失败') + ': ' + e.responseText);
+                errorLabel.show().text(_('failed') + ': ' + e.responseText);
             }
         })
     });

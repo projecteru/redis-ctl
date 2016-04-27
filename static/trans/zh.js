@@ -1,14 +1,14 @@
 window.TRANSLATIONS = {
-    'master': '主',
-    'slave': '从',
-
+    'update': '改',
+    'delete': '删',
     'yes': '是',
     'no': '否',
-
     'enabled': '开启',
     'disabled': '关闭',
-
     'failed': '失败',
+
+    'master': '主',
+    'slave': '从',
 
     'task_step_launch': '创建集群',
     'task_step_fix_migrate': '修复迁移状态',

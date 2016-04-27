@@ -28,6 +28,11 @@ footer {
     border-top: 1px dashed #aaa;
 }
 
+.table caption {
+    font-size: 2em;
+    font-weight: bold;
+}
+
 hr {
     clear: both;
 }

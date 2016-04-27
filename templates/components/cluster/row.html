@@ -1,6 +1,6 @@
 {% set info_rows = cluster.proxies|length + 1 %}
 {% set row_cls = 'class="row-odd"' if odd_row else '' %}
-<tr id='cluster-{{ cluster.id }}' {{ row_cls }}>
+<tr id='cluster-{{ cluster.id }}' {%- autoescape false %} {{ row_cls }} {%- endautoescape %}>
     <td rowspan='{{ info_rows }}'><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.id }}</a></td>
     <td rowspan='{{ info_rows }}'><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.description|e }}</a></td>
     <td rowspan='{{ info_rows }}'>{{ cluster.nodes|length }}</td>

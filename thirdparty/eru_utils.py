@@ -1,6 +1,7 @@
 import logging
 from retrying import retry
 from eruhttp import EruClient, EruException
+from app.utils import datetime_str_to_timestamp
 
 
 class DockerClient(object):
@@ -22,20 +23,32 @@ class DockerClient(object):
                           task_id, r)
             return None
 
-    def lastest_version_sha(self, what):
+    def _list_images(self, what, offset, limit):
+        return [{
+            'name': i['sha'],
+            'description': '',
+            'creation': datetime_str_to_timestamp(i['created']),
+        } for i in self.client.list_app_versions(
+            what, offset, limit)['versions']]
+
+    def list_redis_images(self, offset, limit):
+        return self._list_images('redis', offset, limit)
+
+    def lastest_image(self, what):
         try:
             return self.client.list_app_versions(what)['versions'][0]['sha']
         except LookupError:
             raise ValueError('eru fail to give version SHA of ' + what)
 
     def deploy_with_network(self, what, pod, entrypoint, ncore=1, host=None,
-                            args=None):
+                            args=None, image=None):
         logging.info('Eru deploy %s to pod=%s entry=%s cores=%d host=%s :%s:',
                      what, pod, entrypoint, ncore, host, args)
         network = self.client.get_network(self.network)
-        version_sha = self.lastest_version_sha(what)
+        if not image:
+            image = self.lastest_image(what)
         r = self.client.deploy_private(
-            self.group, pod, what, ncore, 1, version_sha,
+            self.group, pod, what, ncore, 1, image,
             entrypoint, 'prod', [network['id']], host_name=host, args=args)
         try:
             task_id = r['tasks'][0]
@@ -56,7 +69,7 @@ class DockerClient(object):
             raise ValueError('eru gives incorrent container info: %s missing %s'
                              % (cid, e.message))
         return {
-            'version': version_sha,
+            'version': image,
             'container_id': cid,
             'address': addr,
             'host': host,
@@ -67,14 +80,14 @@ class DockerClient(object):
         return self.client.get_container(container_id)
 
     def deploy_redis(self, pod, aof, netmode, cluster=True, host=None,
-                     port=6379):
+                     port=6379, image=None):
         args = ['--port', str(port)]
         if aof:
             args.extend(['--appendonly', 'yes'])
         if cluster:
             args.extend(['--cluster-enabled', 'yes'])
         return self.deploy_with_network('redis', pod, netmode, host=host,
-                                        args=args)
+                                        args=args, image=image)
 
     def deploy_proxy(self, pod, threads, read_slave, netmode, host=None,
                      port=8889):

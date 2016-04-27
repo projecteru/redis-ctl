@@ -1,18 +1,16 @@
 window.TRANSLATIONS = {
-    'master': 'Master',
-    'slave': 'Slave',
-
+    'update': 'Update',
+    'delete': 'Delete',
     'yes': 'Yes',
     'no': 'No',
-
+    'failed': 'Failed',
+    'master': 'Master',
+    'slave': 'Slave',
     'enabled': 'Enabled',
     'disabled': 'Disabled',
 
     '不正确的端口范围格式': 'invalid port format',
     '正在注册': 'registering',
-
-    '失败': 'Failed',
-    'failed': 'Failed',
 
     '尚未获取节点详细信息': 'WAITING FOR POLLING',
     '此代理已被移除': 'Proxy removed',
@@ -39,6 +37,8 @@ window.TRANSLATIONS = {
     '节点已被移除': 'Removed',
     '当前节点': 'Myself',
     'im_slave': 'This is a slave',
+
+    '确定要下线此容器吗?': 'This container will be removed, are you sure?',
 
     '': ''
 };

@@ -11,6 +11,7 @@ import models.cluster
 import models.node
 import models.proxy
 import models.audit
+import models.cont_image
 
 bp = Blueprint('containerize', __name__, url_prefix='/containerize')
 
@@ -26,8 +27,9 @@ def manage_home():
     pods = bp.app.container_client.list_pods()
     if len(pods) == 0:
         return render_template('node/no_eru.html'), 400
-    return render_template('node/manage_eru.html',
-                           pods=pods, clusters=models.cluster.list_all())
+    return render_template(
+        'node/manage_eru.html', pods=pods, clusters=models.cluster.list_all(),
+        redis_images=models.cont_image.list_redis())
 
 
 @bp.route('/nodes/')
@@ -64,7 +66,8 @@ def create_redis():
     container_info = bp.app.container_client.deploy_redis(
         request.form['pod'], request.form['aof'] == 'y',
         request.form['netmode'], request.form['cluster'] == 'y',
-        host=request.form.get('host'), port=port)
+        host=request.form.get('host'), port=port,
+        image=request.form.get('image'))
     logging.debug('Container Redis deployed, info=%s', container_info)
 
     try:

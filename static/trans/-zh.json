@@ -1,4 +1,13 @@
 {
+    "create": "创建",
+    "readonly": "只读",
+    "settings": "设置",
+
+    "opt-all-nodes": "显示全部节点",
+    "opt-error-only": "只显示出错节点",
+    "opt-noalert-only": "忽略报警节点",
+    "opt-migrating-only": "显示槽位正在迁移的节点",
+
     "cluster-creation": "创建时间",
 
     "task-type-0": "修复迁移状态",
@@ -19,6 +28,18 @@
     "cont-no-pod-available": "没有可用的容器资源组",
     "cont-no-pod-available-x": "可用的容器服务部署在",
     "cont-no-pod-available-y": "但它没有给出可用的容器资源组; 请检查容器服务, 然后刷新此页面",
+
+    "select-pod": "选择容器资源组",
+    "server-num": "机器数",
+    "host-network-deploy": "HOST 网络模型部署",
+    "specify-host": "指定机器",
+    "checkbox-aof-enable": "启用 AOF",
+    "checkbox-use-cluster-enable": "集群模式",
+    "select-cluster": "选择集群",
+    "nodes-num": "个节点",
+    "threads-num": "线程数",
+    "newly-created": "最新创建",
+    "view-all": "查看全部",
 
     "": ""
 }

@@ -7,87 +7,114 @@
 {% endblock %}
 
 {% block body %}
-<div class='form-horizontal form-submit'>
-    <div class='from-group'>
-        <h4 style='text-align: right;'><span data-localize='Eru-address'>Eru地址</span>：{{ g.container_client.url|e }}</h4>
-    </div>
-    <div class='from-group'>
-      <div class='col-sm-3'>
-        <select id='pod-list' class='form-control'>
-            <option value='' data-localize='select-server-room'>选择机房</option>
-            {% for p in pods %}
-            <option value='{{ p.name|e }}'>{{ p.name|e }} - <span data-localize='server-num'>机器数</span> {{ p.host_count|e }}</option>
-            {% endfor %}
-        </select>
-      </div>
-      {{ checkbox('指定机器', size=2, color='info', id='specify-host-check') }}
-      <div class='col-sm-3' style='display: none' id='host-list-container'></div>
-      <div class='col-sm-3' style='display: none' id='host-panel'>
-        <button class='check-opt check-group check-group-info' id='netmode-host' data-localize='HOST-network-model-deployment'>HOST 网络模型部署</button>
-      </div>
-    </div>
-</div>
+<div>
+    <ul class='nav nav-tabs' role='tablist'>
+        <li role='presentation' class='active'><a href='#redis' aria-controls='home' role='tab' data-toggle='tab'>Redis</a></li>
+        <li role='presentation'><a href='#proxy' aria-controls='profile' role='tab' data-toggle='tab'>Proxy</a></li>
+    </ul>
 
-<hr style='clear: both'>
-
-<div id='node-create-panel' style='margin-top: 0.5em; display: none' class='form-horizontal form-submit'>
-    <div class='form-group'>
-        {{ label('创建节点', size=1) }}
-        {{ checkbox('启用 AOF', size=2, id='aof-enable', color='info', cls=['check-opt']) }}
-        {{ checkbox('集群模式', size=2, id='use-cluster-enable', color='info', checked=true, cls=['check-opt']) }}
-        {{ input(offset=3, size=2, id='port-node', placeholder='6379', addon='指定端口') }}
-        {{ button('创建 ERU 节点', size=2, id='create-node-btn', color='primary') }}
-    </div>
-
-    <div class='form-group'>
-        {{ label('创建代理', size=1) }}
-        <div class= 'col-xs-4'>
-          <select id='cluster-select' class='form-control'>
-            <option value='' data-localize='select-the-cluster'>选择集群</option>
-            {% for c in clusters if c.nodes|length > 0 %}
-            <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} <span data-localize='node-num'>个节点</option>
-            {% endfor %}
-          </select>
+    <div class='form-horizontal form-submit' style='margin-top: 1em'>
+        <div class='from-group'>
+          <div class='col-xs-3'>
+            <select id='pod-list' class='form-control'>
+                <option value='' data-localize='select-pod'>Select Pod</option>
+                {% for p in pods %}
+                <option value='{{ p.name|e }}'>{{ p.name|e }} - <span data-localize='server-num'>Servers:</span> {{ p.host_count|e }}</option>
+                {% endfor %}
+            </select>
+          </div>
+          {{ checkbox('Specify host', size=2, color='info', id='specify-host-check', lcl='specify-host') }}
+          <div class='col-xs-3' style='display: none' id='host-list-container'></div>
+          <div class='col-xs-3' style='display: none' id='host-panel'>
+            <button class='check-opt check-group check-group-info' id='netmode-host' data-localize='host-network-deployment'>HOST network deploy</button>
+          </div>
         </div>
-        <div class='col-xs-2'>
-          <select id='threads-select' class='form-control'>
-            <option value='' data-localize='threads'>线程数</option>
-            <option value='2' data-localize='threads-2'>2 线程</option>
-            <option value='4' data-localize='threads-4'>4 线程</option>
-            <option value='8' data-localize='threads-8'>8 线程</option>
-            <option value='16' data-localize='threads-16'>16 线程</option>
-            <option value='24' data-localize='threads-24'>24 线程</option>
-          </select>
-        </div>
-        {{ checkbox('只读', size=1, id='read-slave', color='info', cls=['check-opt']) }}
-        {{ input(size=2, id='port-proxy', placeholder='8889', addon='指定端口') }}
-        {{ button('创建 ERU 代理', size=2, id='create-proxy-btn', color='primary') }}
+        <hr style='margin: 1em; visibility: hidden'>
     </div>
-</div>
 
-<div class="panel panel-primary">
-  <div class="panel-heading">
-    <span data-localize='add-nodes'> 新增节点</span>
-    <a href='/containerize/nodes/' style='color:white; float: right;' data-localize='node-list-of-eru'>查看 Eru 节点列表</a>
-  </div>
-  {% autoescape false %}
-    {{ render('components/node/list_eru_node.html', nodes=[]) }}
-  {% endautoescape %}
-</div>
+    <div class='tab-content form-horizontal form-submit'>
+        <div role='tabpanel' class='tab-pane active' id='redis'>
+            <div class='form-group'>
+                {{ label('Settings', size=1, lcl='settings') }}
+                {{ checkbox('Enable AOF', size=2, id='aof-enable', color='info', cls=['check-opt', 'btn-block']) }}
+                {{ checkbox('Enable Cluster', size=2, id='use-cluster-enable', color='info', checked=true, cls=['check-opt', 'btn-block']) }}
+                {{ input(size=2, id='port-node', placeholder='6379', addon='Port') }}
+            </div>
+            <div class='form-group'>
+                {{ label('Image', size=1, lcl='select-image') }}
+                <div class='col-xs-6'>
+                  <select id='redis-images' class='form-control'>
+                    <option value='' data-localize='select-redis-image'>Latest Image</option>
+                    {% for i in redis_images %}
+                    <option value='{{ i.name|e }}'>{{ i.name|e }} - {{ i.description|e }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class='col-xs-1'>
+                  <a style='line-height: 34px' href='/containerize/image/manage/redis/' target='_blank'><i class='fa fa-plus-circle'></i></a>
+                </div>
+            </div>
+            <div class='form-group'>
+                {{ button('Create', offset=1, size=1, id='create-node-btn', color='primary', lcl='create') }}
+            </div>
 
-<div class="panel panel-primary">
-  <div class="panel-heading">
-    <span data-localize='add-agent'>新增代理</span>
-    <a href='/containerize/proxies/' style='color:white; float: right;' data-localize='agent-list-of-eru'>查看 Eru 代理列表</a>
-  </div>
-  {% autoescape false %}
-    {{ render('components/node/list_eru_proxy.html', proxies=[]) }}
-  {% endautoescape %}
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <span data-localize='newly-created'>Newly Created</span>
+                <a href='/containerize/nodes/' style='color:white; float: right;' data-localize='view-all'>View All</a>
+              </div>
+              {% autoescape false %}
+                {{ render('components/node/list_eru_node.html', nodes=[]) }}
+              {% endautoescape %}
+            </div>
+        </div>
+
+        <div role='tabpanel' class='tab-pane' id='proxy'>
+            <div class='form-group'>
+                {{ label('Settings', size=1, lcl='settings') }}
+                {{ checkbox('Readonly', size=2, id='read-slave', color='info', cls=['check-opt', 'btn-block'], lcl='readonly') }}
+                <div class='col-xs-2'>
+                  <select id='threads-select' class='form-control'>
+                    <option value='' data-localize='threads-num'>Threads</option>
+                    <option value='2'>2</option>
+                    <option value='4'>4</option>
+                    <option value='8'>8</option>
+                    <option value='16'>16</option>
+                    <option value='24'>24</option>
+                  </select>
+                </div>
+                {{ input(size=2, id='port-proxy', placeholder='8889', addon='Port') }}
+            </div>
+            <div class='form-group'>
+                {{ label('For', size=1, lcl='serve-for') }}
+                <div class= 'col-xs-6'>
+                  <select id='cluster-select' class='form-control'>
+                    <option value='' data-localize='select-cluster'>Select Cluster</option>
+                    {% for c in clusters if c.nodes|length > 0 %}
+                    <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} <span data-localize='nodes'>Nodes</option>
+                    {% endfor %}
+                  </select>
+                </div>
+            </div>
+            <div class='form-group'>
+                {{ button('Create', offset=1, size=1, id='create-proxy-btn', color='primary', lcl='create') }}
+            </div>
+
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <span data-localize='newly-created'>Newly Created</span>
+                <a href='/containerize/proxies/' style='color:white; float: right;' data-localize='view-all'>View All</a>
+              </div>
+              {% autoescape false %}
+                {{ render('components/node/list_eru_proxy.html', proxies=[]) }}
+              {% endautoescape %}
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 $('#pod-list').change(function() {
-    $('#node-create-panel').show();
     var selectHost = $('<select>').addClass('form-control');
     $('#host-list-container').html('').append(selectHost);
     $.get('/containerize/list_hosts/' + $('#pod-list').val(), {}, function(r) {
@@ -111,9 +138,6 @@ function useHostMode() {
     return $('#netmode-host').prop('checked');
 }
 
-$('#cluster-select').change(function(){width: 280});
-$('#threads-select').change(function(){width: 180});
-
 function displayErrorMsg(btn, msg) {
     btn.removeAttr('disabled');
     alert(msg);
@@ -130,7 +154,19 @@ function displayError(btn, e) {
     displayErrorMsg(btn, '错误: ' + e.responseText);
 }
 
+function checkPodSelect() {
+    var pod = $('#pod-list').val();
+    if (!pod) {
+        alert(_('Please select a pod'));
+        return false;
+    }
+    return true;
+}
+
 $('#create-node-btn').click(function() {
+    if (!checkPodSelect()) {
+        return;
+    }
     var btn = $(this).attr('disabled', 'disabled');
     $('#node-error').hide();
     var port = parseInt($('#port-node').val() || 6379);
@@ -146,6 +182,7 @@ $('#create-node-btn').click(function() {
             cluster: $('#use-cluster-enable').prop('checked') ? 'y' : 'n',
             netmode: useHostMode() ? 'host' : 'macvlan',
             host: getSelectedHost(),
+            image: $('#redis-images').val(),
             port: port
         },
         success: function(r) {
@@ -167,6 +204,9 @@ $('#create-node-btn').click(function() {
 });
 
 $('#create-proxy-btn').click(function () {
+    if (!checkPodSelect()) {
+        return;
+    }
     var btn = $(this);
     var clusterId = $('#cluster-select').val();
     if (!clusterId) {

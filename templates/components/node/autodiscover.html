@@ -74,7 +74,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
                             },
                             error: function(r) {
                                 console.error(r);
-                                btn.text(_('失败') + ': ' + r.responseText);
+                                btn.text(_('failed') + ': ' + r.responseText);
                             }
                         });
                     }
@@ -92,8 +92,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
         },
         error: function(r) {
             console.error(r);
-            pl.text(_('失败') + ': ');
-            pl.append(r.responseJSON.reason);
+            pl.text(_('failed') + ': ' + r.responseJSON.reason);
         }
     });
 });

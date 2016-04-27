@@ -27,7 +27,7 @@ $(document).ready(function() {
                 btn.text(_('此代理已被移除'));
             },
             error: function(e) {
-                btn.text(_('失败') + ': ' + e.responseText);
+                btn.text(_('failed') + ': ' + e.responseText);
             }
         });
     })

@@ -9,12 +9,12 @@ MYSQL_USERNAME = 'root'
 MYSQL_PASSWORD = '123456'
 MYSQL_DATABASE = 'redisctl'
 
-OPEN_FALCON = None
-ALGALON = None
-
 LOG_LEVEL = logging.DEBUG
 
 DEBUG = 1
 POLL_INTERVAL = 10
 
 TEST_SQLALCHEMY_DATABASE_URI = 'mysql://user:pass@127.0.0.1:3306/redisctltest'
+
+OPEN_FALCON = None
+ALGALON = None
