@@ -6,6 +6,7 @@ window.TRANSLATIONS = {
     'enabled': '开启',
     'disabled': '关闭',
     'failed': '失败',
+    'done': '完成',
 
     'master': '主',
     'slave': '从',

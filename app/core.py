@@ -16,6 +16,7 @@ blueprints = (
     'command',
     'task',
     'audit',
+    'prune',
     'translation',
 )
 

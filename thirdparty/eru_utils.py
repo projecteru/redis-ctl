@@ -77,7 +77,15 @@ class DockerClient(object):
         }
 
     def get_container(self, container_id):
-        return self.client.get_container(container_id)
+        try:
+            return self.client.get_container(container_id)
+        except EruException as e:
+            logging.exception(e)
+            return {
+                'version': '-',
+                'host': '-',
+                'created': 'CONTAINER NOT ALIVE',
+            }
 
     def deploy_redis(self, pod, aof, netmode, cluster=True, host=None,
                      port=6379, image=None):

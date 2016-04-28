@@ -49,5 +49,5 @@ def eru_event(host, port, event_type, user_id, args=''):
 
 
 def list_events(skip, limit):
-    return db.session.query(NodeEvent).order_by(
+    return NodeEvent.query.order_by(
         NodeEvent.id.desc()).offset(skip).limit(limit).all()

@@ -3,10 +3,9 @@
 {% block title %}Audit{% endblock %}
 
 {% block body %}
-
 {% block pagination %}
 <nav>
-  <div class="pagination pagination-info">
+  <div class="pagination pagination-info" style='float: left'>
     <ul>
         {% if page != 0 %}
         <li class='previous'><a href='/audit/nodes' data-localize='home'>首页</a></li>
@@ -15,7 +14,13 @@
         <li class='next'><a href='?page={{ page + 1 }}' data-localize='next-page'>下一页</a></li>
     </ul>
   </div>
+  <div class="pagination" style='float: right'>
+    <ul>
+        <li><a href='/prune/list_audit' data-localize='prune'>Prune</a></li>
+    </ul>
+  </div>
 </nav>
+<hr style='visibility: hidden'>
 {% endblock %}
 
 <table class='table text-center'>

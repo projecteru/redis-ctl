@@ -2,10 +2,6 @@
     "master": "Master",
     "slave": "Slave",
 
-    "container-nodes-mgr": "Containerizing",
-    "global-cluster-tasks-list": "All Tasks",
-    "polling-stats": "Pollings",
-
     "clusters-info": "Clusters Info",
     "cluster-descr": "Description",
     "cluster-nodes-count": "Redis Count",
@@ -139,6 +135,8 @@
     "serving": "Serving",
 
     "task-cluster": "Cluster",
+    "task-steps-0": "Steps ( Total",
+    "task-steps-1": ")",
     "task-type": "Type",
     "task-creation": "Creation time",
     "task-command": "Command",

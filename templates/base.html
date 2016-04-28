@@ -50,9 +50,9 @@ $(document).ready(function() {
         {% if g.display_login_entry %}
             <li><a class='nav-link' href='{{ login_url() }}' data-localize='login'>Login</a></li>
         {% else %}
-            <li><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>容器节点管理</span></a></li>
-            <li><a class='nav-link' href='/task/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>集群任务</span></a></li>
-            <li><a class='nav-link' href='/stats/pollings'><i class='fa fa-calendar'></i> <span data-localize='polling-stats'>轮询记录</span></a></li>
+            <li><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>Containerize</span></a></li>
+            <li><a class='nav-link' href='/task/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>All Tasks</span></a></li>
+            <li><a class='nav-link' href='/stats/pollings'><i class='fa fa-calendar'></i> <span data-localize='polling-stats'>Pollings</span></a></li>
             <li><a class='nav-link' href='/audit/nodes'><i class='fa fa-list-alt'></i> <span data-localize='audit-nodes'>Audit</span></a></li>
 
             {#

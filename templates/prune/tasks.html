@@ -1,0 +1,23 @@
+{% extends './cluster/tasks_all.html' %}
+
+{% block title %}Prune Tasks{% endblock %}
+
+{% block head %}
+{{ super() }}
+<script src='/static/js/prune.js'></script>
+{% endblock %}
+
+{% block pagination %}{% endblock %}
+
+{% block body %}
+    {% if first is not none %}
+        {{ super() }}
+        <div>
+            <span data-localize='prune-tasks'>Click to prune tasks before</span>
+            <span>{{ datetime|strftime }}</span>
+            <button class='btn btn-primary' data-localize='prune' data-id='{{ first.id|tojson }}' onclick='prune($(this), "/prune/do_tasks")'>Prune</button>
+        </div>
+    {% else %}
+        <p data-localize='prune-no-records'>No records to prune</p>
+    {% endif %}
+{% endblock %}
