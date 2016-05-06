@@ -1,6 +1,6 @@
 {% extends './base.html' %}
 
-{% block title %}ERU 节点管理{% endblock %}
+{% block title %}Containerization{% endblock %}
 
 {% block head %}
 <script src='/static/js/eru_container.js'></script>
@@ -36,9 +36,9 @@
         <div role='tabpanel' class='tab-pane active' id='redis'>
             <div class='form-group'>
                 {{ label('Settings', size=1, lcl='settings') }}
+                {{ input(size=2, id='port-node', placeholder='6379', addon='Port') }}
                 {{ checkbox('Enable AOF', size=2, id='aof-enable', color='info', cls=['check-opt', 'btn-block']) }}
                 {{ checkbox('Enable Cluster', size=2, id='use-cluster-enable', color='info', checked=true, cls=['check-opt', 'btn-block']) }}
-                {{ input(size=2, id='port-node', placeholder='6379', addon='Port') }}
             </div>
             <div class='form-group'>
                 {{ label('Image', size=1, lcl='select-image') }}
@@ -54,6 +54,11 @@
                   <a style='line-height: 34px' href='/containerize/image/manage/redis/' target='_blank'><i class='fa fa-plus-circle'></i></a>
                 </div>
             </div>
+
+            <div class='form-group'>
+                {{ checkbox('Micro plan', offset=1, size=2, id='redis-micro-plan', color='success', cls=['check-opt', 'btn-block'], lcl='micro-plan') }}
+            </div>
+
             <div class='form-group'>
                 {{ button('Create', offset=1, size=1, id='create-node-btn', color='primary', lcl='create') }}
             </div>
@@ -72,7 +77,12 @@
         <div role='tabpanel' class='tab-pane' id='proxy'>
             <div class='form-group'>
                 {{ label('Settings', size=1, lcl='settings') }}
+                {{ input(size=2, id='port-proxy', placeholder='8889', addon='Port') }}
                 {{ checkbox('Readonly', size=2, id='read-slave', color='info', cls=['check-opt', 'btn-block'], lcl='readonly') }}
+            </div>
+
+            <div class='form-group'>
+                {{ checkbox('Micro plan', offset=1, size=2, id='proxy-micro-plan', color='success', cls=['btn-block'], lcl='micro-plan') }}
                 <div class='col-xs-2'>
                   <select id='threads-select' class='form-control'>
                     <option value='' data-localize='threads-num'>Threads</option>
@@ -83,8 +93,13 @@
                     <option value='24'>24</option>
                   </select>
                 </div>
-                {{ input(size=2, id='port-proxy', placeholder='8889', addon='Port') }}
+                <div class='col-xs-2'>
+                  <select id='cpu-slice-select' class='form-control'>
+                    <option value='' data-localize='threads-num'>CPU Slice</option>
+                  </select>
+                </div>
             </div>
+
             <div class='form-group'>
                 {{ label('For', size=1, lcl='serve-for') }}
                 <div class= 'col-xs-6'>
@@ -146,12 +161,12 @@ function displayErrorMsg(btn, msg) {
 function displayError(btn, e) {
     var err = e.responseJSON || {};
     if (err.reason === 'eru fail' && err.detail === 'Not enough core resources') {
-        return displayErrorMsg(btn, '指定机器的资源不足');
+        return displayErrorMsg(btn, _('Insufficient resource in specified host'));
     }
     if (err.reason === 'exists') {
-        return displayErrorMsg(btn, '该地址的节点或代理已经存在');
+        return displayErrorMsg(btn, _('An instance is already serving at the address'));
     }
-    displayErrorMsg(btn, '错误: ' + e.responseText);
+    displayErrorMsg(btn, _('failed') + ':' + e.responseText);
 }
 
 function checkPodSelect() {
@@ -171,7 +186,7 @@ $('#create-node-btn').click(function() {
     $('#node-error').hide();
     var port = parseInt($('#port-node').val() || 6379);
     if (!(6000 <= port && port <= 7999)) {
-        return displayErrorMsg(btn, '端口范围应该在 6000-7999 之间');
+        return displayErrorMsg(btn, _('redis-containerize-port-range-invalid'));
     }
     $.ajax({
         url: '/containerize/create_redis',
@@ -182,8 +197,9 @@ $('#create-node-btn').click(function() {
             cluster: $('#use-cluster-enable').prop('checked') ? 'y' : 'n',
             netmode: useHostMode() ? 'host' : 'macvlan',
             host: getSelectedHost(),
+            port: port,
             image: $('#redis-images').val(),
-            port: port
+            micro_plan: $('#redis-micro-plan').prop('checked') ? 'y' : 'n'
         },
         success: function(r) {
             btn.removeAttr('disabled');
@@ -212,13 +228,24 @@ $('#create-proxy-btn').click(function () {
     if (!clusterId) {
         return;
     }
-    var threads = $('#threads-select').val();
-    if (!threads) {
-        return;
-    }
     var port = parseInt($('#port-proxy').val() || 8889);
     if (!(8000 <= port && port <= 9999)) {
-        return displayErrorMsg(btn, '端口范围应该在 8000-9999 之间');
+        return displayErrorMsg(btn, 'proxy-containerize-port-range-invalid');
+    }
+
+    var micro_plan, threads, cpu_slice;
+    if ($('#proxy-micro-plan').prop('checked')) {
+        cpu_slice = $('#cpu-slice-select').val();
+        if (!cpu_slice) {
+            return displayErrorMsg(btn, _('Number of CPU slices not selected'));
+        }
+        micro_plan = 'y';
+    } else {
+        threads = $('#threads-select').val();
+        if (!threads) {
+            return displayErrorMsg(btn, _('Number of threads not selected'));
+        }
+        micro_plan = 'n';
     }
 
     btn.attr('disabled', 'disabled');
@@ -229,11 +256,13 @@ $('#create-proxy-btn').click(function () {
         data: {
             pod: $('#pod-list').val(),
             cluster_id: clusterId,
-            threads: threads,
             read_slave: $('#read-slave').prop('checked') ? 'rs' : '',
             netmode: useHostMode() ? 'host' : 'macvlan',
             host: getSelectedHost(),
-            port: port
+            port: port,
+            threads: threads,
+            cpu_slice: cpu_slice,
+            micro_plan: micro_plan
         },
         success: function(r) {
             btn.removeAttr('disabled');
@@ -258,5 +287,24 @@ function deleteButton(containerId, type) {
 }
 
 $('.check-opt').enableLabelCheck();
+$('#proxy-micro-plan').enableLabelCheck({
+    onClick: function(btn) {
+        if (btn.prop('checked')) {
+            $('#cpu-slice-select').show();
+            $('#threads-select').hide();
+        } else {
+            $('#cpu-slice-select').hide();
+            $('#threads-select').show();
+        }
+    }
+});
+(function() {
+    var cpuSlice = $('#cpu-slice-select');
+    var sliceCount = {{ g.container_client.cpu_slice()|tojson }};
+    for (var i = 1; i < sliceCount; ++i) {
+        cpuSlice.append($('<option>').val(i).text(i + ' / ' + sliceCount));
+    }
+    cpuSlice.append($('<option>').val(sliceCount).text('1')).hide();
+}());
 </script>
 {% endblock %}

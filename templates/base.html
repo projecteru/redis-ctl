@@ -50,7 +50,16 @@ $(document).ready(function() {
         {% if g.display_login_entry %}
             <li><a class='nav-link' href='{{ login_url() }}' data-localize='login'>Login</a></li>
         {% else %}
-            <li><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>Containerize</span></a></li>
+            <li class='dropdown'>
+                <a href='#' class='dropdown-toggle' data-toggle='dropdown' role='button' aria-haspopup='true' aria-expanded='false'>
+                    <i class='fa fa-plus'></i> <span data-localize='nav-add'>Add</span>...
+                </a>
+                <ul class='dropdown-menu'>
+                    <li><a class='nav-link' href='/redis/register'><i class='fa fa-database'></i> Redis</a></li>
+                    <li><a class='nav-link' href='/cluster/create'><i class='fa fa-cubes'></i> <span data-localize='cluster'>Cluster</span></a></li>
+                    <li><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>Containerize</span></a></li>
+                </ul>
+            </li>
             <li><a class='nav-link' href='/task/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>All Tasks</span></a></li>
             <li><a class='nav-link' href='/stats/pollings'><i class='fa fa-calendar'></i> <span data-localize='polling-stats'>Pollings</span></a></li>
             <li><a class='nav-link' href='/audit/nodes'><i class='fa fa-list-alt'></i> <span data-localize='audit-nodes'>Audit</span></a></li>
@@ -72,7 +81,7 @@ $(document).ready(function() {
 
 <div class='main-width'>{% block body %}{% endblock %}</div>
 
-<footer style="margin-top: 0px;">
+<footer style='margin-top: 0px;'>
     <div class='main-width'>
         <span style='float: right'>
             &copy; HunanTV Platform developers - v0.9.0-2016-05-10

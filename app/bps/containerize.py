@@ -67,7 +67,8 @@ def create_redis():
         request.form['pod'], request.form['aof'] == 'y',
         request.form['netmode'], request.form['cluster'] == 'y',
         host=request.form.get('host'), port=port,
-        image=request.form.get('image'))
+        image=request.form.get('image'),
+        micro_plan=request.form.get('micro_plan') == 'y')
     logging.debug('Container Redis deployed, info=%s', container_info)
 
     try:
@@ -101,11 +102,16 @@ def create_proxy():
     cluster = models.cluster.get_by_id(int(request.form['cluster_id']))
     if cluster is None or len(cluster.nodes) == 0:
         raise ValueError('no such cluster')
+    threads = 1
+    micro_plan_cpu_slice = None
+    if request.form.get('micro_plan') != 'y':
+        threads = int(request.form['threads'])
+    else:
+        micro_plan_cpu_slice = int(request.form['cpu_slice'])
     container_info = bp.app.container_client.deploy_proxy(
-        request.form['pod'], int(request.form['threads']),
-        request.form.get('read_slave') == 'rs',
+        request.form['pod'], threads, request.form.get('read_slave') == 'rs',
         request.form['netmode'], host=request.form.get('host'),
-        port=port)
+        port=port, micro_plan_cpu_slice=micro_plan_cpu_slice)
     logging.debug('Container proxy deployed, info=%s', container_info)
 
     try:

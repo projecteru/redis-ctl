@@ -1,7 +1,7 @@
 {% extends 'components/grid-group.html' %}
 
 {% block content %}
-<button
+<button type='button'
     class='btn btn-{{ color }} {{ ' '.join(cls) }}'
     {% if id %}id='{{ id }}'{% endif %}
     {% if lcl %}data-localize='{{ lcl }}'{% endif %}

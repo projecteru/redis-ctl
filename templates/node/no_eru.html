@@ -1,16 +1,14 @@
 {% extends './base.html' %}
 
-{% block title %}ERU 异常{% endblock %}
+{% block title %}Containerization Unavailable{% endblock %}
 
 {% block body %}
-
 <div style='text-align: center'>
   <h1 data-localize='cont-no-pod-available'>No pod available</h1>
   <p>
     <span data-localize='cont-no-pod-available-x'>Containerizing service runs at</span>
-    {{ g.container_client.url|e }},
+    {{ g.container_client|e }},
     <span data-localize='cont-no-pod-available-y'>but it does not provide any available pod; please check the service, and refresh this page.</span>
   </p>
 </div>
-
 {% endblock %}

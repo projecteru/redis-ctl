@@ -9,10 +9,7 @@ window.TRANSLATIONS = {
     'enabled': 'Enabled',
     'disabled': 'Disabled',
 
-    '不正确的端口范围格式': 'invalid port format',
-    '正在注册': 'registering',
-
-    '尚未获取节点详细信息': 'WAITING FOR POLLING',
+    'waiting for polling': 'WAITING FOR POLLING',
     '此代理已被移除': 'Proxy removed',
     '正在载入集群信息': 'Loading cluster nodes',
     '节点不在集群中': 'Not in a cluster',
@@ -34,11 +31,11 @@ window.TRANSLATIONS = {
     'processing': 'Processing',
     'completed': 'Done',
 
-    '节点已被移除': 'Removed',
-    '当前节点': 'Myself',
     'im_slave': 'This is a slave',
 
     '确定要下线此容器吗?': 'This container will be removed, are you sure?',
+    'redis-containerize-port-range-invalid': 'Port should between 6000 and 7999',
+    'proxy-containerize-port-range-invalid': 'Port should between 8000 and 9999',
 
     '': ''
 };

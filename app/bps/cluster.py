@@ -19,6 +19,11 @@ def access_control():
         abort(403)
 
 
+@bp.route('/create')
+def create_cluster():
+    return render_template('cluster/create.html')
+
+
 @bp.route('/panel/<int:cluster_id>')
 def cluster_panel(cluster_id):
     c = models.cluster.get_by_id(cluster_id)

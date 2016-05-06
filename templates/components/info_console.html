@@ -162,12 +162,12 @@ $(document).ready(function() {
                 return 0;
             });
             body.html('').append(makeRow()
-                .append(makeCell(2).text('节点 ID'))
-                .append(makeCell(2).text('地址'))
-                .append(makeCell(2).text('角色'))
-                .append(makeCell(2).text('主节点 ID'))
-                .append(makeCell(1).text('状态'))
-                .append(makeCell(2).text('槽位'))
+                .append(makeCell(2).text(_('Node ID')))
+                .append(makeCell(2).text(_('Address')))
+                .append(makeCell(2).text(_('Role')))
+                .append(makeCell(2).text(_('Master ID')))
+                .append(makeCell(1).text(_('Status')))
+                .append(makeCell(2).text(_('Slots')))
                 );
             $.each(lines, function(_, e) {
                 body.append(makeRow()

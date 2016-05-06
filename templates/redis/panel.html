@@ -3,7 +3,6 @@
 {% block title %}Node Panel - {{ node.host|e }}:{{ node.port }}{% endblock %}
 
 {% block head %}
-<script src='/static/js/eru_container.js'></script>
 <style>
 .table { text-align: center; }
 .status-table {
@@ -17,6 +16,8 @@
     padding: 6px 13px;
 }
 </style>
+<script src='/static/js/eru_container.js'></script>
+<script src='/static/js/cluster_task.js'></script>
 <script src='/static/js/redis_node.js'></script>
 <script src='/static/js/sort-nodes.js'></script>
 {% endblock %}
@@ -26,15 +27,15 @@
     <div class="panel-heading">{{ node.host|e }}:{{ node.port }}</div>
     <table class='table'>
     <tr>
-        <th data-localize='node-id'>节点 ID</th>
+        <th data-localize='node-id'>Node Id</th>
         <td>{{ detail.node_id|e }}</td>
     </tr>
     <tr>
-        <th data-localize='version'>版本</th>
+        <th data-localize='version'>Version</th>
         <td>{{ detail.version }}</td>
     </tr>
     <tr>
-        <th data-localize='node-memory-usage'>内存</th>
+        <th data-localize='node-memory-usage'>Memory</th>
         <td>
         {% if detail %}
             <span>
@@ -42,71 +43,71 @@
                 {% if detail.get('maxmemory', 0) != 0 %}
                   / {{ detail.maxmemory|filesizeformat }}
                 {% else %}
-                  (<span data-localize='max-memory-not-set'>未设置最大值</span>)
+                  (<span data-localize='max-memory-not-set'></span>)
                 {% endif %}
             </span>
-            <button class='btn btn-inverse' data-toggle='modal' data-target='#nodeMemSetting' data-localize='setting'>设置</button>
+            <button class='btn btn-inverse' data-toggle='modal' data-target='#nodeMemSetting' data-localize='settings'>Settings</button>
             {% autoescape false %}
                 {{ render('components/node/memory-setting.html', host=node.host, port=node.port,
-                          max_mem=detail.maxmemory, used_mem=detail.used_memory, mem_limit=max_mem_limit) }}
+                          max_mem=detail.get('maxmemory', 0), used_mem=detail.get('used_memory', 0), mem_limit=max_mem_limit) }}
             {% endautoescape %}
         {% else %}
-        <span data-localize='wait-poll'>等待轮询</span>
+        <span data-localize='wait-poll'>WAIT FOR POLLING</span>
         {% endif %}
         </td>
     </tr>
   {%- if node.eru_deployed %}
     <tr>
-        <th data-localize='deploy'>部署</th>
-        <td><i class='fa fa-cube'></i><span data-localize='eru-container'> ERU 容器</td>
+        <th data-localize='deploy'>Depoly</th>
+        <td><i class='fa fa-cube'></i><span data-localize='eru-container'> <span data-localize='container'>Container</span></td>
     </tr>
     {%- if node.eru_info %}
     <tr>
-        <td data-localize='eru-cantainer-id'>ERU 容器 ID</td>
+        <td><span data-localize='container'>Container</span> ID</td>
         <td>
             <span>{{ node.eru_container_id|e }}</span>
           {%- if not node.eru_info.is_alive %}
-            <button class='btn btn-info btn-revive-container' data-cid='{{ node.eru_container_id|e }}' data-localize='btn-revive'>复活此容器</button>
+            <button class='btn btn-info btn-revive-container' data-cid='{{ node.eru_container_id|e }}' data-localize='btn-revive'>Revive</button>
           {%- endif %}
         </td>
     </tr>
     <tr>
-        <td data-localize='create-container-time'>ERU 容器创建时间</td>
+        <td data-localize='creation'>Creation</td>
         <td>{{ node.eru_info.created|e }}</td>
     </tr>
     <tr>
-        <td data-localize='host-address'>ERU 宿主机地址</td>
+        <td data-localize='host-address'>Host Address</td>
         <td>{{ node.eru_info.host|e }}</td>
     </tr>
     {%- endif %}
   {%- endif %}
     <tr>
-        <th data-localize='statistics'>统计</th>
+        <th data-localize='statistics'>Stats</th>
         <td>
             {% if not (detail and detail.stat) %}
-            <span data-localize='wait-poll'>等待轮询采集数据</span>
+            <span data-localize='wait-poll'>WAIT FOR POLLING</span>
             {% else %}
             <table class='table status-table'>
                 <caption>CPU</caption>
                 <tr>
-                    <td data-localize='cpu-user'>用户态累计</td>
+                    <td data-localize='cpu-user'>CPU User</td>
                     <td>{{ detail.used_cpu_user }}</td>
                 </tr>
                 <tr>
-                    <td data-localize='cpu-sys'>内核态累计</td>
+                    <td data-localize='cpu-sys'>CPU Sys</td>
                     <td>{{ detail.used_cpu_sys }}</td>
                 </tr>
                 <tr>
-                    <td data-localize='uptime'>总运行时间</td>
+                    <td data-localize='uptime'>Uptime</td>
                     <td>{{ detail.uptime_in_seconds }}</td>
                 </tr>
                 <tr>
-                    <td data-localize='avg-cpu-usage'>平均 CPU 占用率</td>
+                    <td data-localize='avg-cpu-usage'>Avg CPU usage</td>
                     <td>{{ ((detail.used_cpu_user + detail.used_cpu_sys) / detail.uptime_in_seconds * 100)|round(2) }}%</td>
                 </tr>
             </table>
             <table class='table status-table'>
-                <caption data-localize='storage'>存储</caption>
+                <caption data-localize='storage'>Storage</caption>
                 <tr>
                     <td>Keyspace hits</td>
                     <td>{{ detail.keyspace_hits }}</td>
@@ -125,13 +126,13 @@
                 </tr>
             </table>
             <table class='table status-table'>
-                <caption data-localize="node-memory-usage">内存</caption>
+                <caption data-localize="node-memory-usage">Memory</caption>
                 <tr>
-                    <td data-localize='used-memory'>已使用内存</td>
+                    <td data-localize='used-memory'>Used memory</td>
                     <td>{{ detail.get('used_memory', 0)|filesizeformat }}</td>
                 </tr>
                 <tr>
-                    <td data-localize='mem-rss'>常驻集</td>
+                    <td data-localize='mem-rss'>RSS</td>
                     <td>{{ detail.get('used_memory_rss', 0)|filesizeformat }}</td>
                 </tr>
             </table>
@@ -143,66 +144,71 @@
 <div class='form-horizontal form-submit'>
     <div class='form-group'>
         {%- if stats_enabled %}
-        <div class='col-xs-2'>
-            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'><span data-localize='history'>状态历史</span> {{ icon('line-chart') }}</a>
+        <div class='col-xs-2 text-center'>
+            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'><span data-localize='history'>History</span> {{ icon('line-chart') }}</a>
         </div>
         {% endif %}
 
-        {{ checkbox('关闭报警', size=2, color='danger', cls=['check-suppress-alert'], checked=node.suppress_alert, data={'ntype': 'redis', 'host': node.host, 'port': node.port}, lcl='btn-disable-alarm') }}
-
-        {%- if node.assignee is none and not node.eru_deployed %}
-            {{ button('从监视器中移除此节点', size=2, color='danger', cls=['node-deleter'], data={'host': node.host, 'port': node.port}, lcl='btn-remove') }}
-        {% endif %}
+        {{ checkbox('Disable alarm', size=2, color='danger', cls=['check-suppress-alert', 'btn-block'], checked=node.suppress_alert, data={'ntype': 'redis', 'host': node.host, 'port': node.port}, lcl='btn-disable-alarm') }}
 
         {%- if detail.slots_migrating %}
-            {{ button('修复迁移状态', size=2, color='warning', cls=['fix-migrating-btn'], data={'host': node.host, 'port': node.port}, lcl='cluster-fix-migrating') }}
+            {{ button('Fix migrating', size=2, color='warning', cls=['fix-migrating-btn', 'btn-block'], data={'host': node.host, 'port': node.port}, lcl='cluster-fix-migrating') }}
         {% endif %}
-        {{ button('发送指令', size=1, data={'toggle': 'modal', 'target': '#commandConsole', 'host': node.host, 'port': node.port}, lcl='btn-direct-command') }}
-        {{ button('INFO', size=1, cls=['info-btn'], data={'type': 'node', 'host': node.host, 'port': node.port}) }}
-        {{ button('CLUSTER NODES', size=2, cls=['cluster-nodes-btn'], data={'host': node.host, 'port': node.port}) }}
+        {{ button('Send Cmd', size=2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#commandConsole', 'host': node.host, 'port': node.port}, lcl='btn-direct-command') }}
+        {{ button('INFO', size=2, cls=['info-btn', 'btn-block'], data={'type': 'node', 'host': node.host, 'port': node.port}) }}
+        {{ button('CLUSTER NODES', size=2, cls=['cluster-nodes-btn', 'btn-block'], data={'host': node.host, 'port': node.port}) }}
     </div>
 </div>
 
 {% if node.assignee %}
 
-<table class='table'>
-    <tr>
-        <th data-localize='belonging-cluster'>所属集群</th>
-        <td><a target='_blank' href='/cluster/panel/{{ node.assignee.id }}'>{{ node.assignee.description|e }} <i class='fa fa-external-link'></i></a></td>
-    </tr>
-    <tr>
-        <th data-localize='slots-num'>槽位数</th>
-        <td>{{ detail.slots|length }}</td>
-    </tr>
-</table>
+<form class='form-horizontal'>
+    <div class='form-group text-center'>
+        <div class='col-xs-2'><strong data-localize='slots-num'>Slots</strong></div>
+        <div class='col-xs-2'>{{ detail.slots|length }}</div>
 
-<div>
-    <button class='btn panel-btn btn-primary' id='quit-cluster-btn' data-bind='quit-cluster' data-localize='quit-cluster'>退出集群</button>
-    <button class='btn panel-btn btn-primary' id='migrating-slots-btn' data-bind='migrating-slots' data-localize='move-slot'>迁出槽位</button>
-    <button class='btn btn-info' style='display: none' id='quit-cluster-force' data-localize='already-quit-message'>此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联</button>
-</div>
+        <div class='col-xs-2'><strong data-localize='serving-in-cluster'>Serving in</strong></div>
+        <div class='col-xs-4'>
+            <a target='_blank' href='/cluster/panel/{{ node.assignee.id }}'>{{ node.assignee.description|e }} <i class='fa fa-external-link'></i></a>
+        </div>
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-2'>
+            <button type='button' class='btn btn-primary btn-block panel-btn' id='quit-cluster-btn' data-bind='quit-cluster' data-localize='quit-cluster'>Quit cluster</button>
+        </div>
+        <div class='col-xs-2'>
+            <button type='button' class='btn btn-primary btn-block panel-btn' id='migrating-slots-btn' data-bind='migrating-slots' data-localize='migr-out-slot'>Migrate out</button>
+        </div>
+        <div class='col-xs-6'>
+            <button type='button' class='btn btn-info btn-block' style='display: none' id='quit-cluster-force' data-localize='already-quit-message'>Confirm</button>
+        </div>
+    </div>
+</form>
 
 <div class='panel-div' id='quit-cluster'>
-    <span class='loading-cluster-info' data-localize='loading'>正在加载集群信息...</span>
-    <button class='btn btn-info' style='display: none' id='quit-cluster-replica' data-localize='ok-to-quit'>确定退出</button>
+    <span class='loading-cluster-info' data-localize='loading-cluster-info'>Loading cluster info</span>...
+    <button type='button' class='btn btn-info' style='display: none' id='quit-cluster-replica' data-localize='confirm'>Confirm</button>
     <table class='table' style='display: none'>
-        <caption><h2 data-localize='exit-message'>退出集群 - 迁出该节点上的所有槽位才能退出</h2></caption>
+        <caption data-localize='quit-cluster-precondition'>Quit - migrate out all the slots before quit</caption>
         <thead>
             <tr>
                 <th>#</th>
-                <th data-localize='address'>地址</th>
-                <th data-localize='slots-num'>槽位数</th>
-                <th data-localize='migrate-in'>迁出至此节点的槽位数</th>
-                <th data-localize='after-migrated'>迁移后的槽位数</th>
+                <th data-localize='address'>Address</th>
+                <th data-localize='slots-num'>Slots</th>
+                <th data-localize='migrate-in'>Number of slots to be migrated in</th>
+                <th data-localize='after-migrated'>Number of slots after migration</th>
             </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
             <tr>
                 <td colspan='5'>
-                    <button class='btn' id='avg-migr-slots-btn' data-localize='btn-equalize'>平均分配迁出的槽位</button>
-                    <button class='btn btn-danger' id='quit-cluster-confirm' data-localize='confirm'>迁移全部槽位并退出集群</button>
-                    <span id='slots-remain-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='slots-remain-err'>退出集群前节点槽位必须完全迁出</span>
+                    <button type='button' class='btn' id='avg-migr-slots-btn' data-localize='btn-equalize'>Equalize</button>
+                    <button type='button' class='btn btn-danger' id='quit-cluster-confirm' data-localize='confirm'>Confirm</button>
+                    <span id='slots-remain-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='slots-remain-err'>
+                        You are supposed to migrate all the slots
+                    </span>
                 </td>
             </tr>
         </tfoot>
@@ -210,23 +216,23 @@
 </div>
 
 <div class='panel-div' id='migrating-slots'>
-    <span class='loading-cluster-info' data-localize='loading'>正在加载集群信息...</span>
+    <span class='loading-cluster-info' data-localize='loading-cluster-info'>Loading cluster info</span>...
     <table class='table' style='display: none'>
         <thead>
             <tr>
                 <th>#</th>
-                <th data-localize='address'>地址</th>
-                <th data-localize='slots-num'>槽位数</th>
-                <th data-localize='migrate-in'>迁出至此节点的槽位数</th>
-                <th data-localize='after-migrated'>迁移后的槽位数</th>
+                <th data-localize='address'>Address</th>
+                <th data-localize='slots-num'>Slots</th>
+                <th data-localize='migrate-in'>Number of slots to be migrated in</th>
+                <th data-localize='after-migrated'>Number of slots after migration</th>
             </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
             <tr>
                 <td colspan='5'>
-                    <button id='migrating-slots-confirm' class='btn btn-primary' data-localize='confirm'>迁移</button>
-                    <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='insufficient-slots'>槽位不足</span>
+                    <button type='button' id='migrating-slots-confirm' class='btn btn-primary' data-localize='confirm'>Confirm</button>
+                    <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='insufficient-slots'>Insufficient slots</span>
                 </td>
             </tr>
         </tfoot>
@@ -387,7 +393,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
             ).append($('<td>').text(i)
             ).append($('<td>').text(node.host + ':' + node.port)
             ).append($('<td>').text(node.slots_count)
-            ).append($('<td>').text(_('当前节点'))
+            ).append($('<td>').text(_('Myself'))
             ).append($('<td>').addClass('slots-result').text(node.slots_count)
             );
     }
@@ -477,9 +483,12 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
 {% else %}
 
 <div style='margin-bottom: 1em' class='row'>
-    {{ button('集群自动发现', size=2, data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
-    {{ button('启动集群', size=2, id='start-cluster-btn', cls=['panel-btn'], data={'bind': 'start-cluster'}, lcl='start-cluster') }}
-    {{ button('加入集群', size=2, id='join-cluster-btn', cls=['panel-btn'], data={'bind': 'join-cluster'}, lcl='join-cluster') }}
+    {{ button('Auto discover', size=2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
+    {{ button('Launch cluster', size=2, id='start-cluster-btn', cls=['panel-btn', 'btn-block'], data={'bind': 'start-cluster'}, lcl='start-cluster') }}
+    {{ button('Join cluster', size=2, id='join-cluster-btn', cls=['panel-btn', 'btn-block'], data={'bind': 'join-cluster'}, lcl='join-cluster') }}
+    {%- if not node.eru_deployed %}
+        {{ button('Unregister', offset=2, size=2, color='danger', cls=['node-deleter', 'btn-block'], data={'host': node.host, 'port': node.port}, lcl='btn-remove') }}
+    {% endif %}
 </div>
 
 {% autoescape false %}
@@ -487,19 +496,19 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
 {% endautoescape %}
 
 <div class='panel-div' id='start-cluster'>
-    <span data-localize='cluster-description'>集群描述</span>: <input id='start-cluster-descr'>
-    <button class='btn btn-primary' id='start-cluster-confirm' data-localize='start-cluster'>启动</button>
+    <span data-localize='cluster-description'>Cluster description</span>: <input id='start-cluster-descr'>
+    <button class='btn btn-primary' id='start-cluster-confirm' data-localize='start-cluster'>Launch</button>
 </div>
 
 <div class='panel-div' id='join-cluster'>
-    <span id='loading-cluster-list' data-localize='loading'>正在加载集群列表...</span>
+    <span id='loading-cluster-list' data-localize='loading-cluster-list'></span>...
     <select id='select-cluster' data-select-style='select-default'>
-        <option value='' data-localize='choose-cluster'>选择集群</option>
+        <option value='' data-localize='select-cluster'>Select cluster</option>
     </select>
-    <button class='btn btn-primary' id='join-cluster-confirm' data-localize='join-cluster-confirm'>加入成为主节点</button>
-    -- <span data-localize='or'>或</span> --
-    <select id='select-master' data-select-style='select-default' data-default-text='选择主节点'></select>
-    <button class='btn btn-primary' id='replicate-confirm' data-localize='replicate-confirm'>以此主节点的副本加入</button>
+    <button class='btn btn-primary' id='join-cluster-confirm' data-localize='join-cluster-confirm'>Join as master</button>
+    -- <span data-localize='or'>or</span> --
+    <select id='select-master' data-select-style='select-default' data-localize='select-master' data-default-text='Select master'>Select master</select>
+    <button class='btn btn-primary' id='replicate-confirm' data-localize='replicate-confirm'>Replicate as slave</button>
 </div>
 
 <script>
@@ -517,28 +526,17 @@ $('#start-cluster-confirm').click(function() {
         return $('#start-cluster-descr').focus();
     }
     var btn = $(this);
-    btn.text('请稍候').attr('disabled', 'disabled');
-    $.post('/cluster/add', {
-        descr: $('#start-cluster-descr').val()
-    }, function(r) {
-        $.ajax({
-            url: '/task/launch',
-            type: 'POST',
-            data: JSON.stringify({
-                nodes: [{
-                    host: {{ node.host|tojson }},
-                    port: {{ node.port|tojson }},
-                }],
-                cluster: r
-            }),
-            success: function() {
-                window.location.reload();
-            },
-            error: function(r) {
-                btn.parent().text(_('failed') + ': ' + r.responseText);
-            }
-        });
-    });
+    btn.attr('disabled', 'disabled');
+    createAndLaunchCluster($('#start-cluster-descr').val(), [{
+        host: {{ node.host|tojson }},
+        port: {{ node.port|tojson }},
+    }], function(e, r) {
+        if (e) {
+            console.error(e);
+            return alert(_('failed') + ': ' + e.responseText);
+        }
+        window.location = '/cluster/panel/' + r;
+    })
 });
 
 $('#join-cluster-btn').click(function() {
@@ -556,7 +554,7 @@ $('#join-cluster-btn').click(function() {
             for (var i in r) {
                 var cluster = r[i];
                 $('#select-cluster').append($('<option>')
-                    .text([cluster.descr, '-', cluster.nodes, '个节点'].join(' '))
+                    .text([cluster.descr, '-', cluster.nodes].join(' '))
                     .val(cluster.id)
                     .data('index', i));
             }
@@ -580,7 +578,7 @@ $('#join-cluster-btn').click(function() {
                             }
                         },
                         error: function(r) {
-                            console.log(r);
+                            console.error(r);
                             alert(_('failed') + ': ' + r.responseText);
                         }
                     });
@@ -606,21 +604,12 @@ $('#join-cluster-confirm').click(function() {
         return;
     }
     $('#join-cluster button').attr('disabled', 'disabled');
-    btn.text('请稍候');
-    $.ajax({
-        url: '/task/join',
-        type: 'POST',
-        data: {
-            host: {{ node.host|tojson }},
-            port: {{ node.port|tojson }},
-            cluster_id: clusterId
-        },
-        success: function() {
-            window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text(_('failed') + ': ' + r.responseText);
+    btn.text(_('Please wait'));
+    joinTask(clusterId, [{host: {{ node.host|tojson }}, port: {{ node.port|tojson }} }], function(e) {
+        if (e) {
+            return btn.parent().text(_('failed') + ': ' + e.responseText);
         }
+        window.location.reload();
     });
 });
 
@@ -631,21 +620,13 @@ $('#replicate-confirm').click(function() {
     }
     $('#join-cluster button').attr('disabled', 'disabled');
     var btn = $(this);
-    btn.text('请稍候');
-    $.ajax({
-        url: '/task/replicate',
-        type: 'POST',
-        data: {
-            master_host: opt.host,
-            master_port: opt.port,
-            slave_host: {{ node.host|tojson }},
-            slave_port: {{ node.port|tojson }}
-        },
-        success: function() {
+    btn.text(_('Please wait'));
+    replicateTask(opt.host, opt.port, {{ node.host|tojson }}, {{ node.port|tojson }}, function(e) {
+        if (e) {
+            console.error(e);
+            btn.parent().text(_('failed') + ': ' + e.responseText);
+        } else {
             window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text(_('failed') + ': ' + r.responseText);
         }
     });
 });

@@ -26,6 +26,7 @@ REDIS_CONNECT_TIMEOUT = int(os.getenv('REDIS_CONNECT_TIMEOUT', 5))
 ERU_URL = os.getenv('ERU_URL', None)
 ERU_GROUP = os.getenv('ERU_GROUP', 'group')
 ERU_NETWORK = os.getenv('ERU_NETWORK', 'net')
+MICRO_PLAN_MEM = int(os.getenv('MICRO_PLAN_MEM', 108 * 1000 * 1000))
 
 OPEN_FALCON = {
     'host_query': os.getenv('OPEN_FALCON_HOST_QUERY', ''),

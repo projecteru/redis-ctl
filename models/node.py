@@ -53,6 +53,11 @@ def create_instance(host, port):
     return node
 
 
+def list_free():
+    return RedisNode.query.filter(RedisNode.assignee_id == None).order_by(
+            RedisNode.id.desc()).all()
+
+
 def create_eru_instance(host, port, eru_container_id):
     node = RedisNode(host=host, port=port, eru_container_id=eru_container_id)
     db.session.add(node)

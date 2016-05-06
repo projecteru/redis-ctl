@@ -1,13 +1,13 @@
 <table class='table' style='text-align: center'>
   <thead>
     <tr>
-      <th data-localize='container-id'>容器 ID</th>
-      <th data-localize='mirrored-version'>镜像版本</th>
-      <th data-localize='host-address'>宿主地址</th>
-      <th data-localize='create-time'>创建时间</th>
-      <th data-localize='address'>地址</th>
-      <th data-localize='cluster-mode'>集群模式</th>
-      <th data-localize='offline-container'>下线容器</th>
+      <th data-localize='container-id'>Container ID</th>
+      <th data-localize='image-version'>Image Version</th>
+      <th data-localize='host-address'>Host Address</th>
+      <th data-localize='creation'>Creation</th>
+      <th data-localize='address'>Address</th>
+      <th data-localize='cluster-mode'>Cluster mode</th>
+      <th data-localize='ops'>Ops</th>
     </tr>
   </thead>
   <tbody id='eru-nodes'>
@@ -29,7 +29,7 @@
         {% if n.assignee_id %}
         集群在役中
         {% else %}
-        {{ button('下线容器', color='danger', cls=['btn-del-container'], data={'type': 'node', 'cid': n.eru_container_id}) }}
+        {{ button('Offline', color='danger', cls=['btn-del-container'], data={'type': 'node', 'cid': n.eru_container_id}, lcl='offline') }}
         {% endif %}
       </td>
     <tr>

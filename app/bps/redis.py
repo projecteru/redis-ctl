@@ -1,5 +1,6 @@
 from flask import render_template, abort, request
 
+from app.utils import json_response
 from app.bpbase import Blueprint
 import models.node
 import models.audit
@@ -29,6 +30,19 @@ def node_panel(host, port):
         'redis/panel.html', node=node, detail=detail,
         max_mem_limit=bp.app.config_node_max_mem,
         stats_enabled=bp.app.stats_enabled())
+
+
+@bp.route('/register')
+def register_redis():
+    return render_template('redis/create.html')
+
+
+@bp.route('/list_free')
+def list_free():
+    return json_response([{
+        'host': n.host,
+        'port': n.port,
+    } for n in models.node.list_free()])
 
 
 @bp.route_post_json('/add', True)

@@ -1,0 +1,44 @@
+{% import 'blocks/modal.html' as modal %}
+
+{{ modal.head('nodesAdd', 'Batch Add Redis') }}
+<div class='form-horizontal form-submit' style='text-align: center'>
+    <form role='form' class='form-horizontal form-submit' style='padding-top: 12px'>
+        <div id='redis-selects'></div>
+        <div class='form-group'>
+          <div class='col-xs-offset-2 col-xs-2'>
+            <button type='button' class='btn btn-primary btn-block' disabled='disabled' id='batch-add-confirm' data-localize='btn-batch-add'>Batch add</button>
+          </div>
+        </div>
+    </form>
+</div>
+{{ modal.tail() }}
+
+<script>
+$('#nodesAdd').on('show.bs.modal', function(event) {
+    enableMultipleRedisOp($('#redis-selects').html(''), function() {
+        $('#batch-add-confirm').removeAttr('disabled');
+    });
+});
+
+$('#batch-add-confirm').click(function(r) {
+    checkMultipleRedisSelection(function(masters, slaveries) {
+        $('#batch-add-confirm').attr('disabled', 'disabled');
+        $.ajax({
+            type: 'POST',
+            url: '/task/batch',
+            data: JSON.stringify({
+                joins: masters,
+                replicas: slaveries,
+                cluster_id: {{ cluster_id|tojson }}
+            }),
+            success: function() {
+                window.location.reload();
+            },
+            error: function(e) {
+                console.error(e);
+                return alert(_('failed') + ': ' + e.responseText);
+            }
+        });
+    })
+});
+</script>
