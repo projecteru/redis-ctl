@@ -3,7 +3,7 @@
     {% set awaiting_polling = node.stat and not node.detail %}
     <td>
         <a id='node-i-{{ node.host|e }}-{{ node.port }}' href='/redis/panel/{{ node.host|e }}/{{ node.port}}'>{{ node.host|e }}:{{ node.port }}</a>
-        {% if node.eru_deployed %}
+        {% if node.containerized %}
         <span class='label label-info card-previewonly'><i class='fa fa-cube'></i></span>
         {% endif %}
     </td>

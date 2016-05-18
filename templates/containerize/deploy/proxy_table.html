@@ -1,0 +1,27 @@
+{% extends './containerize/deploy/table_base.html' %}
+
+{%- block table_id %}proxy-table{% endblock %}
+
+{%- block table_head %}
+<th data-localize='container-id'>Container ID</th>
+<th data-localize='image-version'>Image Version</th>
+<th data-localize='host-address'>Host Address</th>
+<th data-localize='creation'>Creation</th>
+<th data-localize='address'>Address</th>
+<th data-localize='ops'>Ops</th>
+{% endblock %}
+
+{%- block table_body %}
+  {% for n in proxies %}
+    <tr id='proxy-{{ n.host|e }}-{{ n.port }}'>
+      <td>{{ n.eru_container_id[:16]|e }}</td>
+      <td>{{ n.container_info.version|e }}</td>
+      <td>{{ n.container_info.host|e }}</td>
+      <td>{{ n.container_info.created|e }}</td>
+      <td><a href='/cluster/panel/{{ n.cluster.id }}#proxy-{{ n.host|e }}-{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
+      <td>
+        {{ button('Offline', color='danger', cls=['btn-del-container'], data={'type': 'proxy', 'cid': n.eru_container_id}, lcl='offline') }}
+      </td>
+    <tr>
+  {% endfor %}
+{% endblock %}

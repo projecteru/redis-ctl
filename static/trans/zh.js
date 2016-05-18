@@ -17,6 +17,7 @@ window.TRANSLATIONS = {
     'invalid port format': '不正确的端口范围格式',
     'registering': '正在注册',
     'waiting for polling': '尚未获取节点详细信息',
+    'Redis unregistered': '节点已被移除',
 
     'task_step_launch': '创建集群',
     'task_step_fix_migrate': '修复迁移状态',
@@ -56,6 +57,8 @@ window.TRANSLATIONS = {
     'proxy-containerize-port-range-invalid': '端口范围应该在 8000-9999 之间',
     'Number of threads not selected': '请选择线程数量',
     'Number of CPU slices not selected': '请选择 CPU 分片数量',
+    'Offline': '下线容器',
+    'This container will be removed, are you sure?': '确定要下线此容器吗?',
 
     '': ''
 };

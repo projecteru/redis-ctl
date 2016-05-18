@@ -117,6 +117,8 @@
     "text-auto-expand": "集群自动扩容在集群节点内存容量使用超过 90% 时自动申请新节点并迁移数据.",
     "btn-enable-auto-expand": "启用自动扩容",
     "background-task": "后台任务",
+    "serving-redis": "现有 Redis",
+    "serving-proxies": "现有代理",
 
     "start-cluster": "启动集群",
     "join-cluster": "加入集群",
@@ -158,6 +160,7 @@
     "threads-num": "线程数",
     "newly-created": "最新创建",
     "view-all": "查看全部",
+    "back-to-containerize-manage": "回到容器管理页",
 
     "": ""
 }

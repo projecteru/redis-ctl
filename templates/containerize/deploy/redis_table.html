@@ -1,0 +1,39 @@
+{% extends './containerize/deploy/table_base.html' %}
+
+{%- block table_id %}redis-table{% endblock %}
+
+{%- block table_head %}
+<th data-localize='container-id'>Container ID</th>
+<th data-localize='image-version'>Image Version</th>
+<th data-localize='host-address'>Host Address</th>
+<th data-localize='creation'>Creation</th>
+<th data-localize='address'>Address</th>
+<th data-localize='cluster-mode'>Cluster mode</th>
+<th data-localize='ops'>Ops</th>
+{% endblock %}
+
+{%- block table_body %}
+  {% for n in nodes %}
+    <tr>
+      <td>{{ n.eru_container_id[:16]|e }}</td>
+      <td>{{ n.container_info.version|e }}</td>
+      <td>{{ n.container_info.host|e }}</td>
+      <td>{{ n.container_info.created|e }}</td>
+      <td><a href='/redis/panel/{{ n.host|e }}/{{ n.port }}'>{{ n.host|e }}:{{ n.port }}</a></td>
+      <td>
+          {% if n.detail %}
+            {{ n.detail.cluster_enabled }}
+          {% else %}
+            -
+          {% endif %}
+      </td>
+      <td>
+        {% if n.assignee_id %}
+        <span data-localize='serving'>Serving</span>
+        {% else %}
+        {{ button('Offline', color='danger', cls=['btn-del-container'], data={'type': 'node', 'cid': n.eru_container_id}, lcl='offline') }}
+        {% endif %}
+      </td>
+    <tr>
+  {% endfor %}
+{% endblock %}

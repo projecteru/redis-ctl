@@ -3,7 +3,7 @@
 {% block title %}Containerization{% endblock %}
 
 {% block head %}
-<script src='/static/js/eru_container.js'></script>
+<script src='/static/js/containerize.js'></script>
 {% endblock %}
 
 {% block body %}
@@ -69,7 +69,7 @@
                 <a href='/containerize/nodes/' style='color:white; float: right;' data-localize='view-all'>View All</a>
               </div>
               {% autoescape false %}
-                {{ render('components/node/list_eru_node.html', nodes=[]) }}
+                {{ render('containerize/deploy/redis_table.html', nodes=[]) }}
               {% endautoescape %}
             </div>
         </div>
@@ -121,7 +121,7 @@
                 <a href='/containerize/proxies/' style='color:white; float: right;' data-localize='view-all'>View All</a>
               </div>
               {% autoescape false %}
-                {{ render('components/node/list_eru_proxy.html', proxies=[]) }}
+                {{ render('containerize/deploy/proxy_table.html', proxies=[]) }}
               {% endautoescape %}
             </div>
         </div>
@@ -178,6 +178,10 @@ function checkPodSelect() {
     return true;
 }
 
+delContainer.deleted = function(btn) {
+    btn.parent().parent().remove();
+}
+
 $('#create-node-btn').click(function() {
     if (!checkPodSelect()) {
         return;
@@ -203,12 +207,12 @@ $('#create-node-btn').click(function() {
         },
         success: function(r) {
             btn.removeAttr('disabled');
-            $('#eru-nodes').append($('<tr>'
+            $('#redis-table').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
                     ).append($('<td>').text(r.version.slice(0, 7))
                     ).append($('<td>').text(r.host)
                     ).append($('<td>').text(r.created)
-                    ).append($('<td>').append($('<a>').attr('href', '/redis/panel/' + r.address + '/' + port).text(r.address))
+                    ).append($('<td>').append($('<a>').attr('href', '/redis/panel/' + r.address + '/' + r.port).text(r.address + ':' + r.port))
                     ).append($('<td>')
                     ).append($('<td>').append(deleteButton(r.container_id, 'node'))
                     ));
@@ -266,12 +270,12 @@ $('#create-proxy-btn').click(function () {
         },
         success: function(r) {
             btn.removeAttr('disabled');
-            $('#eru-proxies').append($('<tr>'
+            $('#proxy-table').append($('<tr>'
                     ).append($('<td>').text(r.container_id.slice(0, 16))
                     ).append($('<td>').text(r.version.slice(0, 7))
                     ).append($('<td>').text(r.host)
                     ).append($('<td>').text(r.created)
-                    ).append($('<td>').append($('<a>').attr('href', '/cluster/panel/' + clusterId).text(r.address + ':' + port))
+                    ).append($('<td>').append($('<a>').attr('href', '/cluster/panel/' + clusterId).text(r.address + ':' + r.port))
                     ).append($('<td>').append(deleteButton(r.container_id, 'proxy'))
                     ));
         },
@@ -282,8 +286,9 @@ $('#create-proxy-btn').click(function () {
 });
 
 function deleteButton(containerId, type) {
-    return $('<button>').addClass('btn').addClass('btn-danger').text(
-        '下线容器').data('cid', containerId).data('type', type).click(delContainer);
+    return $('<button>').addClass('btn').addClass('btn-danger')
+                        .data('cid', containerId).data('type', type)
+                        .text(_('Offline')).click(delContainer);
 }
 
 $('.check-opt').enableLabelCheck();

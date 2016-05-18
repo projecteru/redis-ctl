@@ -5,7 +5,7 @@
 {% block head %}
 <script src='/static/js/cluster_task.js'></script>
 <script src='/static/js/redis_node.js'></script>
-<script src='/static/js/eru_container.js'></script>
+<script src='/static/js/containerize.js'></script>
 <script src='/static/js/sort-nodes.js'></script>
 <style>
 .slave-row .node-addr {
@@ -191,10 +191,10 @@ $('#shutdown-cluster').click(function() {
     </table>
     <form class='form-horizontal'>
         <div class='form-group'>
-            {{ button('Auto discover', 3, cls=['btn-block'], data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
-            {{ button('Nodes addresses', 3, cls=['btn-block'], data={'toggle': 'modal', 'target': '#exportNodes'}, lcl='btn-list-nodes') }}
-            {{ button('Batch migr', 3, cls=['btn-block'], data={'toggle': 'modal', 'target': '#nodesAdjustment'}, lcl='btn-bulk-migr') }}
-            {{ button('Batch add', 3, cls=['btn-block'], data={'toggle': 'modal', 'target': '#nodesAdd'}, lcl='btn-batch-add') }}
+            {{ button('Auto discover', 2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
+            {{ button('Nodes addresses', 2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#exportNodes'}, lcl='btn-list-nodes') }}
+            {{ button('Batch migr', 2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#nodesAdjustment'}, lcl='btn-bulk-migr') }}
+            {{ button('Batch add', 2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#nodesAdd'}, lcl='btn-batch-add') }}
         </div>
     </form>
 </div>
@@ -312,7 +312,7 @@ $('#shutdown-cluster').click(function() {
             {%- if proxy.details.read_slave %}
             <span class='label label-info' data-localize='read-only'>Read Only</span>
             {% endif %}
-            {%- if proxy.eru_deployed %}{{ icon('cube') }}{% endif %}
+            {%- if proxy.containerized %}{{ icon('cube') }}{% endif %}
         </div>
 
         <div class='col-sm-1'>
@@ -328,9 +328,9 @@ $('#shutdown-cluster').click(function() {
         {{ button('INFO', size=1, cls=['info-btn'], data={'type': 'proxy', 'host': proxy.host, 'port': proxy.port}) }}
         {{ button('Sync remote', size=1, cls=['sync-remotes-btn'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-sync-slots-map') }}
 
-        {%- if proxy.eru_deployed %}
+        {%- if proxy.containerized %}
           {{ button('Remove Container', size=2, color='danger', cls=['btn-del-container'], data={'type': 'proxy', 'cid': proxy.eru_container_id}, lcl='btn-remove-container') }}
-          {%- if proxy.eru_info and not proxy.eru_info.is_alive %}
+          {%- if proxy.container_info and not proxy.container_info.is_alive %}
             {{ button('Revive', size=1, color='info', cls=['btn-revive-container'], data={'cid': proxy.eru_container_id}, lcl='btn-revive') }}
           {%- endif %}
         {%- else %}

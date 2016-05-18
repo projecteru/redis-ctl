@@ -44,7 +44,7 @@ class TestApp(RedisCtl):
 
     def replace_container_client(self, client=None):
         if client is None:
-            client = FakeEruClientBase()
+            client = FakeContainerClientBase()
         self.container_client = client
         return client
 
@@ -100,7 +100,7 @@ class TestCase(unittest.TestCase):
             ]))
 
 
-class FakeEruClientBase(object):
+class FakeContainerClientBase(object):
     def __init__(self):
         self.next_container_id = 0
         self.deployed = {}
@@ -131,12 +131,12 @@ class FakeEruClientBase(object):
         }
 
     def deploy_redis(self, pod, aof, netmode, cluster=True, host=None,
-                     port=6379):
+                     port=6379, *args, **kwarge):
         return self.deploy_with_network('redis', pod, netmode, host=host,
                                         args=[])
 
     def deploy_proxy(self, pod, threads, read_slave, netmode, host=None,
-                     port=8889):
+                     port=8889, *args, **kwarge):
         return self.deploy_with_network(
             'cerberus', pod, netmode, ncore=threads, host=host, args=[])
 

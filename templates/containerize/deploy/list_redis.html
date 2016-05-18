@@ -1,0 +1,9 @@
+{% extends './containerize/deploy/list_base.html' %}
+
+{% block title %}Containerized Redis{% endblock %}
+
+{% block table %}
+  {% autoescape false %}
+    {{ render('containerize/deploy/redis_table.html', nodes=nodes) }}
+  {% endautoescape %}
+{% endblock %}

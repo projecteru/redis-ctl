@@ -33,7 +33,6 @@ window.TRANSLATIONS = {
 
     'im_slave': 'This is a slave',
 
-    '确定要下线此容器吗?': 'This container will be removed, are you sure?',
     'redis-containerize-port-range-invalid': 'Port should between 6000 and 7999',
     'proxy-containerize-port-range-invalid': 'Port should between 8000 and 9999',
 

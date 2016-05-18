@@ -16,7 +16,7 @@
     padding: 6px 13px;
 }
 </style>
-<script src='/static/js/eru_container.js'></script>
+<script src='/static/js/containerize.js'></script>
 <script src='/static/js/cluster_task.js'></script>
 <script src='/static/js/redis_node.js'></script>
 <script src='/static/js/sort-nodes.js'></script>
@@ -56,28 +56,28 @@
         {% endif %}
         </td>
     </tr>
-  {%- if node.eru_deployed %}
+  {%- if node.containerized %}
     <tr>
         <th data-localize='deploy'>Depoly</th>
-        <td><i class='fa fa-cube'></i><span data-localize='eru-container'> <span data-localize='container'>Container</span></td>
+        <td><i class='fa fa-cube'></i><span data-localize='container'>Container</span></td>
     </tr>
-    {%- if node.eru_info %}
+    {%- if node.container_info %}
     <tr>
         <td><span data-localize='container'>Container</span> ID</td>
         <td>
             <span>{{ node.eru_container_id|e }}</span>
-          {%- if not node.eru_info.is_alive %}
+          {%- if not node.container_info.is_alive %}
             <button class='btn btn-info btn-revive-container' data-cid='{{ node.eru_container_id|e }}' data-localize='btn-revive'>Revive</button>
           {%- endif %}
         </td>
     </tr>
     <tr>
         <td data-localize='creation'>Creation</td>
-        <td>{{ node.eru_info.created|e }}</td>
+        <td>{{ node.container_info.created|e }}</td>
     </tr>
     <tr>
         <td data-localize='host-address'>Host Address</td>
-        <td>{{ node.eru_info.host|e }}</td>
+        <td>{{ node.container_info.host|e }}</td>
     </tr>
     {%- endif %}
   {%- endif %}
@@ -486,7 +486,7 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
     {{ button('Auto discover', size=2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
     {{ button('Launch cluster', size=2, id='start-cluster-btn', cls=['panel-btn', 'btn-block'], data={'bind': 'start-cluster'}, lcl='start-cluster') }}
     {{ button('Join cluster', size=2, id='join-cluster-btn', cls=['panel-btn', 'btn-block'], data={'bind': 'join-cluster'}, lcl='join-cluster') }}
-    {%- if not node.eru_deployed %}
+    {%- if not node.containerized %}
         {{ button('Unregister', offset=2, size=2, color='danger', cls=['node-deleter', 'btn-block'], data={'host': node.host, 'port': node.port}, lcl='btn-remove') }}
     {% endif %}
 </div>

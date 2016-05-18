@@ -26,9 +26,10 @@ def access_control():
 def manage_home():
     pods = bp.app.container_client.list_pods()
     if len(pods) == 0:
-        return render_template('node/no_eru.html'), 400
+        return render_template('containerize/deploy/no_pod.html'), 400
     return render_template(
-        'node/manage_eru.html', pods=pods, clusters=models.cluster.list_all(),
+        'containerize/deploy/manage.html', pods=pods,
+        clusters=models.cluster.list_all(),
         redis_images=models.cont_image.list_redis())
 
 
@@ -39,13 +40,13 @@ def manage_redis():
     for n in nodes:
         n.detail = node_details.get('%s:%d' % (n.host, n.port), {})
     return render_template(
-        'node/manage_eru_nodes.html', page=g.page, nodes=nodes)
+        'containerize/deploy/list_redis.html', page=g.page, nodes=nodes)
 
 
 @bp.route('/proxies/')
 def manage_proxy():
     return render_template(
-        'node/manage_eru_proxies.html', page=g.page,
+        'containerize/deploy/list_proxies.html', page=g.page,
         proxies=models.proxy.list_eru_proxies(g.page * 20, 20))
 
 
@@ -71,6 +72,7 @@ def create_redis():
         micro_plan=request.form.get('micro_plan') == 'y')
     logging.debug('Container Redis deployed, info=%s', container_info)
 
+    port = container_info.setdefault('port', port)
     try:
         models.node.create_eru_instance(container_info['address'], port,
                                         container_info['container_id'])
@@ -114,6 +116,7 @@ def create_proxy():
         port=port, micro_plan_cpu_slice=micro_plan_cpu_slice)
     logging.debug('Container proxy deployed, info=%s', container_info)
 
+    port = container_info.setdefault('port', port)
     try:
         models.proxy.create_eru_instance(
             container_info['address'], port, cluster.id,

@@ -370,15 +370,15 @@ class AutoBalance(base.TestCase):
             }, self.app.polling_targets())
 
     def test_interrupted_after_deploy_some(self):
-        class EruClientLimited(base.FakeEruClientBase):
+        class ClientLimited(base.FakeContainerClientBase):
             def __init__(self, limit):
-                base.FakeEruClientBase.__init__(self)
+                base.FakeContainerClientBase.__init__(self)
                 self.limit = limit
 
             def deploy_private(self, *a, **kwargs):
                 if len(self.deployed) == self.limit:
                     raise ValueError('v')
-                return base.FakeEruClientBase.deploy_private(
+                return base.FakeContainerClientBase.deploy_private(
                     self, *a, **kwargs)
 
         with self.app.test_client() as client:
@@ -390,7 +390,7 @@ class AutoBalance(base.TestCase):
 
             cluster_id = c.id
 
-            self.replace_eru_client(EruClientLimited(2))
+            self.replace_eru_client(ClientLimited(2))
             self.assertRaisesRegexp(
                 ValueError, '^v$', add_node_to_balance_for,
                 '127.0.0.1', 6301, _get_balance_plan({
