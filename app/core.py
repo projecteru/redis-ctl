@@ -17,6 +17,7 @@ blueprints = (
     'task',
     'audit',
     'prune',
+    'myself',
     'translation',
 )
 

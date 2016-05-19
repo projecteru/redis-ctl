@@ -21,10 +21,12 @@
     "migrating": "有槽位正在迁移",
 
     "nav-add": "添加",
+    "nav-status": "服务状态",
     "container-nodes-mgr": "容器节点管理",
     "global-cluster-tasks-list": "集群任务",
     "polling-stats": "轮询记录",
     "audit-nodes": "节点审计",
+    "thirdparty-utils": "第三方库",
 
     "register-node": "注册新节点",
     "register-node-host": "节点地址",

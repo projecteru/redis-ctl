@@ -23,6 +23,10 @@ class Client(object):
         self.buf_size = None
         self.reconnect()
 
+    def __str__(self):
+        return 'OpenFalcon write@<%s> query@<%s>' % (
+            self.write_addr, self.query_uri)
+
     def reconnect(self):
         self.close()
         self.socket = socket.create_connection(self.write_addr)
@@ -49,7 +53,7 @@ class Client(object):
                 'step': 30,
                 'value': val,
                 'counterType': 'GAUGE',
-                'tags': 'service=redisctl&addr=' + name,
+                'tags': 'service=redisctl,addr=' + name,
             } for metric, val in fields.iteritems()])
         except IOError as e:
             logging.error('Fail to write points for %s as %s', name, e.message)
@@ -91,7 +95,7 @@ class Client(object):
             'cf': aggf,
             'endpoint_counters': [{
                 'endpoint': self.prefix,
-                'counter': field + '/service=redisctl&addr=' + name,
+                'counter': '%s/addr=%s,service=redisctl' % (field, name),
             }],
         })).json()[0]['Values']
         if r is None:

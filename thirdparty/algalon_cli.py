@@ -4,13 +4,15 @@ import json
 
 
 class AlgalonClient(object):
-
     def __init__(self, dsn, csrf_token):
         self.url = None
         self._dsn = None
         self.token = None
         self.dsn = dsn
         self.csrf_token = csrf_token
+
+    def __str__(self):
+        return 'Algalon DSN <%s>' % self.client.dsn
 
     def send_alarm(self, title, text):
         headers = {'content-type': 'application/json',
