@@ -18,6 +18,13 @@ window.TRANSLATIONS = {
     'registering': '正在注册',
     'waiting for polling': '尚未获取节点详细信息',
     'Redis unregistered': '节点已被移除',
+    'Proxy unregistered': '代理已被移除',
+    'Registered': '已注册',
+    'Remove': '移除此节点',
+    'Not in a cluster': '节点不在集群中',
+    'Loading cluster nodes': '正在载入集群信息',
+    'serving': 'Serving',
+    'ready': 'Ready',
 
     'task_step_launch': '创建集群',
     'task_step_fix_migrate': '修复迁移状态',
@@ -49,7 +56,6 @@ window.TRANSLATIONS = {
     'completed': '完成',
 
     'Myself': '当前节点',
-    'im_slave': '此节点是从节点',
 
     'Insufficient resource in specified host': '指定机器的资源不足',
     'An instance is already serving at the address': '该地址的节点或代理已经存在',

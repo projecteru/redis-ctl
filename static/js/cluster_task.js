@@ -194,3 +194,16 @@ function enableMultipleRedisOp(selects, callback) {
         callback(masters, slaveries);
     };
 }
+
+function taskFixMigrating() {
+    var btn = $(this);
+    $.post('/task/fix_redis', {
+        host: btn.data('host'),
+        port: btn.data('port')
+    }, function() {
+        btn.attr('disabled', 'disabled').text(_('Task created'));
+    }).error(function(e) {
+        console.error('fix_redis', e);
+        alert(_('failed') + ': ' + e.responseJSON.reason);
+    });
+}

@@ -78,7 +78,7 @@ def get_masters_info():
 
 
 @bp.route_post_json('/exec')
-def node_exec_command():
+def exec_command():
     host = request.form['host']
     port = int(request.form['port'])
     args = json.loads(request.form['cmd'])
@@ -100,8 +100,8 @@ def node_exec_command():
 
 MAXMEM_LIMIT_LOW = 64 * 1000 * 1000
 
-@bp.route_post('/set_max_mem')
-def node_set_max_mem():
+@bp.route_post_json('/set_max_mem')
+def set_max_mem():
     max_mem = int(request.form['max_mem'])
     if not MAXMEM_LIMIT_LOW <= max_mem <= bp.app.config_node_max_mem:
         raise ValueError('invalid max_mem size')
@@ -116,4 +116,27 @@ def node_set_max_mem():
         m = t.talk('config', 'set', 'maxmemory', str(max_mem))
         if 'ok' != m.lower():
             raise ValueError('CONFIG SET MAXMEMROY redis %s:%d returns %s' % (
+                host, port, m))
+
+
+@bp.route('/get_max_mem')
+def get_max_mem():
+    return _simple_cmd(request.args['host'], int(request.args['port']),
+                       'config', 'get', 'maxmemory')
+
+
+@bp.route_post_json('/set_aof')
+def set_aof():
+    aof = 'yes' if request.form['aof'] == 'y' else 'no'
+    host = request.form['host']
+    port = int(request.form['port'])
+
+    models.audit.raw_event(
+        host, port, models.audit.EVENT_TYPE_CONFIG, bp.app.get_user_id(),
+        {'aof': aof})
+
+    with Talker(host, port) as t:
+        m = t.talk('config', 'set', 'appendonly', aof)
+        if 'ok' != m.lower():
+            raise ValueError('CONFIG SET APPENDONLY redis %s:%d returns %s' % (
                 host, port, m))

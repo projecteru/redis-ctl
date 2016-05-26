@@ -6,7 +6,6 @@
 <script src='/static/js/cluster_task.js'></script>
 <script src='/static/js/redis_node.js'></script>
 <script src='/static/js/containerize.js'></script>
-<script src='/static/js/sort-nodes.js'></script>
 <style>
 .slave-row .node-addr {
     padding-left: 2em
@@ -202,32 +201,7 @@ $('#shutdown-cluster').click(function() {
 <script>
 -function() {
     var tbody = $('#cluster-nodes');
-    var mastersWithoutId = [];
-    var masters = {};
-    var allMasters = [];
-    var slaves = [];
-
-    $.each({{ nodes|tojson }}, function(i, n) {
-        if (n.slave) {
-            return slaves.push(n);
-        }
-        allMasters.push(n);
-        n.slaves = [];
-        if (n.node_id) {
-            return masters[n.node_id] = n;
-        }
-    });
-
-    $.each(slaves, function(i, n) {
-        if (masters[n.master_id]) {
-            return masters[n.master_id].slaves.push(n);
-        }
-        allMasters.push(n);
-    });
-
-    allMasters.sort(sortNodeByAddr);
-
-    $.each(allMasters, function(i, e) {
+    $.each(window.allMasters = redisRelations({{ nodes|tojson }}), function(i, e) {
         function makeNoStatCells(n) {
             return [
                 $('<td>').append('-'),
@@ -292,7 +266,6 @@ $('#shutdown-cluster').click(function() {
             });
         }
     });
-    window.allMasters = allMasters;
 }();
 </script>
 

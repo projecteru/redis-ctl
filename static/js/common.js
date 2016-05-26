@@ -15,7 +15,7 @@ $(document).ready(function() {
     });
     $('.delete-proxy-btn').click(function() {
         var btn = $(this);
-        btn.attr('disabled', 'disabled').text('请稍候');
+        btn.attr('disabled', 'disabled').text(_('Please wait'));
         $.ajax({
             url: '/cluster/delete_proxy',
             type: 'POST',
@@ -24,7 +24,7 @@ $(document).ready(function() {
                 port: btn.data('port')
             },
             success: function() {
-                btn.text(_('此代理已被移除'));
+                btn.text(_('Proxy unregistered'));
             },
             error: function(e) {
                 btn.text(_('failed') + ': ' + e.responseText);
@@ -35,7 +35,7 @@ $(document).ready(function() {
     $('.toggle-next').click(function() {$(this).next().toggle();}).next().hide();
 
     $('.panel-heading-hide-content').click(function() {
-       $(this).next().fadeToggle('slow');
+       $(this).next().slideToggle();
     });
 });
 

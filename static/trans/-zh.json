@@ -6,6 +6,8 @@
     "ops": "操作",
     "read-only": "只读",
     "or": "或",
+    "status": "状态",
+    "address": "地址",
 
     "first-page": "首页",
     "previous-page": "上一页",
@@ -38,7 +40,6 @@
     "create": "创建",
     "readonly": "只读",
     "settings": "设置",
-    "address": "地址",
     "version": "版本",
     "deploy": "部署",
     "container": "容器",
@@ -49,8 +50,11 @@
     "container-id": "容器 ID",
     "cluster-mode": "集群模式",
     "offline": "下线",
+    "containerize": "容器化",
+    "cluster-status": "集群状态",
 
     "node-memory-usage": "内存",
+    "max-memory": "内存最大值",
     "max-memory-not-set": "最大值未设置",
     "wait-poll": "等待轮询",
     "host-address": "宿主机地址",
@@ -65,6 +69,7 @@
     "loading-cluster-list": "正在加载集群列表",
     "quit-cluster": "退出集群",
     "migr-out-slot": "迁出槽位",
+    "need-autodiscover": "此节点没有在数据库中关联集群, 请点击自动发现进行关联",
     "already-quit-message": "此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联",
     "loading-cluster-info": "正在加载集群信息",
     "quit-cluster-precondition": "退出集群 - 迁出该节点上的所有槽位才能退出",
@@ -124,6 +129,7 @@
 
     "start-cluster": "启动集群",
     "join-cluster": "加入集群",
+    "im_slave": "此节点是从节点",
 
     "time": "时间",
     "nodes-ok": "正常节点数",

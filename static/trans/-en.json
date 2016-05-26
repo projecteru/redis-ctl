@@ -38,6 +38,7 @@
     "back-to-cluster-panel": "Back to cluster panel",
     "next-page": "Next page",
 
+    "need-autodiscover": "This Redis is not assigned to any cluster in DB, try Auto discover",
     "already-quit-message": "This Redis is not actually in the cluster. Quit anyway",
     "command-terminal": "Command terminal",
     "nodeMemSettingTitle": "Node memory setting title",

@@ -6,35 +6,6 @@
 
 <script>
 $(document).ready(function() {
-    function execInfo(host, port, callback) {
-        $.get('/cmd/info', {host: host, port: port}, function(r) {
-            var lines = r.split('\n');
-            var blocks = [{items: []}];
-            for (var i = 0; i < lines.length; ++i) {
-                var ln = lines[i].trim();
-                if (!ln) {
-                    continue;
-                }
-                if (ln[0] === '#') {
-                    blocks.push({
-                        title: ln.slice(1).trim(),
-                        items: []
-                    });
-                    continue;
-                }
-                var k = ln.indexOf(':');
-                if (-1 === k) {
-                    continue;
-                }
-                blocks[blocks.length - 1].items.push({
-                    key: ln.slice(0, k),
-                    value: ln.slice(k + 1)
-                });
-            }
-            callback(blocks);
-        }).error(showError);
-    }
-
     var modal = $('#infoConsole');
     var body = $('#info-console-body');
 
@@ -102,7 +73,7 @@ $(document).ready(function() {
     };
 
     function showInfo(host, port, specialDisp) {
-        execInfo(host, port, function(r) {
+        cmdInfo(host, port, function() {}, function(r) {
             body.html('');
             $.each(r, function(_, e) {
                 if (e.items.length === 0) {
@@ -120,67 +91,13 @@ $(document).ready(function() {
                 }
             });
             modal.modal('show');
-        });
+        }, showError);
     }
 
     $('.info-btn').click(function() {
         var btn = $(this);
         showInfo(btn.data('host'), btn.data('port'),
                  btn.data('type') === 'node' ? NODE_SPECIAL_DISPLAY : PROXY_SPECIAL_DISPLAY);
-    });
-
-    function labelRole(role) {
-        return role.split(',').map(function(e) {
-            var lb = $('<span>').addClass('label');
-            switch(e) {
-            case 'myself':
-                return lb.addClass('label-default').text('Myself');
-            case 'master':
-                return lb.addClass('label-primary').text(_('master'));
-            case 'slave':
-                return lb.addClass('label-info').text(_('slave'));
-            case 'fail':
-                return lb.addClass('label-danger').text('F');
-            default:
-                return lb.addClass('label-default').text(e);
-            }
-        });
-    }
-
-    $('.cluster-nodes-btn').click(function() {
-        var btn = $(this);
-        $.get('/cmd/cluster_nodes', {host: btn.data('host'), port: btn.data('port')}, function(r) {
-            var lines = r.trim().split('\n').map(function(e) {
-                return e.split(' ');
-            }).sort(function(a, b) {
-                if (a[1] > b[1]) {
-                    return 1;
-                }
-                if (a[1] < b[1]) {
-                    return -1;
-                }
-                return 0;
-            });
-            body.html('').append(makeRow()
-                .append(makeCell(2).text(_('Node ID')))
-                .append(makeCell(2).text(_('Address')))
-                .append(makeCell(2).text(_('Role')))
-                .append(makeCell(2).text(_('Master ID')))
-                .append(makeCell(1).text(_('Status')))
-                .append(makeCell(2).text(_('Slots')))
-                );
-            $.each(lines, function(_, e) {
-                body.append(makeRow()
-                        .append(makeCell(2).text(e[0].slice(0, 11)))
-                        .append(makeCell(2).text(e[1]))
-                        .append(makeCell(2).append(labelRole(e[2])))
-                        .append(makeCell(2).text(e[3].slice(0, 11)))
-                        .append(makeCell(1).text(e[7]))
-                        .append(makeCell(3).append(e.slice(8).map(function(e) { return $('<div>').text(e) })))
-                        );
-            });
-            modal.modal('show');
-        }).error(showError);
     });
 });
 </script>

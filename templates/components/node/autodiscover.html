@@ -29,7 +29,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
     if (pl.length === 0) {
         return;
     }
-    pl.text(_('正在载入集群信息') + '...');
+    pl.text(_('Loading cluster nodes') + '...');
     $.ajax({
         url: '/cluster/autodiscover',
         type: 'GET',
@@ -39,7 +39,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
         },
         success: function(r) {
             if (!r.cluster_discovered) {
-                return pl.text(_('节点不在集群中'));
+                return pl.text(_('Not in a cluster'));
             }
             pl.remove();
             var tbody = $('#clusterDiscoverNodes').show().find('tbody');
@@ -50,7 +50,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
                     ).append($('<td>').text(e.role == 'master' ? _('master') : _('slave'))
                     );
                 if (e.known) {
-                    row.append($('<td>').text(_('已注册')));
+                    row.append($('<td>').text(_('Registered')));
                 } else {
                     row.addClass('row-unknown').append($('<td>').addClass('unknown-td'));
                     row.data('host', e.host).data('port', e.port);
@@ -84,7 +84,7 @@ $('#clusterAutoDiscover').on('show.bs.modal', function(event) {
                         port: row.data('port')
                     }, function() {
                         row.removeClass('row-unknown');
-                        row.find('.unknown-td').text(_('已注册'));
+                        row.find('.unknown-td').text(_('Registered'));
                         addNode(rows, index + 1);
                     });
                 }($('.row-unknown'), 0);

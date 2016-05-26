@@ -85,4 +85,78 @@
             $(document).click(cancel);
         });
     };
+
+    function findDt(t) {
+        var self = $(t);
+        if (self.hasClass('dd')) {
+            self = self.prev();
+        }
+        if (!self.hasClass('dt')) {
+            return null;
+        }
+        return self;
+    }
+
+    function dtSetScheme(self, sc) {
+        return self.removeClass('dt-success dt-info dt-primary dt-warning dt-danger dt-default').addClass('dt-' + sc);
+    }
+
+    $.fn.dtResetDefault = function() {
+        return this.each(function() {
+            var self = findDt(this);
+            if (self === null) {
+                return;
+            }
+            dtSetScheme(self, 'default');
+        });
+    };
+
+    $.fn.dtSetScheme = function(sc) {
+        return this.each(function() {
+            var self = findDt(this);
+            if (self === null) {
+                return;
+            }
+            dtSetScheme(self, sc);
+        });
+    };
 }(jQuery);
+
+var bscp = {
+    form: function(id) {
+        return $('<div>').attr('id', id).addClass('form-horizontal');
+    },
+    row: function(id) {
+        return $('<div>').attr('id', id).addClass('form-group');
+    },
+    grid: function(size, offset, id) {
+        var cls = ''
+        if (offset > 0) {
+            cls += ' col-xs-offset-' + offset;
+        }
+        return $('<div>').attr('id', id).addClass('col-xs-' + size + cls);
+    },
+    clabel: function(size, offset, id) {
+        var cls = ''
+        if (offset > 0) {
+            cls += ' col-xs-offset-' + offset;
+        }
+        return $('<div>').attr('id', id).addClass('control-label col-xs-' + size + cls);
+    },
+    label: function(text, color, id) {
+        var cls = ''
+        if (color) {
+            cls += ' label-' + color;
+        } else {
+            cls += ' label-default';
+        }
+        return $('<div>').attr('id', id).addClass('label' + cls).text(text);
+    },
+    btn: function(text, color, cls, id) {
+        cls = (cls || '') + ' btn';
+        if (color) {
+            cls += ' btn-' + color;
+        }
+        return $('<button>').attr('type', 'button').attr('id', id).addClass(cls).text(text);
+    }
+};

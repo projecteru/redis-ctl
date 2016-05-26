@@ -45,6 +45,10 @@ class RedisCtl(Flask):
         self.jinja_env.globals['user_valid'] = self.access_ctl_user_valid
         self.jinja_env.globals['login_url'] = self.login_url
 
+        self.jinja_env.globals['stats_enabled'] = self.stats_enabled
+        self.jinja_env.globals['alarm_enabled'] = self.alarm_enabled
+        self.jinja_env.globals['container_enabled'] = self.container_enabled
+
         for u in dir(render_utils):
             if u.startswith('g_'):
                 self.jinja_env.globals[u[2:]] = getattr(render_utils, u)
