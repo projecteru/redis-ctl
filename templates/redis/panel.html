@@ -160,7 +160,7 @@ function addMode(m) {
             <div class='dd'>{{ icon('cube') }}</div>
         </div>
 
-        {%- if not node.container_info.is_alive %}
+        {%- if node.container_info and not node.container_info.is_alive %}
         <div class='col-xs-2'>
             <button class='btn btn-info btn-block btn-revive-container' data-cid='{{ node.eru_container_id|e }}' data-localize='btn-revive'>Revive</button>
         </div>
@@ -175,12 +175,12 @@ function addMode(m) {
 
         <div class='col-xs-4'>
             <div class='dt dt-default' data-localize='creation'>Creation</div>
-            <div class='dd'>{{ node.container_info.created|e }}</div>
+            <div class='dd'>{{ node.container_info.created|e if node.container_info else '-' }}</div>
         </div>
 
         <div class='col-xs-4'>
             <div class='dt dt-default' data-localize='host-address'>Host Addr</div>
-            <div class='dd'>{{ node.container_info.host|e }}</div>
+            <div class='dd'>{{ node.container_info.host|e if node.container_info else '-' }}</div>
         </div>
     </div>
     {% else %}

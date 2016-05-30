@@ -57,7 +57,6 @@ window.TRANSLATIONS = {
 
     'Myself': '当前节点',
 
-    'Insufficient resource in specified host': '指定机器的资源不足',
     'An instance is already serving at the address': '该地址的节点或代理已经存在',
     'redis-containerize-port-range-invalid': '端口范围应该在 6000-7999 之间',
     'proxy-containerize-port-range-invalid': '端口范围应该在 8000-9999 之间',
@@ -65,6 +64,10 @@ window.TRANSLATIONS = {
     'Number of CPU slices not selected': '请选择 CPU 分片数量',
     'Offline': '下线容器',
     'This container will be removed, are you sure?': '确定要下线此容器吗?',
+
+    /* 开始 容器化异常信息 */
+    'Not enough core resources': '指定机器的资源不足',
+    /* 结束 */
 
     '': ''
 };

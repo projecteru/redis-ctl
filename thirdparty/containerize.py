@@ -1,0 +1,2 @@
+class ContainerizeExceptionBase(Exception):
+    pass

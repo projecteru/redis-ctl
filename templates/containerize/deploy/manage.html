@@ -160,8 +160,8 @@ function displayErrorMsg(btn, msg) {
 
 function displayError(btn, e) {
     var err = e.responseJSON || {};
-    if (err.reason === 'eru fail' && err.detail === 'Not enough core resources') {
-        return displayErrorMsg(btn, _('Insufficient resource in specified host'));
+    if (err.reason === 'containerize fail') {
+        return displayErrorMsg(btn, _(err.detail));
     }
     if (err.reason === 'exists') {
         return displayErrorMsg(btn, _('An instance is already serving at the address'));

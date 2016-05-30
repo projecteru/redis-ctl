@@ -31,5 +31,9 @@ window.TRANSLATIONS = {
     'redis-containerize-port-range-invalid': 'Port should between 6000 and 7999',
     'proxy-containerize-port-range-invalid': 'Port should between 8000 and 9999',
 
+    /* BEGIN containerization exception detail */
+    'Not enough core resources': 'Insufficient resource in specified host',
+    /* END */
+
     '': ''
 };

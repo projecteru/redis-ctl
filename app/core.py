@@ -196,8 +196,10 @@ class RedisCtl(Flask):
         self.alarm_client.send_alarm(message, trace)
 
     def init_container_client(self, config):
-        from thirdparty.eru_utils import DockerClient
-        return None if config.ERU_URL is None else DockerClient(config)
+        if config.ERU_URL is not None:
+            from thirdparty.eru_utils import DockerClient
+            return DockerClient(config)
+        return None
 
     def container_enabled(self):
         return self.container_client is not None

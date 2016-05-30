@@ -1,7 +1,20 @@
 import logging
 from retrying import retry
 from eruhttp import EruClient, EruException
+from functools import wraps
+
 from app.utils import datetime_str_to_timestamp
+from containerize import ContainerizeExceptionBase
+
+
+def exception_adapt(f):
+    @wraps(f)
+    def g(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except EruException as e:
+            raise ContainerizeExceptionBase(e)
+    return g
 
 
 class DockerClient(object):
@@ -37,6 +50,7 @@ class DockerClient(object):
         } for i in self.client.list_app_versions(
             what, offset, limit)['versions']]
 
+    @exception_adapt
     def list_redis_images(self, offset, limit):
         return self._list_images('redis', offset, limit)
 
@@ -46,6 +60,7 @@ class DockerClient(object):
         except LookupError:
             raise ValueError('eru fail to give version SHA of ' + what)
 
+    @exception_adapt
     def deploy_with_network(self, what, pod, entrypoint, ncore=1, host=None,
                             args=None, image=None):
         logging.info('Eru deploy %s to pod=%s entry=%s cores=%d host=%s :%s:',
@@ -82,6 +97,7 @@ class DockerClient(object):
             'created': created,
         }
 
+    @exception_adapt
     def get_container(self, container_id):
         try:
             return self.client.get_container(container_id)
@@ -119,6 +135,7 @@ class DockerClient(object):
         return self.deploy_with_network(
             'cerberus', pod, netmode, ncore=ncore, host=host, args=args)
 
+    @exception_adapt
     def rm_containers(self, container_ids):
         logging.info('Remove containers: %s', container_ids)
         try:
@@ -126,12 +143,15 @@ class DockerClient(object):
         except EruException as e:
             logging.exception(e)
 
+    @exception_adapt
     def revive_container(self, container_id):
         logging.debug('Revive container: %s', container_id)
         self.client.start_container(container_id)
 
+    @exception_adapt
     def list_pods(self):
         return self.client.list_pods()
 
+    @exception_adapt
     def list_pod_hosts(self, pod):
         return self.client.list_pod_hosts(pod)
