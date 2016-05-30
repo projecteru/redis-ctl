@@ -180,9 +180,6 @@ class RedisCtl(Flask):
         self.stats_client.write_points(addr, points)
 
     def init_alarm_client(self, config):
-        if config.ALGALON and config.ALGALON['dsn']:
-            from thirdparty.algalon_cli import AlgalonClient
-            return AlgalonClient(**config.ALGALON)
         return None
 
     def alarm_enabled(self):
@@ -196,9 +193,6 @@ class RedisCtl(Flask):
         self.alarm_client.send_alarm(message, trace)
 
     def init_container_client(self, config):
-        if config.ERU_URL is not None:
-            from thirdparty.eru_utils import DockerClient
-            return DockerClient(config)
         return None
 
     def container_enabled(self):

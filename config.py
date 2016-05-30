@@ -22,10 +22,6 @@ PERMDIR = os.getenv('PERMDIR', tempfile.gettempdir())
 NODE_MAX_MEM = int(os.getenv('NODE_MAX_MEM', 2048 * 1000 * 1000))
 NODES_EACH_THREAD = int(os.getenv('NODES_EACH_THREAD', 10))
 REDIS_CONNECT_TIMEOUT = int(os.getenv('REDIS_CONNECT_TIMEOUT', 5))
-
-ERU_URL = os.getenv('ERU_URL', None)
-ERU_GROUP = os.getenv('ERU_GROUP', 'group')
-ERU_NETWORK = os.getenv('ERU_NETWORK', 'net')
 MICRO_PLAN_MEM = int(os.getenv('MICRO_PLAN_MEM', 108 * 1000 * 1000))
 
 OPEN_FALCON = {
@@ -34,11 +30,6 @@ OPEN_FALCON = {
     'port_query': int(os.getenv('OPEN_FALCON_PORT_QUERY', 9966)),
     'port_write': int(os.getenv('OPEN_FALCON_PORT_WRITE', 8433)),
     'db': os.getenv('OPEN_FALCON_DATABASE', 'redisctlstats'),
-}
-
-ALGALON = {
-    'csrf_token': os.getenv('ALGALON_CSRF_TOKEN', ''),
-    'dsn': os.getenv('ALGALON_DSN', ''),
 }
 
 try:
