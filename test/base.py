@@ -25,12 +25,6 @@ except OSError as exc:
         pass
 
 
-def reset_db():
-    models.base.db.session.close()
-    models.base.db.drop_all()
-    models.base.db.create_all()
-
-
 class TestApp(RedisCtl):
     def __init__(self):
         RedisCtl.__init__(self, config)
@@ -47,6 +41,9 @@ class TestApp(RedisCtl):
             client = FakeContainerClientBase()
         self.container_client = client
         return client
+
+    def replace_alarm_client(self, client=None):
+        self.alarm_client = client
 
     def init_stats_client(self, config):
         return None
@@ -65,9 +62,21 @@ class TestCase(unittest.TestCase):
         self.app.register_blueprints()
         self.db = models.base.db
 
+    def reset_db(self):
+        with self.app.app_context():
+            models.base.db.session.close()
+            models.base.db.drop_all()
+            models.base.db.create_all()
+
     def setUp(self):
-        reset_db()
+        print ''
+        print '[- Setup -]', self._testMethodName
+        self.reset_db()
         self.app.write_polling_targets()
+        print '[+ Start +]', self._testMethodName
+
+    def tearDown(self):
+        print '[[ Done  ]]', self._testMethodName
 
     def replace_eru_client(self, client=None):
         return self.app.replace_container_client(client)

@@ -10,6 +10,11 @@ class Containerize(base.TestCase):
         base.TestCase.__init__(self, *args, **kwargs)
         self.app.register_blueprint(bp)
 
+    def reset_db(self):
+        with self.app.app_context():
+            models.node.RedisNode.query.delete()
+            self.db.session.commit()
+
     def test_port_offset(self):
         class ClientOffset(base.FakeContainerClientBase):
             def __init__(self, offset):
@@ -53,7 +58,7 @@ class Containerize(base.TestCase):
                 'version': 'b840fc02d524045429941cc15f59e41cb7be6c52',
             }, json.loads(r.data))
 
-            n = models.node.list_all_nodes()
-            self.assertEqual(1, len(n))
-            n0 = n[0]
-            self.assertEqual(6512, n0.port)
+        n = models.node.list_all_nodes()
+        self.assertEqual(1, len(n))
+        n0 = n[0]
+        self.assertEqual(6512, n0.port)

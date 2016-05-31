@@ -156,8 +156,7 @@ class ProxyStatus(ProxyStatsBase):
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
-        with Talker(self.details['host'], self.details['port'],
-                    CONNECT_TIMEOUT) as t:
+        with Talker(self.host, self.port, CONNECT_TIMEOUT) as t:
             i = t.talk_raw(CMD_PROXY)
             lines = i.split('\n')
             st = {}
@@ -197,6 +196,7 @@ class ProxyStatus(ProxyStatsBase):
             if cluster_ok:
                 self.set_available()
             else:
-                self.send_alarm('Cluster failed for Cerberus %s:%d' % (
-                    self.details['host'], self.details['port']), '')
+                self.send_alarm(
+                    'Cluster failed behind %s:%d' % (self.host, self.port),
+                    None)
                 self.set_unavailable()

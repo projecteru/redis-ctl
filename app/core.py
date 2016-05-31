@@ -155,6 +155,10 @@ class RedisCtl(Flask):
     def write_polling_targets(self):
         file_ipc.write_nodes_proxies_from_db()
 
+    def on_loop_begin(self):
+        if self.alarm_client is not None:
+            self.alarm_client.on_loop_begin()
+
     def init_stats_client(self, config):
         if config.OPEN_FALCON and config.OPEN_FALCON['db']:
             from thirdparty.openfalcon import Client
@@ -185,12 +189,12 @@ class RedisCtl(Flask):
     def alarm_enabled(self):
         return self.alarm_client is not None
 
-    def send_alarm(self, message, trace):
+    def send_alarm(self, endpoint, message, exception):
         if self.alarm_client is not None:
-            self.do_send_alarm(message, trace)
+            self.do_send_alarm(endpoint, message, exception)
 
-    def do_send_alarm(self, message, trace):
-        self.alarm_client.send_alarm(message, trace)
+    def do_send_alarm(self, endpoint, message, exception):
+        self.alarm_client.send_alarm(endpoint, message, exception)
 
     def init_container_client(self, config):
         return None

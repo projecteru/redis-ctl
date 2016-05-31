@@ -73,6 +73,7 @@ class NodeStatCollector(threading.Thread):
         self.interval = interval
 
     def _shot(self):
+        self.app.on_loop_begin()
         poll = self.app.polling_targets()
         nodes = _load_from(RedisNodeStatus, self.app, poll['nodes'])
         proxies = _load_from(ProxyStatus, self.app, poll['proxies'])
