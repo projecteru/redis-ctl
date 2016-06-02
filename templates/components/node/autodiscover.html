@@ -1,13 +1,13 @@
-{% import 'blocks/modal.html' as modal %}
+{% import './blocks/modal.html' as modal %}
 
-{{ modal.head('clusterAutoDiscover', '集群自动发现') }}
+{% call modal.modal('clusterAutoDiscover', 'Auto discover', 'btn-autodiscover') %}
 <span id='clusterDiscoverLoaderPlaceholder'></span>
 <div class="panel panel-default">
   <table class='table' id='clusterDiscoverNodes' style='display: none'>
       <thead>
           <tr>
-              <th data-localize='address'>地址</th>
-              <th data-localize='role'>角色</th>
+              <th data-localize='address'>Address</th>
+              <th data-localize='role'>Role</th>
               <th></th>
           </tr>
       </thead>
@@ -15,13 +15,13 @@
       <tfoot>
           <tr>
               <td colspan='3' id='clusterDiscoverControls'>
-                  {{ button('注册这些节点并加入集群', id='discoverAutoAddNodes', lcl='commit-auto-discover') }}
+                  {{ button('Register these nodes and add them into a cluster', id='discoverAutoAddNodes', lcl='commit-auto-discover') }}
               </td>
           </tr>
       </tfoot>
   </table>
 </div>
-{{ modal.tail() }}
+{%- endcall %}
 
 <script>
 $('#clusterAutoDiscover').on('show.bs.modal', function(event) {

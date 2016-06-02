@@ -7,10 +7,10 @@
   <div class="pagination pagination-info">
     <ul>
         {% if page != 0 %}
-        <li><a href='?page=0' data-localize='home'>首页</a></li>
-        <li class='previous'><a href='?page={{ page - 1 }}' data-localize='previous-page'>上一页</a></li>
+        <li><a href='?page=0' data-localize='first-page'>First page</a></li>
+        <li class='previous'><a href='?page={{ page - 1 }}' data-localize='previous-page'>Previous page</a></li>
         {% endif %}
-        <li class='next'><a href='?page={{ page + 1 }}' data-localize='next-page'>下一页</a></li>
+        <li class='next'><a href='?page={{ page + 1 }}' data-localize='next-page'>Next page</a></li>
     </ul>
   </div>
 </nav>

@@ -19,7 +19,7 @@ $(document).ready(function() {
             return args.newin_host + ':' + args.newin_port;
         },
         replicate: function(args) {
-            return [_('从节点为'), args.slave_host + ':' + args.slave_port, _('主节点为'),
+            return [_('add_slave'), args.slave_host + ':' + args.slave_port, _('to_master'),
                     args.master_host + ':' + args.master_port].join(' ');
         },
         quit: function(args) {

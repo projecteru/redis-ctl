@@ -10,7 +10,6 @@
     white-space: nowrap;
     font-size: 14px;
     line-height: 1.428571429; 
-    border-radius: 6px;
 
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -63,7 +62,6 @@
     -o-transition: all 0.2s ease-in;
     -webkit-transition: all 0.2s ease-in;
     transition: all 0.2s ease-in;
-    border-radius: 6px;
 }
 
 .select-styled:after {
@@ -110,7 +108,6 @@
     -o-transition: all 0.15s ease-in;
     -webkit-transition: all 0.15s ease-in;
     transition: all 0.15s ease-in;
-    border-radius: 6px;
 }
 
 

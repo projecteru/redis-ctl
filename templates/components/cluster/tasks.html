@@ -3,11 +3,11 @@
     <thead>
         <tr>
             <th>#</th>
-            <th data-localize='task-cluster'>所属集群</th>
-            <th data-localize='task-type'>类型</th>
-            <th data-localize='task-creation'>创建时间</th>
-            <th data-localize='task-status'>执行状态</th>
-            <th data-localize='task-detail'>详情</th>
+            <th data-localize='task-cluster'>Cluster</th>
+            <th data-localize='task-type'>Type</th>
+            <th data-localize='task-creation'>Creation time</th>
+            <th data-localize='task-status'>Status</th>
+            <th data-localize='task-detail'>Detail</th>
             <th data-localize='task-creator'>Creator</th>
         </tr>
     </thead>
@@ -21,19 +21,19 @@
             <td>
             {% if task.completed %}
                 {% if task.exec_error %}
-                    <span class='label label-danger' data-localize='task-failed'>失败</span>
+                    <span class='label label-danger' data-localize='task-failed'>Failed</span>
                 {% else %}
-                    <span class='label label-success' data-localize='task-done'>完毕</span>
+                    <span class='label label-success' data-localize='task-done'>Done</span>
                 {% endif %}
                 {{ task.completion|strftime }}
             {% elif task.running %}
-                <span class='label label-primary' data-localize='task-running'>正在执行</span>
+                <span class='label label-primary' data-localize='task-running'>Running</span>
             {% else %}
-                <span class='label label-info' data-localize='task-awaiting'>等待中</span>
+                <span class='label label-info' data-localize='task-awaiting'>Awaiting</span>
             {% endif %}
             </td>
             <td>
-                <button class='btn btn-success' data-toggle='modal' data-target='#taskDetail' data-taskid='{{ task.id }}' data-localize='task-detail'>查看详情</button>
+                <button class='btn btn-success' data-toggle='modal' data-target='#taskDetail' data-taskid='{{ task.id }}' data-localize='task-detail'>Detail</button>
             </td>
             <td>
                 {% autoescape false %}
@@ -45,6 +45,7 @@
     </tbody>
   </table>
 </div>
+
 <div class='modal fade bs-example-modal-lg' id='taskDetail' tabindex='-1' role='dialog' aria-labelledby='taskDetailTitle' aria-hidden='true'>
     <div class='modal-dialog modal-lg'>
         <div class='modal-content'>
@@ -53,23 +54,23 @@
                 <h4 class='modal-title' id='taskDetailTitle'>#<span id='taskDetailId'></span></h4>
             </div>
             <div class='modal-body'>
-                <span id='taskDetailLoaderPlaceholder' data-localize='task-loading'>正在载入任务详情...</span>
+                <span id='taskDetailLoaderPlaceholder'><span data-localize='task-loading'>Loading details</span>...</span>
                 <div id='taskDetailContent'>
                   <div class="panel panel-default">
                     <div class="panel-heading">
                       <table class='table'>
                         <div class="panel-body">
-                          <span data-localize='task-steps-0'>任务步骤 (共</span>
+                          <span data-localize='task-steps-0'>Steps ( Total</span>
                           <span id='taskDetailStepCount'></span>
-                          <span data-localize='task-steps-1'>项)</span>
+                          <span data-localize='task-steps-1'>)</span>
                         </div>
                         <thead>
                           <tr>
                             <th>#</th>
-                            <th data-localize='task-command'>命令</th>
-                            <th data-localize='task-args'>参数</th>
-                            <th data-localize='task-begin'>开始时间</th>
-                            <th data-localize='task-status'>执行状态</th>
+                            <th data-localize='task-command'>Command</th>
+                            <th data-localize='task-args'>Args</th>
+                            <th data-localize='task-begin'>Begin at</th>
+                            <th data-localize='task-status'>Status</th>
                           </tr>
                         </thead>
                         <tbody style='text-align: center' id='taskDetailSteps'></tbody>
