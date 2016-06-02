@@ -65,6 +65,22 @@ window.TRANSLATIONS = {
     'Offline': '下线容器',
     'This container will be removed, are you sure?': '确定要下线此容器吗?',
 
+    'stats-used_cpu_user': '用户态',
+    'stats-used_cpu_sys': '内核态',
+    'stats-used_memory': '内存',
+    'stats-used_memory_rss': 'RSS',
+    'stats-connected_clients': '客户端连接数',
+    'stats-total_commands_processed': '平均每秒指令数',
+    'stats-expired_keys': 'Expired keys',
+    'stats-evicted_keys': 'Evicted keys',
+    'stats-keyspace_hits': 'Keyspace hits',
+    'stats-keyspace_misses': 'Keyspace misses',
+    'stats-keys': 'Keys',
+    'stats-mem_buffer_alloc': '缓冲区',
+    'stats-completed_commands': '平均每秒指令数',
+    'stats-command_elapse': '总共',
+    'stats-remote_cost': '远端',
+
     /* 开始 容器化异常信息 */
     'Not enough core resources': '指定机器的资源不足',
     /* 结束 */

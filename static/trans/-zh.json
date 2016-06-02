@@ -22,6 +22,12 @@
     "history": "状态历史",
     "migrating": "有槽位正在迁移",
 
+    "stats-last-4h": "最近 4 小时",
+    "stats-last-12h": "最近 12 小时",
+    "stats-last-1day": "最近 1 天",
+    "stats-last-2days": "最近 2 天",
+    "stats-last-3days": "最近 3 天",
+
     "nav-add": "添加",
     "nav-status": "服务状态",
     "container-nodes-mgr": "容器节点管理",

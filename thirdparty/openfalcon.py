@@ -6,16 +6,20 @@ import urlparse
 import requests
 import logging
 
+from thirdparty.statistic import Base
+
 POINT_LIMIT = 400
 
 
-class Client(object):
-    def __init__(self, host_query, host_write, port_query, port_write, db):
+class Client(Base):
+    def __init__(self, host_query, host_write, port_query, port_write, db,
+                 interval=30):
         self.query_uri = urlparse.urlunparse(urlparse.ParseResult(
             'http', '%s:%d' % (host_query, port_query), 'graph/history',
             None, None, None))
         self.prefix = db
         self.write_addr = (host_write, port_write)
+        self.interval = interval
 
         self.socket = None
         self.stream = None
@@ -50,7 +54,7 @@ class Client(object):
                 'metric': metric,
                 'endpoint': self.prefix,
                 'timestamp': now,
-                'step': 30,
+                'step': self.interval,
                 'value': val,
                 'counterType': 'GAUGE',
                 'tags': 'service=redisctl,addr=' + name,

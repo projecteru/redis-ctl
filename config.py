@@ -24,12 +24,17 @@ NODES_EACH_THREAD = int(os.getenv('NODES_EACH_THREAD', 10))
 REDIS_CONNECT_TIMEOUT = int(os.getenv('REDIS_CONNECT_TIMEOUT', 5))
 MICRO_PLAN_MEM = int(os.getenv('MICRO_PLAN_MEM', 108 * 1000 * 1000))
 
+# ========================= #
+# Thirdparty configurations #
+# ========================= #
+
 OPEN_FALCON = {
     'host_query': os.getenv('OPEN_FALCON_HOST_QUERY', ''),
     'host_write': os.getenv('OPEN_FALCON_HOST_WRITE', ''),
     'port_query': int(os.getenv('OPEN_FALCON_PORT_QUERY', 9966)),
     'port_write': int(os.getenv('OPEN_FALCON_PORT_WRITE', 8433)),
     'db': os.getenv('OPEN_FALCON_DATABASE', 'redisctlstats'),
+    'interval': int(os.getenv('OPEN_FALCON_ANTICIPATED_INTERVAL', 30)),
 }
 
 try:

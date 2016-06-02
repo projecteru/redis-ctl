@@ -21,12 +21,6 @@
     "nodes-fail": "Failed nodes",
     "proxies-ok": "Normal proxies",
     "proxies-fail": "Failed proxies",
-
-    "last-4h-of-data": "Last 4 hours",
-    "last-12h-of-data": "Last 12 hours",
-    "last-1day-of-data": "Last 1 day",
-    "last-2days-of-data": "Last 2 days",
-    "last-3days-of-data": "Last 3 days",
    
     "expnd-show-masters-only": "Master only",
     "expnd-sort": "Sort",
