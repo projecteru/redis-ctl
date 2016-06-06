@@ -39,7 +39,8 @@ $(document).ready(function() {
 </script>
 {% block head %}{% endblock %}
 </head>
-<body>
+{% set body_cls = body_classes() %}
+<body{% if body_cls %} class='{{ ' '.join(body_cls) }}'{% endif %}>
 <header style='padding-left: 0px; padding-right: 0px; padding-bottom: 0px; padding-top: 0px;'>
     <nav class='navbar navbar-inverse navbar-embossed' role='navigation' style='margin-bottom:0px;'>
     <div class='navbar-header'>
@@ -57,7 +58,7 @@ $(document).ready(function() {
                 <ul class='dropdown-menu'>
                     <li><a class='nav-link' href='/redis/register'><i class='fa fa-database'></i> Redis</a></li>
                     <li><a class='nav-link' href='/cluster/create'><i class='fa fa-cubes'></i> <span data-localize='cluster'>Cluster</span></a></li>
-                    <li><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>Containerize</span></a></li>
+                    <li class='container-display'><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>Containerize</span></a></li>
                 </ul>
             </li>
             <li><a class='nav-link' href='/task/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>All Tasks</span></a></li>

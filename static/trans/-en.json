@@ -2,20 +2,6 @@
     "master": "Master",
     "slave": "Slave",
 
-    "clusters-info": "Clusters Info",
-    "cluster-descr": "Description",
-    "cluster-nodes-count": "Redis Count",
-    "cluster-proxies": "Proxies",
-    "nodes-info": "Nodes Info",
-    "opt-all-nodes": "All nodes",
-    "opt-error-only": "Nodes Unreachable",
-    "opt-noalert-only": "Nodes with alarm disabled",
-    "opt-migrating-only": "Nodes with migrating slots",
-
-    "node-addr": "Address",
-    "node-cluster": "Cluster",
-    "node-ops": "",
-
     "time": "Time",
     "nodes-ok": "Normal nodes",
     "nodes-fail": "Failed nodes",

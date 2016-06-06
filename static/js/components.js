@@ -2,8 +2,8 @@
     $.fn.enableLabelCheck = function(opt) {
         opt = opt || {};
         var callback = opt.onClick || function() {};
-        var checkedClass = opt.checkedClass || 'fa-check-square-o';
-        var uncheckedClass = opt.uncheckedClass || 'fa-square-o';
+        var checkedClass = 'fa-' + (opt.checkedClass || 'check-square-o');
+        var uncheckedClass = 'fa-' + (opt.uncheckedClass || 'square-o');
         return this.each(function() {
             var self = $(this);
             var fa = $('<i>').addClass('fa');

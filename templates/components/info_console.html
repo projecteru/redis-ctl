@@ -1,118 +1,162 @@
 {% import './blocks/modal.html' as modal %}
 
-{{ modal.head('infoConsole', 'INFO') }}
-<div class='form-horizontal form-submit' id='info-console-body'></div>
-{{ modal.tail() }}
+{% call modal.modal('proxy-info', 'INFO', '') %}
+<div>
+    <ul class='nav nav-tabs' role='tablist'>
+        <li role='presentation' class='active'><a href='#proxy-info-labels' role='tab' data-toggle='tab' data-localize='info-labels'>Labels</a></li>
+        <li role='presentation'><a href='#proxy-info-text' role='tab' data-toggle='tab' data-localize='info-text'>Text</a></li>
+        <li role='presentation' style='float: right'><a id='refresh-proxy-info-btn' href='javascript:;'>{{ icon('refresh') }}</a></li>
+    </ul>
+
+    <div class='tab-content form-horizontal'>
+        <div role='tabpanel' class='tab-pane active dl-hori' id='proxy-info-labels'>
+            <div class='form-group'>
+                <div class='col-xs-6'>
+                    <div class='dt dt-primary' data-localize='address'>Address</div>
+                    <div class='dd' id='proxy-info-addr'></div>
+                </div>
+
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='status' id='proxy-info-status'>Status</div>
+                    <div class='dd'>...</div>
+                </div>
+            </div>
+
+            <div class='form-group'>
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='version'>Version</div>
+                    <div class='dd' id='det_version'>-</div>
+                </div>
+
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='cluster-status'>Cluster Status</div>
+                    <div class='dd' id='det_cluster_ok'>-</div>
+                </div>
+            </div>
+
+            <div class='form-group'>
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='threads'>Threads</div>
+                    <div class='dd' id='det_threads'>-</div>
+                </div>
+
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='readonly'>Readonly</div>
+                    <div class='dd' id='det_read_slave'>-</div>
+                </div>
+            </div>
+
+            <div class='form-group'>
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='connected-clients'>Clients</div>
+                    <div class='dd' id='det_clients_count'>-</div>
+                </div>
+
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='long-connections'>Long Connections</div>
+                    <div class='dd' id='det_long_connections_count'>-</div>
+                </div>
+            </div>
+
+            <div class='form-group'>
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='cpu-user'>CPU User</div>
+                    <div class='dd' id='det_used_cpu_user'>-</div>
+                </div>
+
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='cpu-sys'>CPU Sys</div>
+                    <div class='dd' id='det_used_cpu_sys'>-</div>
+                </div>
+            </div>
+
+            <div class='form-group'>
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='commands-processed'>Command Processed</div>
+                    <div class='dd' id='det_completed_commands'>-</div>
+                </div>
+
+                <div class='col-xs-6'>
+                    <div class='dt dt-default' data-localize='memory-buffer'>Memory Buffer</div>
+                    <div class='dd' id='det_mem_buffer_alloc'>-</div>
+                </div>
+            </div>
+        </div>
+
+        <div role='tabpanel' class='tab-pane' id='proxy-info-text'>
+            <textarea id='proxy-info-textarea' style='min-height: 400px; font-family: monospace' class='form-control'></textarea>
+        </div>
+    </div>
+</div>
+{% endcall %}
 
 <script>
 $(document).ready(function() {
-    var modal = $('#infoConsole');
-    var body = $('#info-console-body');
+    var modal = $('#proxy-info');
 
-    function makeRow() {
-        return $('<div>').addClass('form-group');
-    }
-
-    function makeLabel(size) {
-        return makeCell(size).css('text-align', 'right');
-    }
-
-    function makeCell(size) {
-        return $('<div>').addClass('col-xs-' + size);
-    }
-
-    function splitTotal(val) {
-        return val.split(',').reduce(function(a, b) {
-            return a + parseInt(b);
+    function merge(t) {
+        return t.split(',').reduce(function(i, e) {
+            return i + parseInt(e);
         }, 0);
     }
 
-    var NODE_SPECIAL_DISPLAY = {
-        connected_clients: function(val) {
-            return $('<span>').text(parseInt(val).toLocaleString());
-        },
-        used_memory: function(val) {
-            return $('<span>').text(parseInt(val).toLocaleString());
-        },
-        total_commands_processed: function(val) {
-            return $('<span>').text(parseInt(val).toLocaleString());
-        },
-        aof_enabled: function(val) {
-            return $('<span>').addClass('label label-default').text(val === '0' ? _('disabled') : _('enabled'));
-        },
-        role: function(val) {
-            return $('<span>').addClass('label label-default').text(val === 'master' ? _('master') : _('slave'));
-        },
-        cluster_enabled: function(val) {
-            return $('<span>').addClass('label label-default').text(val === '1' ? _('enabled') : _('disabled'));
+    function formatInt(s) {
+        return parseInt(s).toLocaleString();
+    }
+
+    function mergeFormat(s) {
+        return merge(s).toLocaleString();
+    }
+
+    function yes(colorYes, colorNo) {
+        return function(s, k) {
+            var y = s === '1';
+            if (y) {
+                $('#det_' + k).dtSetScheme(colorYes);
+            } else {
+                $('#det_' + k).dtSetScheme(colorNo);
+            }
+            return y ? _('yes') : _('no');
         }
+    }
+
+    var specialProps = {
+        cluster_ok: yes('success', 'danger'),
+        read_slave: yes('info', 'default'),
+        clients_count: mergeFormat,
+        long_connections_count: mergeFormat,
+        mem_buffer_alloc: mergeFormat,
+        completed_commands: formatInt
     };
 
-    var PROXY_SPECIAL_DISPLAY = {
-        cluster_ok: function(val) {
-            var ok = val !== '0';
-            return $('<span>').addClass('label').addClass(ok ? 'label-success' : 'label-danger').text(ok ? 'OK' : 'E');
-        },
-        clients_count: function(val) {
-            return $('<span>').text(splitTotal(val).toLocaleString());
-        },
-        long_connections_count: function(val) {
-            return $('<span>').text(splitTotal(val).toLocaleString());
-        },
-        mem_buffer_alloc: function(val) {
-            return $('<span>').text(splitTotal(val).toLocaleString());
-        },
-        completed_commands: function(val) {
-            return $('<span>').text(parseInt(val).toLocaleString());
-        },
-        remotes: function(val) {
-            return val.split(',').map(function(e) {
-                return $('<div>').text(e);
-            });
-        }
-    };
-
-    function showInfo(host, port, specialDisp) {
-        cmdInfo(host, port, function() {}, function(r) {
-            body.html('');
-            $.each(r, function(_, e) {
-                if (e.items.length === 0) {
-                    return;
-                }
-                if (e.title) {
-                    body.append(makeRow().append($('<label>').text(e.title)));
-                }
+    function refreshInfo(host, port) {
+        $('#proxy-info-addr').text(host + ':' + port);
+        $('#proxy-info-status').dtResetDefault().next().text('...');
+        cmdInfo(host, port, function(t) {
+            $('#proxy-info-textarea').val(t);
+        }, function(blocks) {
+            $('#proxy-info-status').dtSetScheme('success').next().text(_('Connected'));
+            $.each(blocks, function(_, e) {
                 for (var i = 0; i < e.items.length; ++i) {
                     var item = e.items[i];
-                    var row = makeRow().append(makeLabel(4).text(item.key));
-                    var value = specialDisp[item.key] ? specialDisp[item.key](item.value) : item.value;
-                    row.append(makeCell(8).append(value));
-                    body.append(row);
+                    var f = specialProps[item.key];
+                    $('#det_' + item.key).text(f ? f(item.value, item.key) : item.value);
                 }
             });
-            modal.modal('show');
-        }, showError);
+        }, function(e) {
+            $('#proxy-info-status').dtSetScheme('danger').next().text(_(e.responseJSON.reason));
+        });
     }
 
     $('.info-btn').click(function() {
         var btn = $(this);
-        showInfo(btn.data('host'), btn.data('port'),
-                 btn.data('type') === 'node' ? NODE_SPECIAL_DISPLAY : PROXY_SPECIAL_DISPLAY);
+        $('#refresh-proxy-info-btn').data('host', btn.data('host')).data('port', btn.data('port')).click();
+        modal.modal('show');
+    });
+
+    $('#refresh-proxy-info-btn').click(function() {
+        var btn = $(this);
+        refreshInfo(btn.data('host'), btn.data('port'));
     });
 });
-</script>
-
-{{ modal.head('commandError', 'Error') }}
-<div class='form-horizontal form-submit' id='command-error-body'></div>
-{{ modal.tail() }}
-
-<script>
-function showError(e) {
-    if (e.status === 400) {
-        $('#command-error-body').text(_('failed') + ': ' + e.responseJSON.reason);
-    } else if (e.status === 500) {
-        $('#command-error-body').text(e.responseText);
-    }
-    $('#commandError').modal('show');
-}
 </script>

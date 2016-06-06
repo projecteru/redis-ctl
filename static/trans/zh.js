@@ -64,6 +64,7 @@ window.TRANSLATIONS = {
     'Number of CPU slices not selected': '请选择 CPU 分片数量',
     'Offline': '下线容器',
     'This container will be removed, are you sure?': '确定要下线此容器吗?',
+    'not reachable': '无法连接',
 
     'stats-used_cpu_user': '用户态',
     'stats-used_cpu_sys': '内核态',

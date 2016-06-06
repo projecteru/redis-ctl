@@ -1,7 +1,0 @@
-{%- macro stat_icon(type, host, port, bar_before=False, bar_after=False) %}
-{%- if stats_enabled() %}
-    {%- if bar_before %}|{% endif %}
-    <a target='_blank' href='/stats/{{ type }}?host={{ host|e }}&port={{ port }}'>{{ icon('line-chart') }}</a>
-    {%- if bar_after %}|{% endif %}
-{% endif %}
-{%- endmacro %}

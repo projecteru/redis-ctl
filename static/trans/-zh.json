@@ -14,13 +14,16 @@
     "next-page": "下一页",
     "ready": "就绪",
     "serving": "在役",
-    "btn-disable-alarm": "关闭报警",
     "register": "注册",
     "btn-remove": "移除",
     "btn-remove-container": "下线此容器",
     "view-more": "查看更多",
     "history": "状态历史",
     "migrating": "有槽位正在迁移",
+
+    "clusters-info": "集群信息",
+    "nodes-info": "节点信息",
+    "node-ops": "",
 
     "stats-last-4h": "最近 4 小时",
     "stats-last-12h": "最近 12 小时",

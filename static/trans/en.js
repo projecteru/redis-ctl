@@ -30,6 +30,7 @@ window.TRANSLATIONS = {
 
     'redis-containerize-port-range-invalid': 'Port should between 6000 and 7999',
     'proxy-containerize-port-range-invalid': 'Port should between 8000 and 9999',
+    'not reachable': 'Not reachable',
 
     'stats-used_cpu_user': 'User',
     'stats-used_cpu_sys': 'Sys',

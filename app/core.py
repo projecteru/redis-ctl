@@ -48,6 +48,7 @@ class RedisCtl(Flask):
         self.jinja_env.globals['stats_enabled'] = self.stats_enabled
         self.jinja_env.globals['alarm_enabled'] = self.alarm_enabled
         self.jinja_env.globals['container_enabled'] = self.container_enabled
+        self.jinja_env.globals['body_classes'] = self.body_classes
 
         for u in dir(render_utils):
             if u.startswith('g_'):
@@ -201,3 +202,13 @@ class RedisCtl(Flask):
 
     def container_enabled(self):
         return self.container_client is not None
+
+    def body_classes(self):
+        c = []
+        if not self.stats_enabled():
+            c.append('no-stats-mode')
+        if not self.alarm_enabled():
+            c.append('no-alarm-mode')
+        if not self.container_enabled():
+            c.append('no-container-mode')
+        return c

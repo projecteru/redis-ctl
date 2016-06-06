@@ -24,6 +24,10 @@ footer {
     border-top: 1px dashed #aaa;
 }
 
+.no-stats-mode .stats-display { display: none }
+.no-alarm-mode .alarm-display { display: none }
+.no-container-mode .container-display { display: none }
+
 .table caption {
     font-size: 2em;
     font-weight: bold;

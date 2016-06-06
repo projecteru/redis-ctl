@@ -5,10 +5,7 @@
 {% block head %}
 <style>
 .table { text-align: center; }
-#nodes-area > tbody > tr:nth-child(2n+1) { background-color: #f0f0f0; }
-.row-odd { background-color: #f0f0f0; }
-.proxy-tab { border-left: 1px solid #ddd; }
-.a { text-decoration: none; }
+tbody > tr:nth-child(2n+1) { background-color: #f0f0f0; }
 th { text-align: center; }
 </style>
 <script src='/static/js/cluster_task.js'></script>
@@ -17,23 +14,21 @@ th { text-align: center; }
 
 {% block body %}
 <div class="panel panel-success">
-  <div class="panel-heading panel-heading-hide-content"><strong data-localize='clusters-info'>集群信息</strong></div>
+  <div class="panel-heading panel-heading-hide-content"><strong data-localize='clusters-info'>Clusters Info</strong></div>
   <table class='table'>
     <thead>
       <tr>
         <th>#</th>
-        <th style='width: 320px;' data-localize='cluster-descr'>描述</th>
-        <th data-localize='cluster-nodes-count'>节点数</th>
-        <th colspan='5' data-localize='cluster-proxies'>代理</th>
-        <th>SLA</th>
+        <th style='width: 320px;' data-localize='cluster-description'>Description</th>
+        <th data-localize='nodes-num'>Redis</th>
+        <th colspan='5' data-localize='proxy-num'>Proxy</th>
         <th></th>
       </tr>
     </thead>
     <tbody>
     {% autoescape false %}
         {% for cluster in clusters if cluster.nodes %}
-            {{ render('components/cluster/row.html', cluster=cluster,
-                      stats_enabled=stats_enabled, odd_row=loop.index % 2) }}
+            {{ render('components/cluster/row.html', cluster=cluster) }}
         {% endfor %}
     {% endautoescape %}
     </tbody>
@@ -43,13 +38,13 @@ th { text-align: center; }
   <div class="panel-heading panel-heading-hide-content">
     <div class="row">
       <div class='col-xs-4' style="margin-top: 10px;">
-        <strong data-localize='nodes-info'>节点信息</strong>
+        <strong data-localize='nodes-info'>Redis Info</strong>
       </div>
       <div class='col-xs-4' style="float:right">
         <select class="select-primary" id="selectmenu">
           <option value='all' data-localize='opt-all-nodes'>All</option>
           <option value='error' data-localize='opt-error-only'>Unreachables</option>
-          <option value='noalert' data-localize='opt-noalert-only'>Alarm disabled</option>
+          <option value='noalert' data-localize='opt-noalert-only' class='alarm-display'>Alarm disabled</option>
           <option value='migrating' data-localize='opt-migrating-only'>Migrating</option>
         </select>
       </div>
@@ -58,11 +53,10 @@ th { text-align: center; }
   <table id='nodes-area' class='table'>
     <thead>
       <tr>
-        <th data-localize='node-addr'>节点</th>
-        <th data-localize='node-memory-usage'>内存</th>
-        <th>SLA</th>
-        <th data-localize='node-cluster'>集群信息</th>
-        <th data-localize='node-ops'>基本操作</th>
+        <th data-localize='address'>Address</th>
+        <th data-localize='node-memory-usage'>Memory Usage</th>
+        <th data-localize='cluster'>Cluster</th>
+        <th data-localize='node-ops'></th>
       </tr>
     </thead>
     <tbody>

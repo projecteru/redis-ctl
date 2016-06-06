@@ -1,5 +1,7 @@
 {% extends './base.html' %}
 
+{% import './components/widgets.html' as widgets %}
+
 {% block title %}{{ cluster.description|e }} - Cluster Panel{% endblock %}
 
 {% block head %}
@@ -291,27 +293,26 @@ $('#shutdown-cluster').click(function() {
         <div class='col-sm-1'>
             <label>
                 {%- if not proxy.details.stat %}{{ icon('warning', 'danger') }}&nbsp;{% endif %}
-                {%- if stats_enabled %}
-                <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}'>{{ icon('line-chart') }}</a>
-                {% endif %}
+                {{ widgets.stat_icon('proxy', proxy.host, proxy.port, bar_before=True) }}
             </label>
         </div>
 
-        {{ button('Send cmd', size=1, data={'toggle': 'modal', 'target': '#commandConsole', 'host': proxy.host, 'port': proxy.port}, lcl='btn-direct-command') }}
-        {{ button('INFO', size=1, cls=['info-btn'], data={'type': 'proxy', 'host': proxy.host, 'port': proxy.port}) }}
-        {{ button('Sync remote', size=1, cls=['sync-remotes-btn'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-sync-slots-map') }}
+        {{ button('INFO', size=1, cls=['info-btn', 'btn-block'], data={'type': 'proxy', 'host': proxy.host, 'port': proxy.port}) }}
+        {{ button('Send cmd', size=1, cls=['btn-block'], data={'toggle': 'modal', 'target': '#commandConsole', 'host': proxy.host, 'port': proxy.port}, lcl='btn-direct-command') }}
+        {{ button('Sync remote', size=1, cls=['sync-remotes-btn', 'btn-block'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-sync-slots-map') }}
 
         {%- if proxy.containerized %}
-          {{ button('Remove Container', size=2, color='danger', cls=['btn-del-container'], data={'type': 'proxy', 'cid': proxy.eru_container_id}, lcl='btn-remove-container') }}
+          {{ button('Remove Container', size=2, color='danger', cls=['btn-del-container', 'btn-block'], data={'type': 'proxy', 'cid': proxy.eru_container_id}, lcl='btn-remove-container') }}
           {%- if proxy.container_info and not proxy.container_info.is_alive %}
-            {{ button('Revive', size=1, color='info', cls=['btn-revive-container'], data={'cid': proxy.eru_container_id}, lcl='btn-revive') }}
+            {{ button('Revive', size=1, color='info', cls=['btn-revive-container', 'btn-block'], data={'cid': proxy.eru_container_id}, lcl='btn-revive') }}
           {%- endif %}
         {%- else %}
-          {{ button('Unregister', size=2, color='danger', cls=['delete-proxy-btn'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-remove') }}
+          {{ button('Unregister', size=2, color='danger', cls=['delete-proxy-btn', 'btn-block'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-remove') }}
         {%- endif %}
 
-        {{ checkbox('Disable alarm', size=2, color='danger', cls=['check-suppress-alert', 'check-group-checked' if proxy.suppress_alert else ''],
-                    data={'ntype': 'proxy', 'host': proxy.host, 'port': proxy.port}, lcl='btn-disable-alarm') }}
+        <div class='col-sm-1'>
+            {{ widgets.suppress_btn('proxy', proxy.host, proxy.port, proxy.suppress_alert) }}
+        </div>
     </div>
   {% endfor %}
     <div class='form-group'>
@@ -376,12 +377,10 @@ $('#new-proxy-btn').click(function() {
     {{ render('components/command_console.html') }}
 {% endautoescape %}
 
-<div class="panel panel-primary">
-  <div class="panel-heading panel-heading-hide-content" data-localize='set-auto-expansion'>Auto expansion</div>
+{% if container_enabled() %}
+<div class='panel panel-primary'>
+  <div class='panel-heading panel-heading-hide-content' data-localize='set-auto-expansion'>Auto expansion</div>
   <div>
-  {% if not g.container_client %}
-      <span data-localize='text-no-container-client'>Containerization client not available</span>
-  {% else %}
       <span data-localize='text-container-client'>Containerization client</span>: {{ g.container_client|e }}
       {%- set pods = g.container_client.list_pods() %}
       {%- if pods|length == 0 %}
@@ -404,9 +403,9 @@ $('#new-proxy-btn').click(function() {
                         cluster=cluster, plan_max_slaves=plan_max_slaves, plan=plan) }}
           {% endautoescape %}
       {%- endif %}
-  {% endif %}
   </div>
 </div>
+{% endif %}
 
 <div class="panel panel-primary">
   <div class="panel-heading panel-heading-hide-content">

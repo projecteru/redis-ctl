@@ -1,6 +1,6 @@
 {% extends './base.html' %}
 
-{% import './components/stat_entry.html' as stat_entry %}
+{% import './components/widgets.html' as widgets %}
 {% import './blocks/modal.html' as modal %}
 
 {% block title %}Node Panel - {{ node.host|e }}:{{ node.port }}{% endblock %}
@@ -53,13 +53,20 @@ function addMode(m) {
             <div class='dt dt-default' data-localize='status' id='redis-status'>Status</div>
             <div class='dd'>...</div>
         </div>
+
+        <div class='col-xs-1 col-xs-offset-1 text-center'>
+            {{ widgets.suppress_btn('redis', node.host, node.port, node.suppress_alert) }}
+        </div>
+        {%- if node.assignee_id is none and not node.containerized %}
+            {{ button('Unregister', size=2, color='danger', cls=['node-deleter', 'btn-block'], data={'host': node.host, 'port': node.port}, lcl='btn-remove') }}
+        {% endif %}
     </div>
 
     <div class='form-group'>
         <div class='col-xs-4'>
             <div class='dt dt-info dt-50'>INFO</div>
             <div class='dd dd-no-border'>
-                {{ stat_entry.stat_icon('redis', node.host, node.port, bar_after=True) }}
+                {{ widgets.stat_icon('redis', node.host, node.port, bar_after=True) }}
 
                 <a href='javascript:refreshInfo()'>{{ icon('refresh') }}</a>
                 |
@@ -336,7 +343,7 @@ function addMode(m) {
         cmdInfo(redis_status.host, redis_status.port, function(t) {
             $('#redis-info-textarea').val(t);
             redis_status.text = t;
-            $('#redis-status').removeClass('dt-default').addClass('dt-success').next().text(_('Connected'));
+            $('#redis-status').dtSetScheme('success').next().text(_('Connected'));
         }, function(blocks) {
             $('#det_db0').text('0');
             $.each(blocks, function(_, e) {
@@ -353,7 +360,10 @@ function addMode(m) {
                 addMode('standalone');
             }
         }, function(e) {
-            $('#redis-status').removeClass('dt-default').addClass('dt-danger').next().text(_(e.responseJSON.reason));
+            $('#redis-status').dtSetScheme('danger').next().text(_(e.responseJSON.reason));
+            if (redis_status.assigned) {
+                addMode('cluster-inconsistent-actually-ready');
+            }
         });
         cmdGetMaxMemory(redis_status.host, redis_status.port, function(m) {
             var mem = formatSize(m);
@@ -549,7 +559,6 @@ $('#redis-setting-modal').on('show.bs.modal', function(event) {
 
 <div class='form-horizontal'>
     <div class='form-group'>
-        {{ checkbox('Disable alarm', size=2, color='danger', cls=['check-suppress-alert', 'btn-block'], checked=node.suppress_alert, data={'ntype': 'redis', 'host': node.host, 'port': node.port}, lcl='btn-disable-alarm') }}
         {{ button('Send Cmd', size=2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#commandConsole', 'host': node.host, 'port': node.port}, lcl='btn-direct-command') }}
 
         <div class='serving-display'>
@@ -563,7 +572,7 @@ $('#redis-setting-modal').on('show.bs.modal', function(event) {
 
         <div class='cluster-inconsistent-actually-ready'>
             <div class='col-xs-6'>
-                <button type='button' class='btn btn-info btn-block' id='quit-cluster-force' data-localize='already-quit-message'>quit confirm</button>
+                <button type='button' class='btn btn-info btn-block' id='quit-cluster-force' data-localize='already-quit-message'>force quit</button>
             </div>
         </div>
 
@@ -989,5 +998,4 @@ $(document).ready(function() {
     {{ render('components/command_console.html') }}
 {% endautoescape %}
 
-{% include 'components/info_console.html' %}
 {% endblock %}
