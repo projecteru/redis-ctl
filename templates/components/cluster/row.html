@@ -1,6 +1,6 @@
 {% import './components/widgets.html' as widgets %}
 
-<tr id='cluster-{{ cluster.id }}'>
+<tr id='cluster-{{ cluster.id }}'class='{% if cluster.nodes|length == 0 %}adv-user-display{% else %}cluster-row{% endif %}'>
     <td><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.id }}</a></td>
     <td><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.description|e }}</a></td>
     <td>{{ cluster.nodes|length }}</td>

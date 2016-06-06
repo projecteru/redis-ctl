@@ -1,6 +1,6 @@
 {% import './components/widgets.html' as widgets %}
 
-<tr class='alert-status-root {{ '' if node.suppress_alert else 'alert-enabled' }} {{ 'node-healthy' if node.stat else '' }} {{ '' if node.detail.slots_migrating else 'node-stable' }}'>
+<tr class='{{ 'node-healthy' if node.stat else '' }} {{ '' if node.detail.slots_migrating else 'node-stable' }}'>
     {% set cluster = node.assignee %}
     {% set awaiting_polling = not node.stat and not node.detail.used_memory %}
     <td>

@@ -27,6 +27,7 @@ footer {
 .no-stats-mode .stats-display { display: none }
 .no-alarm-mode .alarm-display { display: none }
 .no-container-mode .container-display { display: none }
+.no-adv-user-mode .adv-user-display { display: none }
 
 .table caption {
     font-size: 2em;
@@ -43,6 +44,7 @@ hr {
 
 th {
     padding: 4px;
+    text-align: center;
 }
 
 .label-cell {
@@ -83,22 +85,6 @@ th {
 .cluster-info {
     clear: both;
     margin-left: 1em;
-}
-
-.alert-enabled .alert-status {
-    visibility: hidden;
-}
-
-.noalert-only .alert-enabled {
-    display: none;
-}
-
-.error-only .node-healthy {
-    display: none;
-}
-
-.migrating-only .node-stable {
-    display: none;
 }
 
 .row button {

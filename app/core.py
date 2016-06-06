@@ -211,4 +211,6 @@ class RedisCtl(Flask):
             c.append('no-alarm-mode')
         if not self.container_enabled():
             c.append('no-container-mode')
+        if not self.access_ctl_user_adv():
+            c.append('no-adv-user-mode')
         return c

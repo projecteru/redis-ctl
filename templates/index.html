@@ -4,9 +4,12 @@
 
 {% block head %}
 <style>
-.table { text-align: center; }
-tbody > tr:nth-child(2n+1) { background-color: #f0f0f0; }
-th { text-align: center; }
+#nodes-area > tr:nth-child(2n+1) { background-color: #f0f0f0; }
+.cluster-row:nth-child(2n+1) { background-color: #f0f0f0; }
+tr.adv-user-display { background-color: #ffc0c0; }
+
+.error-only .node-healthy { display: none }
+.migrating-only .node-stable { display: none }
 </style>
 <script src='/static/js/cluster_task.js'></script>
 <script src='/static/js/redis_node.js'></script>
@@ -15,7 +18,7 @@ th { text-align: center; }
 {% block body %}
 <div class="panel panel-success">
   <div class="panel-heading panel-heading-hide-content"><strong data-localize='clusters-info'>Clusters Info</strong></div>
-  <table class='table'>
+  <table class='table text-center'>
     <thead>
       <tr>
         <th>#</th>
@@ -27,7 +30,7 @@ th { text-align: center; }
     </thead>
     <tbody>
     {% autoescape false %}
-        {% for cluster in clusters if cluster.nodes %}
+        {% for cluster in clusters %}
             {{ render('components/cluster/row.html', cluster=cluster) }}
         {% endfor %}
     {% endautoescape %}
@@ -44,13 +47,12 @@ th { text-align: center; }
         <select class="select-primary" id="selectmenu">
           <option value='all' data-localize='opt-all-nodes'>All</option>
           <option value='error' data-localize='opt-error-only'>Unreachables</option>
-          <option value='noalert' data-localize='opt-noalert-only' class='alarm-display'>Alarm disabled</option>
           <option value='migrating' data-localize='opt-migrating-only'>Migrating</option>
         </select>
       </div>
     </div>
   </div>
-  <table id='nodes-area' class='table'>
+  <table id='nodes-area' class='table text-center'>
     <thead>
       <tr>
         <th data-localize='address'>Address</th>
@@ -75,9 +77,7 @@ $(function() {
         var chooseValues = $('#selectmenu').val();
         switch (chooseValues) {
             case 'error':
-                return  setDisplayClass('error-only');
-            case 'noalert':
-                return setDisplayClass('noalert-only');
+                return setDisplayClass('error-only');
             case 'migrating':
                 return setDisplayClass('migrating-only');
             default:
@@ -85,7 +85,7 @@ $(function() {
             }
     });
     function clearDisplayClasses() {
-        return $('#nodes-area').removeClass('error-only').removeClass('noalert-only').removeClass('migrating-only');
+        return $('#nodes-area').removeClass('error-only').removeClass('migrating-only');
     }
     function setDisplayClass(cls) {
         clearDisplayClasses().addClass(cls);

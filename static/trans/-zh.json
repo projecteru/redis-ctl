@@ -94,7 +94,6 @@
 
     "opt-all-nodes": "显示全部节点",
     "opt-error-only": "只显示出错节点",
-    "opt-noalert-only": "忽略报警节点",
     "opt-migrating-only": "显示槽位正在迁移的节点",
 
     "no-proxy": "没有代理",
