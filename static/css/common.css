@@ -34,6 +34,10 @@ footer {
     font-weight: bold;
 }
 
+th {
+    padding: 4px;
+}
+
 hr {
     clear: both;
 }
@@ -42,51 +46,10 @@ hr {
     background-color: #fc8;
 }
 
-th {
-    padding: 4px;
-    text-align: center;
-}
-
 .label-cell {
     min-width: 72px;
     padding-right: 2em;
 }
 
-.status-table {
-    float: left;
-    min-width: 280px;
-    margin-right: 20px;
-}
-
 .master {color: #044}
 .slave {color: #440}
-
-.cluster-ceiling {
-    border-top: 1px solid;
-    text-align: left;
-}
-
-.cluster-table {
-    text-align: center;
-    width: 100%;
-    margin: auto;
-    margin-bottom: 16px;
-}
-
-.cluster-table tbody {
-    border-left: 1px solid #aaa;
-    border-right: 1px solid #aaa;
-}
-
-.cluster-table th {
-    text-align: center;
-}
-
-.cluster-info {
-    clear: both;
-    margin-left: 1em;
-}
-
-.row button {
-    width: 100%;
-}
