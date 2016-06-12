@@ -4,10 +4,7 @@
 
 {% block head %}
 <style>
-#nodes-area > tr:nth-child(2n+1) { background-color: #f0f0f0; }
-.cluster-row:nth-child(2n+1) { background-color: #f0f0f0; }
 tr.adv-user-display { background-color: #ffc0c0; }
-
 .error-only .node-healthy { display: none }
 .migrating-only .node-stable { display: none }
 </style>
@@ -18,14 +15,13 @@ tr.adv-user-display { background-color: #ffc0c0; }
 {% block body %}
 <div class="panel panel-success">
   <div class="panel-heading panel-heading-hide-content"><strong data-localize='clusters-info'>Clusters Info</strong></div>
-  <table class='table text-center'>
+  <table class='table table-striped text-center'>
     <thead>
       <tr>
         <th>#</th>
         <th style='width: 320px;' data-localize='cluster-description'>Description</th>
         <th data-localize='nodes-num'>Redis</th>
-        <th colspan='5' data-localize='proxy-num'>Proxy</th>
-        <th></th>
+        <th data-localize='proxy-num'>Proxy</th>
       </tr>
     </thead>
     <tbody>
@@ -52,7 +48,7 @@ tr.adv-user-display { background-color: #ffc0c0; }
       </div>
     </div>
   </div>
-  <table id='nodes-area' class='table text-center'>
+  <table class='table table-striped text-center'>
     <thead>
       <tr>
         <th data-localize='address'>Address</th>

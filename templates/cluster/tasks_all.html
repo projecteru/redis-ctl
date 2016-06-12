@@ -1,5 +1,7 @@
 {% extends './base.html' %}
 
+{% import './blocks/pager.html' as pager %}
+
 {% block title %}All Tasks{% endblock %}
 
 {% block head %}
@@ -10,19 +12,18 @@
 
 {% block pagination %}
 <nav>
-  <div class="pagination pagination-info" style='float: left'>
-    <ul>
-        {% if page != 0 %}
-        <li><a href='?page=0' data-localize='first-page'>First page</a></li>
-        <li class='previous'><a href='?page={{ page - 1 }}' data-localize='previous-page'>Previous page</a></li>
-        {% endif %}
-        <li class='next'><a href='?page={{ page + 1 }}' data-localize='next-page'>Next page</a></li>
-    </ul>
+  <div style='float: left'>
+    {% call pager.pager(page) %}{% endcall %}
   </div>
 
-  <div class="pagination" style='float: right'>
-    <ul>
-        <li><a href='/prune/list_tasks' data-localize='prune'>Prune</a></li>
+  <div style='float: right'>
+    <ul class="pager">
+      <li>
+        <a href='/prune/list_tasks'>
+          {{ icon('trash-o') }}
+          <span data-localize='prune'>Prune</span>
+        </a>
+      </li>
     </ul>
   </div>
 </nav>

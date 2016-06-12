@@ -588,7 +588,7 @@ $('#redis-setting-modal').on('show.bs.modal', function(event) {
         <span data-localize='im_slave'>This is a slave</span>
         <button type='button' id='quit-cluster-replica' class='btn btn-info' data-localize='confirm'>Confirm</button>
     </span>
-    <table class='table serving-master-display'>
+    <table class='table table-striped serving-master-display'>
         <caption data-localize='quit-cluster-precondition'>Quit - migrate out all the slots before quit</caption>
         <thead>
             <tr>
@@ -615,7 +615,7 @@ $('#redis-setting-modal').on('show.bs.modal', function(event) {
 </div>
 
 <div class='panel-div' id='migrating-slots'>
-    <table class='table serving-master-display'>
+    <table class='table table-striped serving-master-display'>
         <thead>
             <tr>
                 <th>#</th>

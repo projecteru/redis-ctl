@@ -1,5 +1,7 @@
 {% extends './base.html' %}
 
+{% import './blocks/pager.html' as pager %}
+
 {% block head %}
 <script src='/static/js/containerize.js'></script>
 {% endblock %}
@@ -8,17 +10,20 @@
 
 {% block pagination %}
 <nav>
-  <div class="pagination pagination-info">
-  <ul>
-    {% if page != 0 %}
-    <li><a href='?page=0' data-localize='first-page'>First page</a></li>
-    <li class='previous'><a href='?page={{ page - 1 }}' data-localize='pervious'>Previous page</a></li>
-    {% endif %}
-    <li class='next'><a href='?page={{ page + 1 }}' data-localize='next-page'>Next Page</a></li>
-    <li><a href='/containerize/' data-localize='back-to-containerize-manage'>Back to Manage Page</a></li>
-  </ul>
-  </div>
+    <div class='pull-left'>
+    {% call pager.pager(page) %}{% endcall %}
+    </div>
+
+    <ul class='pager pull-right'>
+        <li>
+            <a href='/containerize/'>
+                {{ icon('cube') }}
+                <span data-localize='back-to-containerize-manage'>Back to Manage Page<span>
+            </a>
+        </li>
+    </ul>
 </nav>
+<hr style='visibility: hidden'>
 {% endblock %}
 
 {% block table %}{% endblock %}
