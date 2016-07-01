@@ -1,5 +1,6 @@
 import logging
 from flask import render_template, abort, request
+from sqlalchemy.exc import IntegrityError
 import redistrib.command
 from redistrib.clusternode import Talker
 from redistrib.exceptions import RedisStatusError
@@ -19,11 +20,27 @@ def access_control():
         abort(403)
 
 
+@bp.route('/create')
+def create_cluster():
+    return render_template('cluster/create.html')
+
+
+@bp.route_post_json('/delete')
+def delete_cluster():
+    try:
+        models.cluster.remove_empty_cluster(int(request.form['id']))
+    except IntegrityError as e:
+        logging.exception(e)
+        raise ValueError(e.message)
+
+
 @bp.route('/panel/<int:cluster_id>')
 def cluster_panel(cluster_id):
     c = models.cluster.get_by_id(cluster_id)
-    if c is None or len(c.nodes) == 0:
-        return abort(404)
+    if c is None:
+        abort(404)
+    if len(c.nodes) == 0:
+        return render_template('cluster/inactive.html', cluster=c)
     all_details = bp.app.polling_result()
     node_details = all_details['nodes']
     nodes = []
@@ -37,8 +54,7 @@ def cluster_panel(cluster_id):
     for p in c.proxies:
         p.details = proxy_details.get('%s:%d' % (p.host, p.port), {})
     return render_template(
-        'cluster/panel.html', cluster=c, nodes=nodes,
-        plan_max_slaves=3, stats_enabled=bp.app.stats_enabled())
+        'cluster/panel.html', cluster=c, nodes=nodes, plan_max_slaves=3)
 
 
 @bp.route('/list')

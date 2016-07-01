@@ -16,13 +16,13 @@ class Proxy(Base):
     __table_args__ = (db.Index('address', 'host', 'port', unique=True),)
 
     @cached_property
-    def eru_deployed(self):
+    def containerized(self):
         return self.eru_container_id is not None
 
     @cached_property
-    def eru_info(self):
+    def container_info(self):
         from flask import g
-        if g.container_client is None or not self.eru_deployed:
+        if g.container_client is None or not self.containerized:
             return None
         return g.container_client.get_container(self.eru_container_id)
 

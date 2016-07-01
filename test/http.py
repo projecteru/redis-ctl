@@ -140,11 +140,13 @@ class HttpRequest(base.TestCase):
             self.assertReqStatus(200, r)
             self.exec_all_tasks()
 
-            r = client.post('/task/join', data={
+            r = client.post('/task/join', data=json.dumps({
                 'cluster_id': cluster_id,
-                'host': '127.0.0.1',
-                'port': 7101,
-            })
+                'nodes': [{
+                    'host': '127.0.0.1',
+                    'port': 7101,
+                }],
+            }))
             self.assertReqStatus(200, r)
 
             nodes, node_7100 = comm.list_nodes('127.0.0.1', 7100)

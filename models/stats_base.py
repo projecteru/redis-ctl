@@ -1,8 +1,9 @@
 import logging
-import traceback
 from hiredis import ReplyError
 
 from models.base import db, Base
+import models.node
+import models.proxy
 
 
 class StatsBase(Base):
@@ -21,6 +22,11 @@ class StatsBase(Base):
         self.details = {}
         self.app = None
         self.typename = ''
+        self.host = None
+        self.port = None
+
+    def get_endpoint(self):
+        raise NotImplementedError()
 
     @classmethod
     def get_by(cls, host, port):
@@ -33,6 +39,8 @@ class StatsBase(Base):
         n.init()
         n.details['host'] = host
         n.details['port'] = port
+        n.host = host
+        n.port = port
         return n
 
     def set_available(self):
@@ -69,12 +77,12 @@ class StatsBase(Base):
             self.set_unavailable()
             self.send_alarm(
                 '%s failed: %s:%d - %s' % (
-                    self.typename, self.details['host'], self.details['port'],
-                    e), traceback.format_exc())
+                    self.typename, self.host, self.port, e), e)
 
-    def send_alarm(self, message, trace):
-        if self.suppress_alert != 1:
-            self.app.send_alarm(message, trace)
+    def send_alarm(self, message, exception):
+        ep = self.get_endpoint()
+        if self.suppress_alert != 1 and ep is not None:
+            self.app.send_alarm(ep, message, exception)
 
     def add_to_db(self):
         db.session.add(self)
@@ -90,6 +98,9 @@ class RedisStatsBase(StatsBase):
         StatsBase.init(self)
         self.typename = 'Redis'
 
+    def get_endpoint(self):
+        return models.node.get_by_host_port(self.host, self.port)
+
 
 class ProxyStatsBase(StatsBase):
     __tablename__ = 'proxy_status'
@@ -100,3 +111,6 @@ class ProxyStatsBase(StatsBase):
     def init(self):
         StatsBase.init(self)
         self.typename = 'Cerberus'
+
+    def get_endpoint(self):
+        return models.proxy.get_by_host_port(self.host, self.port)

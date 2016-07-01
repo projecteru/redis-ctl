@@ -1,0 +1,9 @@
+{% extends './containerize/deploy/list_base.html' %}
+
+{% block title %}Containerized Proxy{% endblock %}
+
+{% block table %}
+  {% autoescape false %}
+    {{ render('containerize/deploy/proxy_table.html', proxies=proxies) }}
+  {% endautoescape %}
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends './base.html' %}
+
+{% block title %}{{ cluster.description|e }} - Cluster Panel{% endblock %}
+
+{% block head %}
+<script src='/static/js/containerize.js'></script>
+{% endblock %}
+
+{% block body %}
+<div class='form-horizontal dl-hori'>
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='cluster-id'>Cluster ID</div>
+            <div class='dd'>{{ cluster.id }}</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='cluster-description'>Description</div>
+            <div class='dd'>{{ cluster.description|e }}</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='creation'>Creation</div>
+            <div class='dd'>{{ cluster.creation|strftime }}</div>
+        </div>
+    </div>
+</div>
+
+<div class='panel panel-default'>
+  <div class='panel-heading' id='proxies'>
+      <span data-localize='proxy'>Proxy</span>
+      <span class='label label-default' data-localize='delete-cluster-message-remove-proxies'>All proxies should be unregistered / removed before deleting the cluster</span>
+  </div>
+  <div class='form-horizontal' style='text-align: center'>
+  {%- for proxy in cluster.proxies %}
+    <div class='form-group' id='proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
+        <div class='col-xs-3'>
+            <label>{{ proxy.host|e }}:{{ proxy.port }}</label>
+            {%- if proxy.containerized %}{{ icon('cube') }}{% endif %}
+        </div>
+
+        {%- if proxy.containerized %}
+          {{ button('Remove Container', size=3, color='danger', cls=['btn-del-container', 'btn-block'], data={'type': 'proxy', 'cid': proxy.eru_container_id}, lcl='btn-remove-container') }}
+        {%- else %}
+          {{ button('Unregister', size=3, color='danger', cls=['delete-proxy-btn', 'btn-block'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-remove') }}
+        {%- endif %}
+    </div>
+  {% endfor %}
+  </div>
+</div>
+
+{%- set tasks = cluster.get_tasks() %}
+<div class='panel panel-default'>
+  <div class='panel-heading'>
+      <span data-localize='background-task'>Tasks</span>
+      <span class='label label-default' data-localize='delete-cluster-message-prune-tasks'>All tasks should be pruned before deleting the cluster</span>
+      <a href='/prune/list_tasks' class='pull-right' data-localize='prune'>Prune</a>
+  </div>
+  {% autoescape false %}
+    {{ render('components/cluster/tasks.html', tasks=tasks) }}
+  {% endautoescape %}
+</div>
+
+{% if cluster.proxies|length == 0 and tasks|length == 0 %}
+<div class='form-horizontal'>
+    <div class='form-group'>
+        <div class='col-xs-4 col-xs-offset-4'>
+            <button class='btn btn-danger btn-block' data-localize='delete-cluster' onclick='delete_me()'>DELETE THE CLUSTER</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function delete_me() {
+    $.ajax({
+        type: 'POST',
+        url: '/cluster/delete',
+        data: {id: {{ cluster.id|tojson }} },
+        success: function() { window.location = '/' },
+        error: function(e) {
+            console.error(e);
+            alert(_('failed'));
+        }
+    });
+}
+</script>
+{% endif %}
+
+{% endblock %}

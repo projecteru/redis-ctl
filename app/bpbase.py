@@ -1,10 +1,10 @@
 from functools import wraps
 import logging
 import flask
-from eruhttp import EruException
 
 import utils
 import models.base
+from thirdparty.containerize import ContainerizeExceptionBase
 
 
 class Blueprint(flask.Blueprint):
@@ -38,9 +38,12 @@ class Blueprint(flask.Blueprint):
                     r, code = {'reason': 'invalid input encoding'}, 400
                 except ValueError, e:
                     r, code = {'reason': e.message}, 400
-                except EruException, e:
+                except ContainerizeExceptionBase, e:
                     logging.exception(e)
-                    r, code = {'reason': 'eru fail', 'detail': e.message}, 400
+                    r, code = {
+                        'reason': 'containerize fail',
+                        'detail': e.message,
+                    }, 400
                 except StandardError, e:
                     logging.error('UNEXPECTED ERROR')
                     logging.exception(e)

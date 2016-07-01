@@ -1,0 +1,13 @@
+{%- macro stat_icon(type, host, port, bar_before=False, bar_after=False) %}
+<span class='stats-display'>
+    {%- if bar_before %}|{% endif %}
+    <a target='_blank' href='/stats/{{ type }}?host={{ host|e }}&port={{ port }}'>{{ icon('line-chart') }}</a>
+    {%- if bar_after %}|{% endif %}
+</span>
+{%- endmacro %}
+
+{%- macro suppress_btn(type, host, port, suppress) %}
+<button class='alarm-display check-suppress-alert check-group check-group-danger {% if suppress %}check-group-checked{% endif %}'
+        data-host={{ host|tojson }} data-ntype='{{ type }}' data-port='{{ port }}'>
+</button>
+{%- endmacro %}

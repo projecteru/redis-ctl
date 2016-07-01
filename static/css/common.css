@@ -13,10 +13,6 @@ header {
     color: #4cc;
     text-decoration: none;
 }
-.main-width {
-    width: 1024px;
-    margin: auto;
-}
 
 footer {
     background-color: #eee;
@@ -28,6 +24,20 @@ footer {
     border-top: 1px dashed #aaa;
 }
 
+.no-stats-mode .stats-display { display: none }
+.no-alarm-mode .alarm-display { display: none }
+.no-container-mode .container-display { display: none }
+.no-adv-user-mode .adv-user-display { display: none }
+
+.table caption {
+    font-size: 2em;
+    font-weight: bold;
+}
+
+th {
+    padding: 4px;
+}
+
 hr {
     clear: both;
 }
@@ -36,89 +46,10 @@ hr {
     background-color: #fc8;
 }
 
-th {
-    padding: 4px;
-}
-
 .label-cell {
     min-width: 72px;
     padding-right: 2em;
 }
 
-.status-table {
-    float: left;
-    min-width: 280px;
-    margin-right: 20px;
-}
-
 .master {color: #044}
 .slave {color: #440}
-
-.cluster-ceiling {
-    border-top: 1px solid;
-    text-align: left;
-}
-
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #000;
-    filter: alpha(opacity=50);
-    -moz-opacity:0.5;
-    -khtml-opacity: 0.5;
-    opacity: 0.5;
-}
-
-.overlay-panel {
-    position: fixed;
-    top: 10%;
-    left: 10%;
-    width: 80%;
-    height: 80%;
-    background-color: white;
-    overflow: scroll;
-}
-
-.cluster-table {
-    text-align: center;
-    width: 100%;
-    margin: auto;
-    margin-bottom: 16px;
-}
-
-.cluster-table tbody {
-    border-left: 1px solid #aaa;
-    border-right: 1px solid #aaa;
-}
-
-.cluster-table th {
-    text-align: center;
-}
-
-.cluster-info {
-    clear: both;
-    margin-left: 1em;
-}
-
-.alert-enabled .alert-status {
-    visibility: hidden;
-}
-
-.noalert-only .alert-enabled {
-    display: none;
-}
-
-.error-only .node-healthy {
-    display: none;
-}
-
-.migrating-only .node-stable {
-    display: none;
-}
-
-.row button {
-    width: 100%;
-}

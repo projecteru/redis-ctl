@@ -1,18 +1,18 @@
 {% extends './base.html' %}
 
-{% block title %}轮询记录{% endblock %}
+{% block title %}Pollings{% endblock %}
 
 {% block body %}
 <div class="panel panel-default">
-  <table class='table' style='text-align: center'>
+  <table class='table table-striped' style='text-align: center'>
     <thead>
         <tr>
             <th>#</th>
-            <th data-localize='time'>时间</th>
-            <th data-localize='nodes-ok'>正常节点数</th>
-            <th data-localize='nodes-fail'>失败节点数</th>
-            <th data-localize='proxies-ok'>正常代理数</th>
-            <th data-localize='proxies-fail'>失败代理数</th>
+            <th data-localize='time'>Time</th>
+            <th data-localize='nodes-ok'>Healthy Redis</th>
+            <th data-localize='nodes-fail'>Unreachable Redis</th>
+            <th data-localize='proxies-ok'>Healthy Proxy</th>
+            <th data-localize='proxies-fail'>Unreachable Proxy</th>
         </tr>
     </thead>
     <tbody>
@@ -29,4 +29,11 @@
     </tbody>
   </table>
 </div>
+
+{% block prune %}
+<div class='text-center'>
+    <a class='btn btn-default' href='/prune/list_pollings' data-localize='prune'>Prune</a>
+</div>
+{% endblock %}
+
 {% endblock %}

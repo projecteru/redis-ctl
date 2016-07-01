@@ -10,12 +10,6 @@ import daemonutils.auto_balance
 import models.base
 from app import RedisCtl
 
-try:
-    config.SQLALCHEMY_DATABASE_URI = config.TEST_SQLALCHEMY_DATABASE_URI
-except AttributeError:
-    raise ValueError('TEST_SQLALCHEMY_DATABASE_URI should be'
-                     ' specified in override_config for unittest')
-
 config.LOG_FILE = os.path.join(tempfile.gettempdir(), 'redisctlpytest')
 config.PERMDIR = os.path.join(tempfile.gettempdir(), 'redisctlpytestpermdir')
 config.POLL_INTERVAL = 0
@@ -31,21 +25,25 @@ except OSError as exc:
         pass
 
 
-def reset_db():
-    models.base.db.session.close()
-    models.base.db.drop_all()
-    models.base.db.create_all()
-
-
 class TestApp(RedisCtl):
     def __init__(self):
         RedisCtl.__init__(self, config)
 
+    def db_uri(self, config):
+        try:
+            return config.TEST_SQLALCHEMY_DATABASE_URI
+        except AttributeError:
+            raise ValueError('TEST_SQLALCHEMY_DATABASE_URI should be'
+                             ' specified in override_config for unittest')
+
     def replace_container_client(self, client=None):
         if client is None:
-            client = FakeEruClientBase()
+            client = FakeContainerClientBase()
         self.container_client = client
         return client
+
+    def replace_alarm_client(self, client=None):
+        self.alarm_client = client
 
     def init_stats_client(self, config):
         return None
@@ -64,9 +62,21 @@ class TestCase(unittest.TestCase):
         self.app.register_blueprints()
         self.db = models.base.db
 
+    def reset_db(self):
+        with self.app.app_context():
+            models.base.db.session.close()
+            models.base.db.drop_all()
+            models.base.db.create_all()
+
     def setUp(self):
-        reset_db()
+        print ''
+        print '[- Setup -]', self._testMethodName
+        self.reset_db()
         self.app.write_polling_targets()
+        print '[+ Start +]', self._testMethodName
+
+    def tearDown(self):
+        print '[[ Done  ]]', self._testMethodName
 
     def replace_eru_client(self, client=None):
         return self.app.replace_container_client(client)
@@ -99,7 +109,7 @@ class TestCase(unittest.TestCase):
             ]))
 
 
-class FakeEruClientBase(object):
+class FakeContainerClientBase(object):
     def __init__(self):
         self.next_container_id = 0
         self.deployed = {}
@@ -130,12 +140,12 @@ class FakeEruClientBase(object):
         }
 
     def deploy_redis(self, pod, aof, netmode, cluster=True, host=None,
-                     port=6379):
+                     port=6379, *args, **kwarge):
         return self.deploy_with_network('redis', pod, netmode, host=host,
                                         args=[])
 
     def deploy_proxy(self, pod, threads, read_slave, netmode, host=None,
-                     port=8889):
+                     port=8889, *args, **kwarge):
         return self.deploy_with_network(
             'cerberus', pod, netmode, ncore=threads, host=host, args=[])
 

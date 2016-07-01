@@ -1,0 +1,33 @@
+{% extends './base.html' %}
+
+{% import './blocks/pager.html' as pager %}
+
+{% block head %}
+<script src='/static/js/containerize.js'></script>
+{% endblock %}
+
+{% block body %}
+
+{% block pagination %}
+<nav>
+    <div class='pull-left'>
+    {% call pager.pager(page) %}{% endcall %}
+    </div>
+
+    <ul class='pager pull-right'>
+        <li>
+            <a href='/containerize/'>
+                {{ icon('cube') }}
+                <span data-localize='back-to-containerize-manage'>Back to Manage Page<span>
+            </a>
+        </li>
+    </ul>
+</nav>
+<hr style='visibility: hidden'>
+{% endblock %}
+
+{% block table %}{% endblock %}
+
+{{ self.pagination() }}
+
+{% endblock %}

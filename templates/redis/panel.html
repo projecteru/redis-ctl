@@ -1,208 +1,613 @@
 {% extends './base.html' %}
 
+{% import './components/widgets.html' as widgets %}
+{% import './blocks/modal.html' as modal %}
+
 {% block title %}Node Panel - {{ node.host|e }}:{{ node.port }}{% endblock %}
 
 {% block head %}
-<script src='/static/js/eru_container.js'></script>
-<style>
-.table { text-align: center; }
-.status-table {
-    max-width: 45%;
-}
-.status-table caption { font-weight: bold; }
-.status-table tr:nth-child(2n+1) { background-color: #f8f8f8; }
-.status-table caption, .status-table tr td {
-    border: 1px solid #cccccc;
-    margin: 0;
-    padding: 6px 13px;
-}
-</style>
+<script src='/static/js/containerize.js'></script>
+<script src='/static/js/cluster_task.js'></script>
 <script src='/static/js/redis_node.js'></script>
-<script src='/static/js/sort-nodes.js'></script>
+<style>
+.cluster-display { display: none }
+.ready-display { display: none }
+.serving-display { display: none }
+.serving-master-display { display: none }
+.serving-slave-display { display: none }
+.cluster-inconsistent-actually-serving { display: none }
+.cluster-inconsistent-actually-ready { display: none }
+.standalone-display { display: none }
+
+.cluster-mode .cluster-display { display: block }
+.ready-mode .ready-display { display: block }
+.serving-mode .serving-display { display: block }
+.serving-master-mode .serving-master-display { display: block }
+.serving-slave-mode .serving-slave-display { display: block }
+.serving-master-mode table.serving-master-display { display: table }
+.cluster-inconsistent-actually-serving-mode .cluster-inconsistent-actually-serving { display: block }
+.cluster-inconsistent-actually-ready-mode .cluster-inconsistent-actually-ready { display: block }
+.standalone-mode .standalone-display { display: block }
+</style>
 {% endblock %}
 
 {% block body %}
-<div class="panel panel-warning">
-    <div class="panel-heading">{{ node.host|e }}:{{ node.port }}</div>
-    <table class='table'>
-    <tr>
-        <th data-localize='node-id'>节点 ID</th>
-        <td>{{ detail.node_id|e }}</td>
-    </tr>
-    <tr>
-        <th data-localize='version'>版本</th>
-        <td>{{ detail.version }}</td>
-    </tr>
-    <tr>
-        <th data-localize='node-memory-usage'>内存</th>
-        <td>
-        {% if detail %}
-            <span>
-                {{ detail.get('used_memory', 0)|filesizeformat }}
-                {% if detail.get('maxmemory', 0) != 0 %}
-                  / {{ detail.maxmemory|filesizeformat }}
-                {% else %}
-                  (<span data-localize='max-memory-not-set'>未设置最大值</span>)
-                {% endif %}
-            </span>
-            <button class='btn btn-inverse' data-toggle='modal' data-target='#nodeMemSetting' data-localize='setting'>设置</button>
-            {% autoescape false %}
-                {{ render('components/node/memory-setting.html', host=node.host, port=node.port,
-                          max_mem=detail.maxmemory, used_mem=detail.used_memory, mem_limit=max_mem_limit) }}
-            {% endautoescape %}
-        {% else %}
-        <span data-localize='wait-poll'>等待轮询</span>
-        {% endif %}
-        </td>
-    </tr>
-  {%- if node.eru_deployed %}
-    <tr>
-        <th data-localize='deploy'>部署</th>
-        <td><i class='fa fa-cube'></i><span data-localize='eru-container'> ERU 容器</td>
-    </tr>
-    {%- if node.eru_info %}
-    <tr>
-        <td data-localize='eru-cantainer-id'>ERU 容器 ID</td>
-        <td>
-            <span>{{ node.eru_container_id|e }}</span>
-          {%- if not node.eru_info.is_alive %}
-            <button class='btn btn-info btn-revive-container' data-cid='{{ node.eru_container_id|e }}' data-localize='btn-revive'>复活此容器</button>
-          {%- endif %}
-        </td>
-    </tr>
-    <tr>
-        <td data-localize='create-container-time'>ERU 容器创建时间</td>
-        <td>{{ node.eru_info.created|e }}</td>
-    </tr>
-    <tr>
-        <td data-localize='host-address'>ERU 宿主机地址</td>
-        <td>{{ node.eru_info.host|e }}</td>
-    </tr>
-    {%- endif %}
-  {%- endif %}
-    <tr>
-        <th data-localize='statistics'>统计</th>
-        <td>
-            {% if not (detail and detail.stat) %}
-            <span data-localize='wait-poll'>等待轮询采集数据</span>
-            {% else %}
-            <table class='table status-table'>
-                <caption>CPU</caption>
-                <tr>
-                    <td data-localize='cpu-user'>用户态累计</td>
-                    <td>{{ detail.used_cpu_user }}</td>
-                </tr>
-                <tr>
-                    <td data-localize='cpu-sys'>内核态累计</td>
-                    <td>{{ detail.used_cpu_sys }}</td>
-                </tr>
-                <tr>
-                    <td data-localize='uptime'>总运行时间</td>
-                    <td>{{ detail.uptime_in_seconds }}</td>
-                </tr>
-                <tr>
-                    <td data-localize='avg-cpu-usage'>平均 CPU 占用率</td>
-                    <td>{{ ((detail.used_cpu_user + detail.used_cpu_sys) / detail.uptime_in_seconds * 100)|round(2) }}%</td>
-                </tr>
-            </table>
-            <table class='table status-table'>
-                <caption data-localize='storage'>存储</caption>
-                <tr>
-                    <td>Keyspace hits</td>
-                    <td>{{ detail.keyspace_hits }}</td>
-                </tr>
-                <tr>
-                    <td>Keyspace misses</td>
-                    <td>{{ detail.keyspace_misses }}</td>
-                </tr>
-                <tr>
-                    <td>Expired keys</td>
-                    <td>{{ detail.expired_keys }}</td>
-                </tr>
-                <tr>
-                    <td>Evicted keys</td>
-                    <td>{{ detail.evicted_keys }}</td>
-                </tr>
-            </table>
-            <table class='table status-table'>
-                <caption data-localize="node-memory-usage">内存</caption>
-                <tr>
-                    <td data-localize='used-memory'>已使用内存</td>
-                    <td>{{ detail.get('used_memory', 0)|filesizeformat }}</td>
-                </tr>
-                <tr>
-                    <td data-localize='mem-rss'>常驻集</td>
-                    <td>{{ detail.get('used_memory_rss', 0)|filesizeformat }}</td>
-                </tr>
-            </table>
-            {% endif %}
-        </td>
-    </tr>
-</table>
+<script>
+function resetModes() {
+    $('body').removeClass('cluster-mode ready-mode serving-mode standalone-mode');
+}
 
-<div class='form-horizontal form-submit'>
+function addMode(m) {
+    $('body').addClass(m + '-mode');
+}
+</script>
+
+<div class='form-horizontal dl-hori'>
     <div class='form-group'>
-        {%- if stats_enabled %}
-        <div class='col-xs-2'>
-            <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'><span data-localize='history'>状态历史</span> {{ icon('line-chart') }}</a>
+        <div class='col-xs-4'>
+            <div class='dt dt-primary dt-50' data-localize='address'>Address</div>
+            <div class='dd'>{{ node.host|e }}:{{ node.port }}</div>
         </div>
-        {% endif %}
 
-        {{ checkbox('关闭报警', size=2, color='danger', cls=['check-suppress-alert'], checked=node.suppress_alert, data={'ntype': 'redis', 'host': node.host, 'port': node.port}, lcl='btn-disable-alarm') }}
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='status' id='redis-status'>Status</div>
+            <div class='dd'>...</div>
+        </div>
 
-        {%- if node.assignee is none and not node.eru_deployed %}
-            {{ button('从监视器中移除此节点', size=2, color='danger', cls=['node-deleter'], data={'host': node.host, 'port': node.port}, lcl='btn-remove') }}
+        <div class='col-xs-1 col-xs-offset-1 text-center'>
+            {{ widgets.suppress_btn('redis', node.host, node.port, node.suppress_alert) }}
+        </div>
+        {%- if node.assignee_id is none and not node.containerized %}
+            {{ button('Unregister', size=2, color='danger', cls=['node-deleter', 'btn-block'], data={'host': node.host, 'port': node.port}, lcl='btn-remove') }}
         {% endif %}
+    </div>
 
-        {%- if detail.slots_migrating %}
-            {{ button('修复迁移状态', size=2, color='warning', cls=['fix-migrating-btn'], data={'host': node.host, 'port': node.port}, lcl='cluster-fix-migrating') }}
-        {% endif %}
-        {{ button('发送指令', size=1, data={'toggle': 'modal', 'target': '#commandConsole', 'host': node.host, 'port': node.port}, lcl='btn-direct-command') }}
-        {{ button('INFO', size=1, cls=['info-btn'], data={'type': 'node', 'host': node.host, 'port': node.port}) }}
-        {{ button('CLUSTER NODES', size=2, cls=['cluster-nodes-btn'], data={'host': node.host, 'port': node.port}) }}
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-info dt-50'>INFO</div>
+            <div class='dd dd-no-border'>
+                {{ widgets.stat_icon('redis', node.host, node.port, bar_after=True) }}
+
+                <a href='javascript:refreshInfo()'>{{ icon('refresh') }}</a>
+                |
+                <a href='javascript:;' data-toggle='modal' data-target='#redis-info-text'>{{ icon('file-text') }}</a>
+                |
+                <a href='javascript:;' data-toggle='modal' data-target='#redis-setting-modal'>{{ icon('cog') }}</a>
+            </div>
+        </div>
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='version'>Version</div>
+            <div class='dd' id='det_redis_version'>-</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' id='memory-usage' data-localize='node-memory-usage'>Memory</div>
+            <div class='dd'>
+                <span id='det_used_memory'>0</span>
+                <span id='node-max-memory'></span>
+            </div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='keys-hits'>Keyspace hits</div>
+            <div class='dd' id='det_keyspace_hits'>0</div>
+        </div>
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='cpu-user'>CPU User</div>
+            <div class='dd' id='det_used_cpu_user'>0</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='mem-rss'>Memory RSS</div>
+            <div class='dd' id='det_used_memory_rss'>0</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='keys-misses'>Keyspace misses</div>
+            <div class='dd' id='det_keyspace_misses'>0</div>
+        </div>
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='cpu-sys'>CPU Sys</div>
+            <div class='dd' id='det_used_cpu_sys'>0</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='keys-count'>Keys</div>
+            <div class='dd' id='det_db0'>0</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='keys-expired'>Expired keys</div>
+            <div class='dd' id='det_expired_keys'>0</div>
+        </div>
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='uptime'>Uptime</div>
+            <div class='dd' id='det_uptime_in_seconds'>0</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='aof-enabled'>AOF</div>
+            <div class='dd' id='det_aof_enabled'>-</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='keys-evicted'>Evicted keys</div>
+            <div class='dd' id='det_evicted_keys'>0</div>
+        </div>
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='commands-processed'>Commands Processed</div>
+            <div class='dd' id='det_total_commands_processed'>0</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='connected-clients'>Clients</div>
+            <div class='dd' id='det_connected_clients'>0</div>
+        </div>
+    </div>
+
+    {%- if node.containerized %}
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-info dt-50' data-localize='containerize'>Containerize</div>
+            <div class='dd'>{{ icon('cube') }}</div>
+        </div>
+
+        {%- if node.container_info and not node.container_info.is_alive %}
+        <div class='col-xs-2'>
+            <button class='btn btn-info btn-block btn-revive-container' data-cid='{{ node.eru_container_id|e }}' data-localize='btn-revive'>Revive</button>
+        </div>
+        {%- endif %}
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='container-id'>Container ID</div>
+            <div class='dd' style='font-family: monospace'>{{ node.eru_container_id[:16]|e }}</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='creation'>Creation</div>
+            <div class='dd'>{{ node.container_info.created|e if node.container_info else '-' }}</div>
+        </div>
+
+        <div class='col-xs-4'>
+            <div class='dt dt-default' data-localize='host-address'>Host Addr</div>
+            <div class='dd'>{{ node.container_info.host|e if node.container_info else '-' }}</div>
+        </div>
+    </div>
+    {% else %}
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-default dt-50' data-localize='containerize'>Containerize</div>
+            <div class='dd'>{{ icon('times-circle') }}</div>
+        </div>
+    </div>
+    {%- endif %}
+
+    <div class='form-group'>
+        <div class='col-xs-4'>
+            <div class='dt dt-info dt-50' data-localize='cluster'>CLUSTER</div>
+            <div class='dd' id='det_cluster_enabled'>-</div>
+        </div>
+    </div>
+
+    <div class='cluster-display'>
+        <div class='form-group'>
+            <div class='col-xs-4'>
+                <div class='dt dt-default' data-localize='cluster-status'>Status</div>
+                <div class='dd' id='cluster-status'>-</div>
+            </div>
+
+            <div class='col-xs-4'>
+                <div class='dt dt-default' data-localize='role'>Role</div>
+                <div class='dd' id='det_role'>-</div>
+            </div>
+
+            <div class='col-xs-4'>
+                <div class='dt dt-default' data-localize='slots-num'>Slots</div>
+                <div class='dd' id='slots-num'>-</div>
+            </div>
+        </div>
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-4'>
+        {%- if node.assignee_id is not none %}
+            <div class='dt dt-default' data-localize='serving-in-cluster'>Serving in</div>
+            <div class='dd'>
+                <a target='_black' href='/cluster/panel/{{ node.assignee_id }}'>{{ node.assignee.description }} {{ icon('external-link') }}</a>
+            </div>
+        {%- else %}
+            <div class='control-label cluster-inconsistent-actually-serving'><span data-localize='need-autodiscover'></span> ==&gt;</div>
+        {%- endif %}
+        </div>
+        {{ button('Auto discover', size=2, offset=6, cls=['btn-block', 'cluster-display'], data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
     </div>
 </div>
 
-{% if node.assignee %}
+{% autoescape false %}
+    {{ render('components/node/autodiscover.html', host=node.host, port=node.port) }}
+{% endautoescape %}
 
-<table class='table'>
-    <tr>
-        <th data-localize='belonging-cluster'>所属集群</th>
-        <td><a target='_blank' href='/cluster/panel/{{ node.assignee.id }}'>{{ node.assignee.description|e }} <i class='fa fa-external-link'></i></a></td>
-    </tr>
-    <tr>
-        <th data-localize='slots-num'>槽位数</th>
-        <td>{{ detail.slots|length }}</td>
-    </tr>
-</table>
+<div class='panel panel-default cluster-display'>
+    <div class='panel-heading panel-heading-hide-content'>CLUSTER NODES</div>
+    <div class='form-horizontal'>
+        <div class='form-group'>
+            <div class='col-xs-3 text-center' data-localize='node-id'>Node ID</div>
+            <div class='col-xs-2' data-localize='address'>Address</div>
+            <div class='col-xs-2' data-localize='role'>Role</div>
+            <div class='col-xs-5' data-localize='slots'>Slots</div>
+        </div>
+        <div id='cluster-nodes' class='form-horizontal'></div>
+    </div>
+</div>
 
-<div>
-    <button class='btn panel-btn btn-primary' id='quit-cluster-btn' data-bind='quit-cluster' data-localize='quit-cluster'>退出集群</button>
-    <button class='btn panel-btn btn-primary' id='migrating-slots-btn' data-bind='migrating-slots' data-localize='move-slot'>迁出槽位</button>
-    <button class='btn btn-info' style='display: none' id='quit-cluster-force' data-localize='already-quit-message'>此节点已由其它进程控制退出集群, 点此按钮解除其与集群的关联</button>
+<script>
+-function() {
+    window.redis_status = {
+        text: '',
+        memory: 0,
+        maxmemory: 0,
+        items: null,
+        assigned: {{ (node.assignee_id is not none)|tojson }},
+
+        cluster_slave: false,
+        cluster_serving: false,
+        cluster_masters: [],
+        slots: [],
+
+        host: {{ node.host|tojson }},
+        port: {{ node.port|tojson }}
+    };
+
+    function formatInt(s) {
+        return parseInt(s).toLocaleString();
+    }
+
+    function formatSize(s) {
+        return Math.round((parseInt(s) / 1000000)) + 'M'
+    }
+
+    function enabled(s, k) {
+        if (redis_status[k] = s === '1') {
+            $('#det_' + k).dtSetScheme('info');
+        } else {
+            $('#det_' + k).dtResetDefault();
+        }
+        return redis_status[k] ? _('enabled') : _('disabled');
+    }
+
+    var specialProps = {
+        total_commands_processed: formatInt,
+        connected_clients: formatInt,
+        uptime_in_seconds: formatInt,
+        used_memory: function(m) {
+            redis_status.memory = m;
+            colorMemoryCard();
+            var mem = formatSize(m);
+            $('#used-memory-mbyte').text(mem);
+            return mem;
+        },
+        used_memory_rss: formatInt,
+        keyspace_hits: formatInt,
+        keyspace_misses: formatInt,
+        expired_keys: formatInt,
+        evicted_keys: formatInt,
+        aof_enabled: enabled,
+        cluster_enabled: enabled,
+        role: _,
+        db0: function(s) {
+            var p = s.split(',');
+            if (p.length === 0) {
+                return 0;
+            }
+            return formatInt(parseInt(p[0].split('=')[1]));
+        }
+    };
+
+    function colorMemoryCard() {
+        if (redis_status.memory && redis_status.maxmemory) {
+            redis_status.mem_rate = redis_status.memory / redis_status.maxmemory;
+            $('#memory-load-rate').text((redis_status.mem_rate * 100).toFixed(2));
+            var cls = 'success';
+            if (redis_status.mem_rate > 0.9) {
+                cls = 'danger';
+            } else if (redis_status.mem_rate > 0.7) {
+                cls = 'warning';
+            }
+            $('#memory-usage').dtSetScheme(cls);
+        } else {
+            $('#memory-usage').dtResetDefault();
+        }
+    }
+
+    window.refreshInfo = function() {
+        resetModes();
+        $('#cluster-status').dtResetDefault();
+        $('#redis-status').dtResetDefault().next().text('...');
+        cmdInfo(redis_status.host, redis_status.port, function(t) {
+            $('#redis-info-textarea').val(t);
+            redis_status.text = t;
+            $('#redis-status').dtSetScheme('success').next().text(_('Connected'));
+        }, function(blocks) {
+            $('#det_db0').text('0');
+            $.each(blocks, function(_, e) {
+                for (var i = 0; i < e.items.length; ++i) {
+                    var item = e.items[i];
+                    var f = specialProps[item.key];
+                    $('#det_' + item.key).text(f ? f(item.value, item.key) : item.value);
+                }
+            });
+            if (redis_status.cluster_enabled) {
+                addMode('cluster');
+                refreshClusterNodes();
+            } else {
+                addMode('standalone');
+            }
+        }, function(e) {
+            $('#redis-status').dtSetScheme('danger').next().text(_(e.responseJSON.reason));
+            if (redis_status.assigned) {
+                addMode('cluster-inconsistent-actually-ready');
+            }
+        });
+        cmdGetMaxMemory(redis_status.host, redis_status.port, function(m) {
+            var mem = formatSize(m);
+            $('#max-mem-mbyte').text(mem);
+            $('#node-max-memory').text('/ ' + mem);
+            redis_status.maxmemory = m;
+            colorMemoryCard();
+        }, function() {}, function() {});
+    };
+
+    function refreshClusterNodes() {
+        var body = $('#cluster-nodes').html('');
+
+        function appendNode(n, extra_char) {
+            body.append(bscp.row()
+                            .append(bscp.grid(3).addClass('text-center').append(bscp.label(n.node_id, n.slave ? 'warning' : 'info')))
+                            .append(bscp.grid(2).text(extra_char + ' ' + n.address + ' ').append(n.myself && n.migrating ? bscp.btn(_('Fix migrating'), 'warning', 'btn-xs')
+                                                                                                                               .click(taskFixMigrating)
+                                                                                                                               .data({host: n.host, port: n.port})
+                                                                                                                         : ''))
+                            .append(bscp.grid(2).append(rolesLabels(n.flags)))
+                            .append(bscp.grid(5).text(n.slots_text))
+            );
+        }
+
+        $.get('/cmd/cluster_nodes', {host: redis_status.host, port: redis_status.port}, function(r) {
+            redis_status.cluster_masters = redisRelations(parseClusterNodes(r));
+            if (redis_status.cluster_masters.length > 1) {
+                redis_status.cluster_serving = true;
+            }
+            $.each(redis_status.cluster_masters, function(_, n) {
+                appendNode(n, '');
+                if (n.slots.length > 0) {
+                    redis_status.cluster_serving = true;
+                }
+                if (n.myself) {
+                    $('#slots-num').text(n.slots.length);
+                    redis_status.slots = n.slots;
+                    redis_status.cluster_slave = false;
+                }
+                n.slaves.sort(sortNodeByAddr);
+                $.each(n.slaves, function(i, s) {
+                    if (s.myself) {
+                        redis_status.cluster_slave = true;
+                    }
+                    appendNode(s, i === n.slaves.length - 1 ? '└' : '├');
+                });
+            });
+            if (redis_status.cluster_serving) {
+                $('#cluster-status').text(_('serving')).dtSetScheme('primary');
+                addMode(redis_status.cluster_slave ? 'serving-slave' : 'serving-master');
+            } else {
+                $('#cluster-status').text(_('ready')).dtSetScheme('success');
+            }
+
+            if (redis_status.cluster_serving && redis_status.assigned) {
+                addMode('serving');
+                updateMigratingForms();
+            }
+            if (redis_status.cluster_serving && !redis_status.assigned) {
+                addMode('cluster-inconsistent-actually-serving');
+            }
+            if ((!redis_status.cluster_serving) && redis_status.assigned) {
+                addMode('cluster-inconsistent-actually-ready');
+            }
+            if ((!redis_status.cluster_serving) && (!redis_status.assigned)) {
+                addMode('ready');
+            }
+        });
+    }
+    window.refreshInfo();
+}();
+</script>
+
+{% call modal.modal('redis-info-text', 'INFO', '') %}
+<textarea id='redis-info-textarea' style='min-height: 400px; font-family: monospace' class='form-control'></textarea>
+{% endcall %}
+
+{% call modal.modal('redis-setting-modal', 'Settings', 'settings') %}
+<div class='form-horizontal'>
+    <div class='form-group dl-hori'>
+        <div class='col-xs-6'>
+            <div class='dt dt-default dt-50' data-localize='max-memory-setting'>Max Memory Setting</div>
+            <div class='dd'><span id='used-memory-mbyte'>-</span> / <span id='max-mem-mbyte'>-</span> (MB)</div>
+        </div>
+        <div class='col-xs-5' style='padding-top: 7px'>
+            <span id='max-mem-slide' style='display: inline-block; margin: 0 8px 0 8px; width: 100%;'></span>
+        </div>
+        <div class='col-xs-1 control-label'>
+            <span id='memory-load-rate'>-</span>%
+        </div>
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-1 control-label'>AOF</div>
+        {{ checkbox('', size=1, color='info', id='setting-aof-enabled') }}
+    </div>
+
+    <div class='form-group'>
+        <div class='col-xs-2'>
+            <button type='button' disabled='disabled' class='btn btn-primary btn-block' id='redis-setting-confirm' data-localize='confirm'>Confirm</button>
+        </div>
+    </div>
+</div>
+{% endcall %}
+
+<script>
+$('#redis-setting-modal').on('show.bs.modal', function(event) {
+    if (!redis_status.text) {
+        return;
+    }
+    if ($('#redis-setting-modal').data('initialized')) {
+        return;
+    }
+    $('#redis-setting-modal').data('initialized', 1)
+
+    $('#max-mem-slide').slider({
+        range: 'min',
+        min: Math.max(Math.ceil(redis_status.memory / 1000000), 100),
+        max: {{ max_mem_limit|tojson }} / 1000000,
+        value: Math.ceil(redis_status.maxmemory / 1000000),
+        slide: function(event, ui) {
+            $('#max-mem-mbyte').text(ui.value);
+            $('#memory-load-rate').text((redis_status.memory / ui.value / 10000).toFixed(2));
+        },
+        change: function(event, ui) {
+            $(this).data('value', ui.value);
+        }
+    }).data('value', Math.ceil(redis_status.maxmemory / 1000000));
+    if (redis_status.aof_enabled) {
+        $('#setting-aof-enabled').addClass('check-group-checked');
+    }
+    $('#setting-aof-enabled').enableLabelCheck();
+
+    $('#redis-setting-confirm').removeAttr('disabled').click(function() {
+        var await = 0;
+        function onSuccess() {
+            if (--await === 0) {
+                refreshInfo();
+                $('#redis-setting-modal').modal('hide');
+            }
+        }
+
+        var maxmem = $('#max-mem-slide').data('value') * 1000000;
+        if (maxmem !== redis_status.maxmemory) {
+            ++await;
+            $.ajax({
+                url: '/cmd/set_max_mem',
+                type: 'POST',
+                data: {
+                    host: redis_status.host,
+                    port: redis_status.port,
+                    max_mem: maxmem
+                },
+                success: function() {
+                    redis_status.maxmemory = maxmem;
+                    $('#node-max-memory').text('/ ' + $('#max-mem-slide').data('value') + 'MB');
+                    onSuccess();
+                },
+                error: function(r) {
+                    console.error('set maxmemory:', r);
+                    alert(_('failed') + ': ' + r.responseText);
+                }
+            });
+        }
+        var aof = $('#setting-aof-enabled').prop('checked');
+        if (redis_status.aof_enabled != aof) {
+            ++await;
+            $.ajax({
+                url: '/cmd/set_aof',
+                type: 'POST',
+                data: {
+                    host: redis_status.host,
+                    port: redis_status.port,
+                    aof: aof ? 'y' : 'n'
+                },
+                success: function() {
+                    redis_status.aof_enabled = aof;
+                    $('#det_aof_enabled').text(aof ? _('enabled') : _('disabled'));
+                    onSuccess();
+                },
+                error: function(r) {
+                    console.error('set aof:', r);
+                    alert(_('failed') + ': ' + r.responseText);
+                }
+            });
+        }
+        ++await;
+        onSuccess();
+    });
+});
+</script>
+
+<div class='form-horizontal'>
+    <div class='form-group'>
+        {{ button('Send Cmd', size=2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#commandConsole', 'host': node.host, 'port': node.port}, lcl='btn-direct-command') }}
+
+        <div class='serving-display'>
+            <div class='col-xs-2'>
+                <button type='button' class='btn btn-primary btn-block panel-btn' data-bind='quit-cluster' data-localize='quit-cluster'>Quit cluster</button>
+            </div>
+            <div class='col-xs-2'>
+                <button type='button' class='btn btn-primary btn-block panel-btn serving-master-display' data-bind='migrating-slots' data-localize='migr-out-slot'>Migrate slots out</button>
+            </div>
+        </div>
+
+        <div class='cluster-inconsistent-actually-ready'>
+            <div class='col-xs-6'>
+                <button type='button' class='btn btn-info btn-block' id='quit-cluster-force' data-localize='already-quit-message'>force quit</button>
+            </div>
+        </div>
+
+        <div class='ready-display'>
+            {{ button('Launch cluster', size=2, id='start-cluster-btn', cls=['panel-btn', 'btn-block'], data={'bind': 'start-cluster'}, lcl='start-cluster') }}
+            {{ button('Join cluster', size=2, id='join-cluster-btn', cls=['panel-btn', 'btn-block'], data={'bind': 'join-cluster'}, lcl='join-cluster') }}
+        </div>
+    </div>
 </div>
 
 <div class='panel-div' id='quit-cluster'>
-    <span class='loading-cluster-info' data-localize='loading'>正在加载集群信息...</span>
-    <button class='btn btn-info' style='display: none' id='quit-cluster-replica' data-localize='ok-to-quit'>确定退出</button>
-    <table class='table' style='display: none'>
-        <caption><h2 data-localize='exit-message'>退出集群 - 迁出该节点上的所有槽位才能退出</h2></caption>
+    <span class='serving-slave-display'>
+        <span data-localize='im_slave'>This is a slave</span>
+        <button type='button' id='quit-cluster-replica' class='btn btn-info' data-localize='confirm'>Confirm</button>
+    </span>
+    <table class='table table-striped serving-master-display'>
+        <caption data-localize='quit-cluster-precondition'>Quit - migrate out all the slots before quit</caption>
         <thead>
             <tr>
                 <th>#</th>
-                <th data-localize='address'>地址</th>
-                <th data-localize='slots-num'>槽位数</th>
-                <th data-localize='migrate-in'>迁出至此节点的槽位数</th>
-                <th data-localize='after-migrated'>迁移后的槽位数</th>
+                <th data-localize='address'>Address</th>
+                <th data-localize='slots-num'>Slots</th>
+                <th data-localize='migrate-in'>Number of slots to be migrated in</th>
+                <th data-localize='after-migrated'>Number of slots after migration</th>
             </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
             <tr>
                 <td colspan='5'>
-                    <button class='btn' id='avg-migr-slots-btn' data-localize='btn-equalize'>平均分配迁出的槽位</button>
-                    <button class='btn btn-danger' id='quit-cluster-confirm' data-localize='confirm'>迁移全部槽位并退出集群</button>
-                    <span id='slots-remain-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='slots-remain-err'>退出集群前节点槽位必须完全迁出</span>
+                    <button type='button' class='btn' id='avg-migr-slots-btn' data-localize='btn-equalize'>Equalize</button>
+                    <button type='button' class='btn btn-danger' id='quit-cluster-confirm' data-localize='confirm'>Confirm</button>
+                    <span id='slots-remain-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='slots-remain-err'>
+                        You are supposed to migrate all the slots
+                    </span>
                 </td>
             </tr>
         </tfoot>
@@ -210,36 +615,29 @@
 </div>
 
 <div class='panel-div' id='migrating-slots'>
-    <span class='loading-cluster-info' data-localize='loading'>正在加载集群信息...</span>
-    <table class='table' style='display: none'>
+    <table class='table table-striped serving-master-display'>
         <thead>
             <tr>
                 <th>#</th>
-                <th data-localize='address'>地址</th>
-                <th data-localize='slots-num'>槽位数</th>
-                <th data-localize='migrate-in'>迁出至此节点的槽位数</th>
-                <th data-localize='after-migrated'>迁移后的槽位数</th>
+                <th data-localize='address'>Address</th>
+                <th data-localize='slots-num'>Slots</th>
+                <th data-localize='migrate-in'>Number of slots to be migrated in</th>
+                <th data-localize='after-migrated'>Number of slots after migration</th>
             </tr>
         </thead>
         <tbody></tbody>
         <tfoot>
             <tr>
                 <td colspan='5'>
-                    <button id='migrating-slots-confirm' class='btn btn-primary' data-localize='confirm'>迁移</button>
-                    <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='insufficient-slots'>槽位不足</span>
+                    <button type='button' id='migrating-slots-confirm' class='btn btn-primary' data-localize='confirm'>Confirm</button>
+                    <span id='insuff-slots-err' style='visibility: hidden' class='label label-warning invalid-migrating-label' data-localize='insufficient-slots'>Insufficient slots</span>
                 </td>
             </tr>
         </tfoot>
     </table>
 </div>
-</div>
-<script>
-var local = {
-    loadingClusterInfo: false,
-    clusterNodes: null,
-    holdingSlots: {{ (detail.slots if detail and detail.slots else [])|tojson }}
-};
 
+<script>
 function updateSlotsResult() {
     $('.invalid-migrating-label').css('visibility', 'hidden');
     $('.node-info').removeClass('has-error');
@@ -266,17 +664,17 @@ function updateSlotsResult() {
         table.find('input').each(function() {
             slots += parseInt($(this).val()) || 0;
         })
-        $(this).find('.slots-result').text(local.holdingSlots.length - slots);
+        $(this).find('.slots-result').text(redis_status.slots.length - slots);
     });
 }
 
 $('#avg-migr-slots-btn').click(function() {
     var input = $('#quit-cluster .node-info input');
-    var forEach = Math.floor(local.holdingSlots.length / input.length);
+    var forEach = Math.floor(redis_status.slots.length / input.length);
     input.each(function() {
         $(this).val(forEach);
     });
-    for (var i = 0; i < local.holdingSlots.length - input.length * forEach; ++i) {
+    for (var i = 0; i < redis_status.slots.length - input.length * forEach; ++i) {
         input[i].value = parseInt(input[i].value) + 1;
     }
 
@@ -302,7 +700,7 @@ $('#quit-cluster-confirm').click(function() {
         migratings.push({
             host: $(this).data('host'),
             port: $(this).data('port'),
-            slots: local.holdingSlots.slice(sliceStart, sliceStart + migrCount)
+            slots: redis_status.slots.slice(sliceStart, sliceStart + migrCount)
         });
         sliceStart += migrCount;
     });
@@ -311,8 +709,8 @@ $('#quit-cluster-confirm').click(function() {
         url: '/task/quit',
         type: 'POST',
         data: JSON.stringify({
-            host: {{ node.host|tojson }},
-            port: {{ node.port|tojson }},
+            host: redis_status.host,
+            port: redis_status.port,
             migratings: migratings
         }),
         success: function() {
@@ -320,6 +718,25 @@ $('#quit-cluster-confirm').click(function() {
         },
         error: function(r) {
             btn.parent().text(_('failed') + ': ' + r.responseText);
+        }
+    });
+});
+
+$('#quit-cluster-force').click(function() {
+    var btn = $(this).attr('disabled', 'disabled');
+    $.ajax({
+        url: '/task/quit',
+        type: 'POST',
+        data: JSON.stringify({
+            host: redis_status.host,
+            port: redis_status.port,
+            migratings: [],
+        }),
+        success: function() {
+            return window.location.reload();
+        },
+        error: function(r) {
+            btn.text(_('failed') + ': ' + r.responseText);
         }
     });
 });
@@ -349,11 +766,11 @@ $('#migrating-slots-confirm').click(function() {
             url: '/task/migrate_slots',
             type: 'POST',
             data: {
-                src_host: {{ node.host|tojson }},
-                src_port: {{ node.port|tojson }},
+                src_host: redis_status.host,
+                src_port: redis_status.port,
                 dst_host: $(this).data('host'),
                 dst_port: $(this).data('port'),
-                slots: local.holdingSlots.slice(sliceStart, sliceStart + migrCount).join(',')
+                slots: redis_status.slots.slice(sliceStart, sliceStart + migrCount).join(',')
             },
             success: function() {
                 return window.location.reload();
@@ -366,19 +783,33 @@ $('#migrating-slots-confirm').click(function() {
     });
 });
 
-$('#quit-cluster-btn,#migrating-slots-btn').click(function() {
-    if (local.loadingClusterInfo) {
-        return;
-    }
-    local.loadingClusterInfo = true;
+$('#quit-cluster-replica').click(function() {
+    var btn = $(this).attr('disabled', 'disabled');
+    $.ajax({
+        url: '/task/quit',
+        type: 'POST',
+        data: JSON.stringify({
+            host: redis_status.host,
+            port: redis_status.port,
+            migratings: [],
+        }),
+        success: function() {
+            return window.location.reload();
+        },
+        error: function(r) {
+            btn.text(_('failed') + ': ' + r.responseText);
+        }
+    });
+});
 
+function updateMigratingForms() {
     function nodeRow(i, node) {
-        return $('<tr>').addClass('node-info').addClass('form-group').data('host', node.host).data('port', node.port).data('slots', node.slots_count
+        return $('<tr>').addClass('node-info').addClass('form-group').data('host', node.host).data('port', node.port).data('slots', node.slots.length
             ).append($('<td>').text(i)
             ).append($('<td>').text(node.host + ':' + node.port)
-            ).append($('<td>').text(node.slots_count)
+            ).append($('<td>').text(node.slots.length)
             ).append($('<td>').append($('<input>').addClass('form-control'))
-            ).append($('<td>').addClass('slots-result').text(node.slots_count)
+            ).append($('<td>').addClass('slots-result').text(node.slots.length)
             );
     }
 
@@ -386,15 +817,15 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
         return $('<tr>').addClass('node-myself'
             ).append($('<td>').text(i)
             ).append($('<td>').text(node.host + ':' + node.port)
-            ).append($('<td>').text(node.slots_count)
-            ).append($('<td>').text(_('当前节点'))
-            ).append($('<td>').addClass('slots-result').text(node.slots_count)
+            ).append($('<td>').text(node.slots.length)
+            ).append($('<td>').text(_('Myself'))
+            ).append($('<td>').addClass('slots-result').text(node.slots.length)
             );
     }
 
     function addNodesToTable(t, nodes) {
         $.each(nodes, function(i, node) {
-            if (node.host === {{ node.host|tojson }} && node.port === {{ node.port|tojson }}) {
+            if (node.host === redis_status.host && node.port === redis_status.port) {
                 t.append(nodeMyself(i, node));
             } else {
                 t.append(nodeRow(i, node));
@@ -403,103 +834,36 @@ $('#quit-cluster-btn,#migrating-slots-btn').click(function() {
         return t;
     }
 
-    $.ajax({
-        url: '/cmd/get_masters',
-        type: 'GET',
-        data: {
-            host: {{ node.host|tojson }},
-            port: {{ node.port|tojson }}
-        },
-        success: function(r) {
-            if (r.myself.role === 'slave') {
-                $('.loading-cluster-info').text(_('im_slave'));
-                return $('#quit-cluster-replica').click(function() {
-                    var btn = $(this).attr('disabled', 'disabled');
-                    $.ajax({
-                        url: '/task/quit',
-                        type: 'POST',
-                        data: JSON.stringify({
-                            host: {{ node.host|tojson }},
-                            port: {{ node.port|tojson }},
-                            migratings: [],
-                        }),
-                        success: function() {
-                            return window.location.reload();
-                        },
-                        error: function(r) {
-                            btn.text(_('failed') + ': ' + r.responseText);
-                        }
-                    });
-                }).show();
-            }
-            $('.loading-cluster-info').remove();
-            if (r.masters.length <= 1 && r.myself.slots === 0) {
-                return $('#quit-cluster-force').click(function() {
-                    var btn = $(this).attr('disabled', 'disabled');
-                    $.ajax({
-                        url: '/task/quit',
-                        type: 'POST',
-                        data: JSON.stringify({
-                            host: {{ node.host|tojson }},
-                            port: {{ node.port|tojson }},
-                            migratings: [],
-                        }),
-                        success: function() {
-                            return window.location.reload();
-                        },
-                        error: function(r) {
-                            btn.text(_('failed') + ': ' + r.responseText);
-                        }
-                    });
-                }).show();
-            }
-            local.clusterNodes = r.masters;
-            local.clusterNodes.sort(sortNodeByAddr);
-            addNodesToTable($('#quit-cluster tbody'), local.clusterNodes);
-            addNodesToTable($('#migrating-slots tbody'), local.clusterNodes);
-            $('#quit-cluster .table').show();
-            $('#migrating-slots .table').show();
+    if (redis_status.cluster_slave) {
+        return;
+    }
 
-            if (local.clusterNodes.length === 1) {
-                $('#quit-cluster button').attr('disabled', 'disabled');
-                $('#migrating-slots button').attr('disabled', 'disabled');
-            }
+    addNodesToTable($('#quit-cluster tbody').html(''), redis_status.cluster_masters);
+    addNodesToTable($('#migrating-slots tbody').html(''), redis_status.cluster_masters);
 
-            $('.node-info input').blur(updateSlotsResult);
-        },
-        error: function(r) {
-            $('.loading-cluster-info').text(_('failed') + ': ' + r.responseText);
-        }
-    });
-});
+    if (redis_status.cluster_masters.length === 1) {
+        $('#quit-cluster button').attr('disabled', 'disabled');
+        $('#migrating-slots button').attr('disabled', 'disabled');
+    }
+
+    $('.node-info input').blur(updateSlotsResult);
+}
 </script>
 
-{% else %}
-
-<div style='margin-bottom: 1em' class='row'>
-    {{ button('集群自动发现', size=2, data={'toggle': 'modal', 'target': '#clusterAutoDiscover'}, lcl='btn-autodiscover') }}
-    {{ button('启动集群', size=2, id='start-cluster-btn', cls=['panel-btn'], data={'bind': 'start-cluster'}, lcl='start-cluster') }}
-    {{ button('加入集群', size=2, id='join-cluster-btn', cls=['panel-btn'], data={'bind': 'join-cluster'}, lcl='join-cluster') }}
-</div>
-
-{% autoescape false %}
-    {{ render('components/node/autodiscover.html', host=node.host, port=node.port) }}
-{% endautoescape %}
-
 <div class='panel-div' id='start-cluster'>
-    <span data-localize='cluster-description'>集群描述</span>: <input id='start-cluster-descr'>
-    <button class='btn btn-primary' id='start-cluster-confirm' data-localize='start-cluster'>启动</button>
+    <span data-localize='cluster-description'>Cluster description</span>: <input class='form-control' style='width: 400px; display: inline-block' id='start-cluster-descr'>
+    <button class='btn btn-primary' id='start-cluster-confirm' data-localize='start-cluster'>Launch</button>
 </div>
 
 <div class='panel-div' id='join-cluster'>
-    <span id='loading-cluster-list' data-localize='loading'>正在加载集群列表...</span>
+    <span id='loading-cluster-list' data-localize='loading-cluster-list'></span>...
     <select id='select-cluster' data-select-style='select-default'>
-        <option value='' data-localize='choose-cluster'>选择集群</option>
+        <option value='' data-localize='select-cluster'>Select cluster</option>
     </select>
-    <button class='btn btn-primary' id='join-cluster-confirm' data-localize='join-cluster-confirm'>加入成为主节点</button>
-    -- <span data-localize='or'>或</span> --
-    <select id='select-master' data-select-style='select-default' data-default-text='选择主节点'></select>
-    <button class='btn btn-primary' id='replicate-confirm' data-localize='replicate-confirm'>以此主节点的副本加入</button>
+    <button class='btn btn-primary' id='join-cluster-confirm' data-localize='join-cluster-confirm'>Join as master</button>
+    -- <span data-localize='or'>or</span> --
+    <select id='select-master' data-select-style='select-default' data-localize='select-master' data-default-text='Select master'>Select master</select>
+    <button class='btn btn-primary' id='replicate-confirm' data-localize='replicate-confirm'>Replicate as slave</button>
 </div>
 
 <script>
@@ -517,28 +881,17 @@ $('#start-cluster-confirm').click(function() {
         return $('#start-cluster-descr').focus();
     }
     var btn = $(this);
-    btn.text('请稍候').attr('disabled', 'disabled');
-    $.post('/cluster/add', {
-        descr: $('#start-cluster-descr').val()
-    }, function(r) {
-        $.ajax({
-            url: '/task/launch',
-            type: 'POST',
-            data: JSON.stringify({
-                nodes: [{
-                    host: {{ node.host|tojson }},
-                    port: {{ node.port|tojson }},
-                }],
-                cluster: r
-            }),
-            success: function() {
-                window.location.reload();
-            },
-            error: function(r) {
-                btn.parent().text(_('failed') + ': ' + r.responseText);
-            }
-        });
-    });
+    btn.attr('disabled', 'disabled');
+    createAndLaunchCluster($('#start-cluster-descr').val(), [{
+        host: {{ node.host|tojson }},
+        port: {{ node.port|tojson }},
+    }], function(e, r) {
+        if (e) {
+            console.error(e);
+            return alert(_('failed') + ': ' + e.responseText);
+        }
+        window.location = '/cluster/panel/' + r;
+    })
 });
 
 $('#join-cluster-btn').click(function() {
@@ -556,7 +909,7 @@ $('#join-cluster-btn').click(function() {
             for (var i in r) {
                 var cluster = r[i];
                 $('#select-cluster').append($('<option>')
-                    .text([cluster.descr, '-', cluster.nodes, '个节点'].join(' '))
+                    .text([cluster.descr, '-', cluster.nodes].join(' '))
                     .val(cluster.id)
                     .data('index', i));
             }
@@ -580,7 +933,7 @@ $('#join-cluster-btn').click(function() {
                             }
                         },
                         error: function(r) {
-                            console.log(r);
+                            console.error(r);
                             alert(_('failed') + ': ' + r.responseText);
                         }
                     });
@@ -606,21 +959,12 @@ $('#join-cluster-confirm').click(function() {
         return;
     }
     $('#join-cluster button').attr('disabled', 'disabled');
-    btn.text('请稍候');
-    $.ajax({
-        url: '/task/join',
-        type: 'POST',
-        data: {
-            host: {{ node.host|tojson }},
-            port: {{ node.port|tojson }},
-            cluster_id: clusterId
-        },
-        success: function() {
-            window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text(_('failed') + ': ' + r.responseText);
+    btn.text(_('Please wait'));
+    joinTask(clusterId, [{host: {{ node.host|tojson }}, port: {{ node.port|tojson }} }], function(e) {
+        if (e) {
+            return btn.parent().text(_('failed') + ': ' + e.responseText);
         }
+        window.location.reload();
     });
 });
 
@@ -631,29 +975,17 @@ $('#replicate-confirm').click(function() {
     }
     $('#join-cluster button').attr('disabled', 'disabled');
     var btn = $(this);
-    btn.text('请稍候');
-    $.ajax({
-        url: '/task/replicate',
-        type: 'POST',
-        data: {
-            master_host: opt.host,
-            master_port: opt.port,
-            slave_host: {{ node.host|tojson }},
-            slave_port: {{ node.port|tojson }}
-        },
-        success: function() {
+    btn.text(_('Please wait'));
+    replicateTask(opt.host, opt.port, {{ node.host|tojson }}, {{ node.port|tojson }}, function(e) {
+        if (e) {
+            console.error(e);
+            btn.parent().text(_('failed') + ': ' + e.responseText);
+        } else {
             window.location.reload();
-        },
-        error: function(r) {
-            btn.parent().text(_('failed') + ': ' + r.responseText);
         }
     });
 });
-</script>
 
-{% endif %}
-
-<script>
 $(document).ready(function() {
     $('.panel-div').hide();
     $('.panel-btn').click(function() {
@@ -666,5 +998,4 @@ $(document).ready(function() {
     {{ render('components/command_console.html') }}
 {% endautoescape %}
 
-{% include 'components/info_console.html' %}
 {% endblock %}

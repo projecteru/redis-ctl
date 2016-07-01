@@ -1,0 +1,315 @@
+{% extends './base.html' %}
+
+{% block title %}Containerization{% endblock %}
+
+{% block head %}
+<script src='/static/js/containerize.js'></script>
+{% endblock %}
+
+{% block body %}
+<div>
+    <ul class='nav nav-tabs' role='tablist'>
+        <li role='presentation' class='active'><a href='#redis' aria-controls='home' role='tab' data-toggle='tab'>Redis</a></li>
+        <li role='presentation'><a href='#proxy' aria-controls='profile' role='tab' data-toggle='tab'>Proxy</a></li>
+    </ul>
+
+    <div class='form-horizontal form-submit' style='margin-top: 1em'>
+        <div class='from-group'>
+          <div class='col-xs-3'>
+            <select id='pod-list' class='form-control'>
+                <option value='' data-localize='select-pod'>Select Pod</option>
+                {% for p in pods %}
+                <option value='{{ p.name|e }}'>{{ p.name|e }} - <span data-localize='server-num'>Servers:</span> {{ p.host_count|e }}</option>
+                {% endfor %}
+            </select>
+          </div>
+          {{ checkbox('Specify host', size=2, color='info', id='specify-host-check', lcl='specify-host') }}
+          <div class='col-xs-3' style='display: none' id='host-list-container'></div>
+          <div class='col-xs-3' style='display: none' id='host-panel'>
+            <button class='check-opt check-group check-group-info' id='netmode-host' data-localize='host-network-deployment'>HOST network deploy</button>
+          </div>
+        </div>
+        <hr style='margin: 1em; visibility: hidden'>
+    </div>
+
+    <div class='tab-content form-horizontal form-submit'>
+        <div role='tabpanel' class='tab-pane active' id='redis'>
+            <div class='form-group'>
+                {{ label('Settings', size=1, lcl='settings') }}
+                {{ input(size=2, id='port-node', placeholder='6379', addon='Port') }}
+                {{ checkbox('Enable AOF', size=2, id='aof-enable', color='info', cls=['check-opt', 'btn-block']) }}
+                {{ checkbox('Enable Cluster', size=2, id='use-cluster-enable', color='info', checked=true, cls=['check-opt', 'btn-block']) }}
+            </div>
+            <div class='form-group'>
+                {{ label('Image', size=1, lcl='select-image') }}
+                <div class='col-xs-6'>
+                  <select id='redis-images' class='form-control'>
+                    <option value='' data-localize='select-redis-image'>Latest Image</option>
+                    {% for i in redis_images %}
+                    <option value='{{ i.name|e }}'>{{ i.name|e }} - {{ i.description|e }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class='col-xs-1'>
+                  <a class='adv-user-display' style='line-height: 34px' href='/containerize/image/manage/redis/' target='_blank'><i class='fa fa-plus-circle'></i></a>
+                </div>
+            </div>
+
+            <div class='form-group'>
+                {{ checkbox('Micro plan', offset=1, size=2, id='redis-micro-plan', color='success', cls=['check-opt', 'btn-block'], lcl='micro-plan') }}
+            </div>
+
+            <div class='form-group'>
+                {{ button('Create', offset=1, size=1, id='create-node-btn', color='primary', lcl='create') }}
+            </div>
+
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <span data-localize='newly-created'>Newly Created</span>
+                <a href='/containerize/nodes/' style='color:white; float: right;' data-localize='view-all'>View All</a>
+              </div>
+              {% autoescape false %}
+                {{ render('containerize/deploy/redis_table.html', nodes=[]) }}
+              {% endautoescape %}
+            </div>
+        </div>
+
+        <div role='tabpanel' class='tab-pane' id='proxy'>
+            <div class='form-group'>
+                {{ label('Settings', size=1, lcl='settings') }}
+                {{ input(size=2, id='port-proxy', placeholder='8889', addon='Port') }}
+                {{ checkbox('Readonly', size=2, id='read-slave', color='info', cls=['check-opt', 'btn-block'], lcl='readonly') }}
+            </div>
+
+            <div class='form-group'>
+                {{ checkbox('Micro plan', offset=1, size=2, id='proxy-micro-plan', color='success', cls=['btn-block'], lcl='micro-plan') }}
+                <div class='col-xs-2'>
+                  <select id='threads-select' class='form-control'>
+                    <option value='' data-localize='threads-num'>Threads</option>
+                    <option value='2'>2</option>
+                    <option value='4'>4</option>
+                    <option value='8'>8</option>
+                    <option value='16'>16</option>
+                    <option value='24'>24</option>
+                  </select>
+                </div>
+                <div class='col-xs-2'>
+                  <select id='cpu-slice-select' class='form-control'>
+                    <option value='' data-localize='threads-num'>CPU Slice</option>
+                  </select>
+                </div>
+            </div>
+
+            <div class='form-group'>
+                {{ label('For', size=1, lcl='serve-for') }}
+                <div class= 'col-xs-6'>
+                  <select id='cluster-select' class='form-control'>
+                    <option value='' data-localize='select-cluster'>Select Cluster</option>
+                    {% for c in clusters if c.nodes|length > 0 %}
+                    <option value='{{ c.id }}'>#{{ c.id }} - {{ c.description }} - {{ c.nodes|length }} <span data-localize='nodes'>Nodes</option>
+                    {% endfor %}
+                  </select>
+                </div>
+            </div>
+            <div class='form-group'>
+                {{ button('Create', offset=1, size=1, id='create-proxy-btn', color='primary', lcl='create') }}
+            </div>
+
+            <div class="panel panel-primary">
+              <div class="panel-heading">
+                <span data-localize='newly-created'>Newly Created</span>
+                <a href='/containerize/proxies/' style='color:white; float: right;' data-localize='view-all'>View All</a>
+              </div>
+              {% autoescape false %}
+                {{ render('containerize/deploy/proxy_table.html', proxies=[]) }}
+              {% endautoescape %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$('#pod-list').change(function() {
+    var selectHost = $('<select>').addClass('form-control');
+    $('#host-list-container').html('').append(selectHost);
+    $.get('/containerize/list_hosts/' + $('#pod-list').val(), {}, function(r) {
+        $.each(r, function(i, e) {
+            selectHost.append($('<option>').val(e.name).text(e.name + ' - ' + e.addr))
+        });
+    });
+});
+$('#specify-host-check').enableLabelCheck({
+    onClick: function(e) {
+        $('#host-panel').toggle(e.prop('checked'));
+        $('#host-list-container').toggle(e.prop('checked'));
+    }
+});
+
+function getSelectedHost() {
+    return $('#specify-host-check').prop('checked') ? $('#host-list-container :selected').val() : '';
+}
+
+function useHostMode() {
+    return $('#netmode-host').prop('checked');
+}
+
+function displayErrorMsg(btn, msg) {
+    btn.removeAttr('disabled');
+    alert(msg);
+}
+
+function displayError(btn, e) {
+    var err = e.responseJSON || {};
+    if (err.reason === 'containerize fail') {
+        return displayErrorMsg(btn, _(err.detail));
+    }
+    if (err.reason === 'exists') {
+        return displayErrorMsg(btn, _('An instance is already serving at the address'));
+    }
+    displayErrorMsg(btn, _('failed') + ':' + e.responseText);
+}
+
+function checkPodSelect() {
+    var pod = $('#pod-list').val();
+    if (!pod) {
+        alert(_('Please select a pod'));
+        return false;
+    }
+    return true;
+}
+
+delContainer.deleted = function(btn) {
+    btn.parent().parent().remove();
+}
+
+$('#create-node-btn').click(function() {
+    if (!checkPodSelect()) {
+        return;
+    }
+    var btn = $(this).attr('disabled', 'disabled');
+    $('#node-error').hide();
+    var port = parseInt($('#port-node').val() || 6379);
+    if (!(6000 <= port && port <= 7999)) {
+        return displayErrorMsg(btn, _('redis-containerize-port-range-invalid'));
+    }
+    $.ajax({
+        url: '/containerize/create_redis',
+        type: 'POST',
+        data: {
+            pod: $('#pod-list').val(),
+            aof: $('#aof-enable').prop('checked') ? 'y' : 'n',
+            cluster: $('#use-cluster-enable').prop('checked') ? 'y' : 'n',
+            netmode: useHostMode() ? 'host' : 'macvlan',
+            host: getSelectedHost(),
+            port: port,
+            image: $('#redis-images').val(),
+            micro_plan: $('#redis-micro-plan').prop('checked') ? 'y' : 'n'
+        },
+        success: function(r) {
+            btn.removeAttr('disabled');
+            $('#redis-table').append($('<tr>'
+                    ).append($('<td>').text(r.container_id.slice(0, 16))
+                    ).append($('<td>').text(r.version.slice(0, 7))
+                    ).append($('<td>').text(r.host)
+                    ).append($('<td>').text(r.created)
+                    ).append($('<td>').append($('<a>').attr('href', '/redis/panel/' + r.address + '/' + r.port).text(r.address + ':' + r.port))
+                    ).append($('<td>')
+                    ).append($('<td>').append(deleteButton(r.container_id, 'node'))
+                    ));
+        },
+        error: function(e) {
+            displayError(btn, e);
+        }
+    });
+});
+
+$('#create-proxy-btn').click(function () {
+    if (!checkPodSelect()) {
+        return;
+    }
+    var btn = $(this);
+    var clusterId = $('#cluster-select').val();
+    if (!clusterId) {
+        return;
+    }
+    var port = parseInt($('#port-proxy').val() || 8889);
+    if (!(8000 <= port && port <= 9999)) {
+        return displayErrorMsg(btn, 'proxy-containerize-port-range-invalid');
+    }
+
+    var micro_plan, threads, cpu_slice;
+    if ($('#proxy-micro-plan').prop('checked')) {
+        cpu_slice = $('#cpu-slice-select').val();
+        if (!cpu_slice) {
+            return displayErrorMsg(btn, _('Number of CPU slices not selected'));
+        }
+        micro_plan = 'y';
+    } else {
+        threads = $('#threads-select').val();
+        if (!threads) {
+            return displayErrorMsg(btn, _('Number of threads not selected'));
+        }
+        micro_plan = 'n';
+    }
+
+    btn.attr('disabled', 'disabled');
+    $('#node-error').hide();
+    $.ajax({
+        url: '/containerize/create_proxy',
+        type: 'POST',
+        data: {
+            pod: $('#pod-list').val(),
+            cluster_id: clusterId,
+            read_slave: $('#read-slave').prop('checked') ? 'rs' : '',
+            netmode: useHostMode() ? 'host' : 'macvlan',
+            host: getSelectedHost(),
+            port: port,
+            threads: threads,
+            cpu_slice: cpu_slice,
+            micro_plan: micro_plan
+        },
+        success: function(r) {
+            btn.removeAttr('disabled');
+            $('#proxy-table').append($('<tr>'
+                    ).append($('<td>').text(r.container_id.slice(0, 16))
+                    ).append($('<td>').text(r.version.slice(0, 7))
+                    ).append($('<td>').text(r.host)
+                    ).append($('<td>').text(r.created)
+                    ).append($('<td>').append($('<a>').attr('href', '/cluster/panel/' + clusterId).text(r.address + ':' + r.port))
+                    ).append($('<td>').append(deleteButton(r.container_id, 'proxy'))
+                    ));
+        },
+        error: function(e) {
+            displayError(btn, e);
+        }
+    });
+});
+
+function deleteButton(containerId, type) {
+    return $('<button>').addClass('btn').addClass('btn-danger')
+                        .data('cid', containerId).data('type', type)
+                        .text(_('Offline')).click(delContainer);
+}
+
+$('.check-opt').enableLabelCheck();
+$('#proxy-micro-plan').enableLabelCheck({
+    onClick: function(btn) {
+        if (btn.prop('checked')) {
+            $('#cpu-slice-select').show();
+            $('#threads-select').hide();
+        } else {
+            $('#cpu-slice-select').hide();
+            $('#threads-select').show();
+        }
+    }
+});
+(function() {
+    var cpuSlice = $('#cpu-slice-select');
+    var sliceCount = {{ g.container_client.cpu_slice()|tojson }};
+    for (var i = 1; i < sliceCount; ++i) {
+        cpuSlice.append($('<option>').val(i).text(i + ' / ' + sliceCount));
+    }
+    cpuSlice.append($('<option>').val(sliceCount).text('1')).hide();
+}());
+</script>
+{% endblock %}

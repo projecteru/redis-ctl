@@ -3,11 +3,11 @@
 <head>
 <meta charset='utf-8'>
 <title>{% block title %}{% endblock %}</title>
-<link rel='stylesheet' type='text/css' href='/static/css/common.css'>
 <link rel='stylesheet' type='text/css' href='/static/lib/css/font-awesome.css'>
 <link rel='stylesheet' type='text/css' href='/static/css/components.css'>
 <link rel='stylesheet' type='text/css' href='/static/css/flat-ui.min.css'>
-<link rel='stylesheet' type='text/css' href='/static/vendor/bootstrap.min.css'>
+<link rel='stylesheet' type='text/css' href='/static/css/bootstrap.css'>
+<link rel='stylesheet' type='text/css' href='/static/css/common.css'>
 <script src='/static/js/jquery.min.js'></script>
 <script src='/static/js/jquery.localize.min.js'></script>
 <script src='/static/js/flat-ui.min.js'></script>
@@ -39,7 +39,8 @@ $(document).ready(function() {
 </script>
 {% block head %}{% endblock %}
 </head>
-<body>
+{% set body_cls = body_classes() %}
+<body{% if body_cls %} class='{{ ' '.join(body_cls) }}'{% endif %}>
 <header style='padding-left: 0px; padding-right: 0px; padding-bottom: 0px; padding-top: 0px;'>
     <nav class='navbar navbar-inverse navbar-embossed' role='navigation' style='margin-bottom:0px;'>
     <div class='navbar-header'>
@@ -50,10 +51,27 @@ $(document).ready(function() {
         {% if g.display_login_entry %}
             <li><a class='nav-link' href='{{ login_url() }}' data-localize='login'>Login</a></li>
         {% else %}
-            <li><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>容器节点管理</span></a></li>
-            <li><a class='nav-link' href='/task/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>集群任务</span></a></li>
-            <li><a class='nav-link' href='/stats/pollings'><i class='fa fa-calendar'></i> <span data-localize='polling-stats'>轮询记录</span></a></li>
+            <li class='dropdown'>
+                <a href='#' class='dropdown-toggle' data-toggle='dropdown' role='button' aria-haspopup='true' aria-expanded='false'>
+                    <i class='fa fa-plus'></i> <span data-localize='nav-add'>Add</span>...
+                </a>
+                <ul class='dropdown-menu'>
+                    <li><a class='nav-link' href='/redis/register'><i class='fa fa-database'></i> Redis</a></li>
+                    <li><a class='nav-link' href='/cluster/create'><i class='fa fa-cubes'></i> <span data-localize='cluster'>Cluster</span></a></li>
+                    <li class='container-display'><a class='nav-link' href='/containerize/'><i class='fa fa-cube'></i> <span data-localize='container-nodes-mgr'>Containerize</span></a></li>
+                </ul>
+            </li>
+            <li><a class='nav-link' href='/task/list_all'><i class='fa fa-tasks'></i> <span data-localize='global-cluster-tasks-list'>All Tasks</span></a></li>
             <li><a class='nav-link' href='/audit/nodes'><i class='fa fa-list-alt'></i> <span data-localize='audit-nodes'>Audit</span></a></li>
+            <li class='dropdown'>
+                <a href='#' class='dropdown-toggle' data-toggle='dropdown' role='button' aria-haspopup='true' aria-expanded='false'>
+                    {{ icon('support') }} <span data-localize='nav-status'>Server Status</span>...
+                </a>
+                <ul class='dropdown-menu'>
+                    <li><a class='nav-link' href='/stats/pollings'>{{ icon('calendar') }} <span data-localize='polling-stats'>Pollings</span></a></li>
+                    <li><a class='nav-link' href='/myself/3rd'>{{ icon('cogs') }} <span data-localize='thirdparty-utils'>Thirdparty</span></a></li>
+                </ul>
+            </li>
 
             {#
                 To change what is displayed after user login
@@ -70,15 +88,15 @@ $(document).ready(function() {
     </div>
 </header>
 
-<div class='main-width'>{% block body %}{% endblock %}</div>
+<div style='width: 80%; min-width: 1200px; margin: auto'>{% block body %}{% endblock %}</div>
 
-<footer style="margin-top: 0px;">
+<footer style='margin-top: 0px;'>
     <div class='main-width'>
         <span style='float: right'>
-            &copy; HunanTV Platform developers - v0.9.0-2016-05-10
+            &copy; HunanTV Platform developers - v0.9.1-2016-06-28
             <a href='https://github.com/HunanTV/redis-ctl'><i class='fa fa-github'></i></a>
         </span>
     </div>
 </footer>
 
-<script>$('[data-localize]').localize('/static/trans/')</script>
+<script>$('[data-localize]').localize('/trans/')</script>

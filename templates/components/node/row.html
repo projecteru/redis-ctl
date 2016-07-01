@@ -1,42 +1,43 @@
-<tr class='alert-status-root {{ '' if node.suppress_alert else 'alert-enabled' }} {{ 'node-healthy' if node.stat else '' }} {{ '' if node.detail.slots_migrating else 'node-stable' }}'>
+{% import './components/widgets.html' as widgets %}
+
+<tr class='{{ 'node-healthy' if node.stat else '' }} {{ '' if node.detail.slots_migrating else 'node-stable' }}'>
     {% set cluster = node.assignee %}
-    {% set awaiting_polling = node.stat and not node.detail %}
+    {% set awaiting_polling = not node.stat and not node.detail.used_memory %}
     <td>
         <a id='node-i-{{ node.host|e }}-{{ node.port }}' href='/redis/panel/{{ node.host|e }}/{{ node.port}}'>{{ node.host|e }}:{{ node.port }}</a>
-        {% if node.eru_deployed %}
+        {% if node.containerized %}
         <span class='label label-info card-previewonly'><i class='fa fa-cube'></i></span>
         {% endif %}
     </td>
     <td>
-        {% if node.stat %}
-        {{ node.detail.used_memory_human }}
+        {% if awaiting_polling %}
+        <p class='slave' style='text-align: center' data-localize='wait-poll'>WAIT FOR POLLING</p>
+        {% else %}
+            {{ node.detail.used_memory_human }}
             {% if node.detail.maxmemory %}
             / {{ node.detail.maxmemory|filesizeformat }}
             <span class='label label-success'>{{ (node.detail.used_memory * 100 / node.detail.maxmemory)|round(2) }}%</span>
             {% else %}
-            | <span class='label label-primary' data-localize='max-memory-not-set'>最大值未设置</span>
+            | <span class='label label-primary' data-localize='max-memory-not-set'>maxmemory not set</span>
             {% endif %}
-        {% else %}
-        <p class='slave' style='text-align: center' data-localize='wait-poll'>等待轮询</p>
         {% endif %}
     </td>
-    <td>{{ (node.detail.get('sla', 0) * 100)|round(2) }}%</td>
     <td>
         {% if awaiting_polling %}
-        <p class='slave' style='text-align: center' data-localize='wait-poll'>等待轮询</p>
+        <p class='slave' style='text-align: center' data-localize='wait-poll'>WAIT FOR POLLING</p>
         {% else %}
             {% if node.stat %}
                 {% if cluster is none %}
-                <span class='label label-success' data-localize='ready'>就绪</span>
+                <span class='label label-success' data-localize='ready'>Ready</span>
                 {% else %}
-                <span class='label label-primary' data-localize='serving'>在役</span>
+                <span class='label label-primary' data-localize='serving'>Serving</span>
                 |
                 <a href='#cluster-{{ cluster.id }}'>#{{ cluster.id }}</a>
                 |
                   {% if node.detail.slave %}
-                  <span data-localize='slave'>从</span>
+                  <span data-localize='slave'>Slave</span>
                   {% else %}
-                  <span data-localize='master'>主</span>
+                  <span data-localize='master'>Master</span>
                   {% endif %}
                 {% endif %}
             {% else %}
@@ -44,19 +45,15 @@
             {% endif %}
 
             {% if node.detail.slots_migrating %}
-            <span class='label label-warning' data-localize='migrating'>有槽位正在迁移</span>
+            <span class='label label-warning' data-localize='migrating'>Migrating</span>
             {% endif %}
         {% endif %}
     </td>
     <td>
-        {% if stats_enabled %}
-        <a target='_blank' href='/stats/redis?host={{ node.host|e }}&port={{ node.port }}' class='btn'><span data-localize='history'>状态历史</span> {{ icon('line-chart') }}</a>
-        {% endif %}
-        <button class='check-suppress-alert check-group check-group-danger {{ 'check-group-checked' if node.suppress_alert else '' }}' data-ntype='redis' data-host={{ node.host|tojson }} data-port='{{ node.port|tojson }}' data-localize='btn-disable-alarm'>
-        关闭报警
-        </button>
+        {{ widgets.stat_icon('redis', node.host, node.port) }}
+        {{ widgets.suppress_btn('redis', node.host, node.port, node.suppress_alert) }}
         {% if node.detail.slots_migrating %}
-        <button class='btn btn-warning fix-migrating-btn' data-host='{{ node.host|e }}' data-port='{{ node.port }}' data-localize='cluster-fix-migrating'>修复迁移状态</button>
+        <button class='btn btn-warning fix-migrating-btn' data-host='{{ node.host|e }}' data-port='{{ node.port }}' data-localize='cluster-fix-migrating'>Fix migrating</button>
         {% endif %}
     </td>
 </tr>

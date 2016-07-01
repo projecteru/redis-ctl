@@ -1,6 +1,4 @@
-import logging
 from werkzeug.utils import cached_property
-from eruhttp import EruException
 
 from base import db, Base
 from cluster import Cluster
@@ -21,23 +19,15 @@ class RedisNode(Base):
         return self.assignee_id is None
 
     @cached_property
-    def eru_deployed(self):
+    def containerized(self):
         return self.eru_container_id is not None
 
     @cached_property
-    def eru_info(self):
+    def container_info(self):
         from flask import g
-        if g.container_client is None or not self.eru_deployed:
+        if g.container_client is None or not self.containerized:
             return None
-        try:
-            return g.container_client.get_container(self.eru_container_id)
-        except EruException as e:
-            logging.exception(e)
-            return {
-                'version': '-',
-                'host': '-',
-                'created': 'CONTAINER NOT ALIVE',
-            }
+        return g.container_client.get_container(self.eru_container_id)
 
 
 def get_by_host_port(host, port):
@@ -60,6 +50,11 @@ def create_instance(host, port):
     db.session.add(node)
     db.session.flush()
     return node
+
+
+def list_free():
+    return RedisNode.query.filter(RedisNode.assignee_id == None).order_by(
+            RedisNode.id.desc()).all()
 
 
 def create_eru_instance(host, port, eru_container_id):

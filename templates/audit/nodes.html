@@ -1,24 +1,32 @@
 {% extends './base.html' %}
 
+{% import './blocks/pager.html' as pager %}
+
 {% block title %}Audit{% endblock %}
 
 {% block body %}
 
 {% block pagination %}
 <nav>
-  <div class="pagination pagination-info">
-    <ul>
-        {% if page != 0 %}
-        <li class='previous'><a href='/audit/nodes' data-localize='home'>首页</a></li>
-        <li class='previous'><a href='?page={{ page - 1 }}' data-localize='previous-page'>上一页</a></li>
-        {% endif %}
-        <li class='next'><a href='?page={{ page + 1 }}' data-localize='next-page'>下一页</a></li>
+  <div style='float: left'>
+    {% call pager.pager(page) %}{% endcall %}
+  </div>
+
+  <div style='float: right'>
+    <ul class='pager'>
+      <li>
+        <a href='/prune/list_audit'>
+          {{ icon('trash-o') }}
+          <span data-localize='prune'>Prune</span>
+        </a>
+      </li>
     </ul>
   </div>
 </nav>
+<hr style='visibility: hidden'>
 {% endblock %}
 
-<table class='table text-center'>
+<table class='table table-striped text-center'>
     <thead>
         <tr>
             <th>#</th>

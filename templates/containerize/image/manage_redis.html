@@ -1,0 +1,155 @@
+{% extends './base.html' %}
+
+{% block title %}Manage Redis Images{% endblock %}
+
+{% block body %}
+<table class='table table-striped'>
+    <caption>Active Images</caption>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Creation</th>
+            <th>Description</th>
+            <th>Ops</th>
+        </tr>
+    </thead>
+    <tbody id='active-images-body'></tbody>
+</table>
+
+<table class='table table-striped'>
+    <caption>Remote Images</caption>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Creation</th>
+            <th>Description</th>
+            <th>Add</th>
+        </tr>
+    </thead>
+    <tbody id='remote-images-body'></tbody>
+</table>
+
+<script>
+function insertImageRow(id, name, creation, descr) {
+    $('#active-images-body')
+        .append($('<tr>')
+            .append($('<td>').text(id))
+            .append($('<td>').text(name))
+            .append($('<td>').text(new Date(creation).toLocaleString()))
+            .append($('<td>').append($('<input>').addClass('form-control').val(descr)))
+            .append($('<td>')
+                .append($('<button>').addClass('btn btn-primary').text(_('update')).data({id: id}).click(updateImage))
+                .append($('<button>').addClass('btn btn-danger').text(_('delete')).data({id: id}).click(delImage))
+            )
+        );
+}
+
+function updateImage() {
+    var self = $(this);
+    var descr = self.parent().prev().find('input').val();
+    $.ajax({
+        type: 'POST',
+        url: '/containerize/image/update/redis',
+        data: {
+            id: self.data('id'),
+            description: descr
+        },
+        success: function() {
+        },
+        error: function(e) {
+            console.error(e);
+            alert(_('Failed to update image description'));
+        }
+    });
+}
+
+function addImage() {
+    var self = $(this);
+    var name = self.data('name');
+    var descr = self.data('description');
+    var creation = self.data('creation');
+    self.attr('disabled', 'disabled');
+    $.ajax({
+        type: 'POST',
+        url: '/containerize/image/add/redis',
+        data: {
+            name: name,
+            description: descr,
+            creation: creation
+        },
+        success: function(e) {
+            self.text('Added');
+            if (!e) {
+                return;
+            }
+            insertImageRow(e, name, creation * 1000, descr);
+        },
+        error: function(e) {
+            console.error(e);
+            alert(_('Failed to add image'));
+        }
+    });
+}
+
+function delImage() {
+    var self = $(this);
+    var id = self.data('id');
+    self.attr('disabled', 'disabled');
+    $.ajax({
+        type: 'POST',
+        url: '/containerize/image/del/redis',
+        data: {id: id},
+        success: function(e) {
+            self.text('Deleted');
+        },
+        error: function(e) {
+            console.error(e);
+            alert(_('Failed to delete image'));
+        }
+    });
+}
+
+$(document).ready(function() {
+    $.ajax({
+        type: 'GET',
+        url: '/containerize/image/list/redis/',
+        success: function(e) {
+            for (var i = 0; i < e.length; ++i) {
+                var image = e[i];
+                insertImageRow(image.id, image.name, image.creation, image.description);
+            }
+        },
+        error: function(e) {
+            console.error(e);
+            alert(_('Failed to load active images'));
+        }
+    });
+
+    $.ajax({
+        type: 'GET',
+        url: '/containerize/image/remote/redis/',
+        data: {page: 0},
+        success: function(e) {
+            var body = $('#remote-images-body');
+            for (var i = 0; i < e.length; ++i) {
+                var image = e[i];
+                body.append($('<tr>').append($('<td>').text(image.name))
+                                     .append($('<td>').text(new Date(image.creation * 1000).toLocaleString()))
+                                     .append($('<td>').text(image.description))
+                                     .append($('<td>').append($('<button>').addClass('btn').text('Add').data({
+                                                                  name: image.name,
+                                                                  description: image.description,
+                                                                  creation: image.creation
+                                                              }).click(addImage)))
+                );
+            }
+        },
+        error: function(e) {
+            console.error(e);
+            alert(_('Failed to load remote images'));
+        }
+    });
+});
+</script>
+{% endblock %}

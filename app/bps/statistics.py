@@ -12,7 +12,7 @@ PAT_HOST = re.compile('^[-.a-zA-Z0-9]+$')
 REDIS_MAX_FIELDS = [
     'used_cpu_sys', 'used_cpu_user', 'connected_clients',
     'total_commands_processed', 'evicted_keys', 'expired_keys',
-    'keyspace_misses', 'keyspace_hits',
+    'keyspace_misses', 'keyspace_hits', 'keys',
 ]
 REDIS_AVG_FIELDS = ['used_memory', 'used_memory_rss', 'response_time']
 REDIS_FIELDS = {}

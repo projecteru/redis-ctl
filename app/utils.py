@@ -18,3 +18,15 @@ def json_response(obj, status_code=200):
     r = flask.Response(tojson(obj), mimetype='application/json')
     r.status_code = status_code
     return r
+
+
+def datetime_to_timestamp(dt):
+    return calendar.timegm(dt.timetuple())
+
+
+def datetime_str_to_timestamp(dt_str, fmt='%Y-%m-%d %H:%M:%S'):
+    return datetime_to_timestamp(datetime.strptime(dt_str, fmt))
+
+
+def timestamp_to_datetime(ts):
+    return datetime.utcfromtimestamp(ts)

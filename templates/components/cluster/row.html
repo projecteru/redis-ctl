@@ -1,35 +1,43 @@
-{% set info_rows = cluster.proxies|length + 1 %}
-{% set row_cls = 'class="row-odd"' if odd_row else '' %}
-<tr id='cluster-{{ cluster.id }}' {{ row_cls }}>
-    <td rowspan='{{ info_rows }}'><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.id }}</a></td>
-    <td rowspan='{{ info_rows }}'><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.description|e }}</a></td>
-    <td rowspan='{{ info_rows }}'>{{ cluster.nodes|length }}</td>
-{% if cluster.proxies %}
-    {% for proxy in cluster.proxies %}
-    <td class='proxy-tab'>
-        <a href='/cluster/panel/{{ cluster.id }}#proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
-            {{ proxy.host|e }}:{{ proxy.port }}
-        </a>
-    </td>
-    <td>{% if proxy.detail.read_slave %}<span class='label label-info'>R</span>{% endif %}</td>
+{% import './components/widgets.html' as widgets %}
+
+<tr id='cluster-{{ cluster.id }}'class='{% if cluster.nodes|length == 0 %}adv-user-display{% else %}cluster-row{% endif %}'>
+    <td><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.id }}</a></td>
+    <td><a href='/cluster/panel/{{ cluster.id }}'>{{ cluster.description|e }}</a></td>
+    <td>{{ cluster.nodes|length }}</td>
     <td>
-    {% if proxy.stat %}
-        <span class='label label-success'>OK</span>
+    {% if cluster.proxies %}
+        <div class='form-horizontal'>
+        {% for proxy in cluster.proxies %}
+            <div class='form-group'>
+                <div class='col-xs-4'>
+                    <a href='/cluster/panel/{{ cluster.id }}#proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
+                        {{ proxy.host|e }}:{{ proxy.port }}
+                    </a>
+                </div>
+                <div class='col-xs-1'>
+                    {% if proxy.detail.read_slave %}<span class='label label-info'>R</span>{% endif %}
+                </div>
+                <div class='col-xs-1'>
+                {% if proxy.stat %}
+                    <span class='label label-success'>OK</span>
+                {% else %}
+                    <span class='label label-danger'>E</span>
+                {% endif %}
+                </div>
+                <div class='col-xs-1'>
+                    {% if proxy.suppress_alert %}<span class='label label-warning alarm-display'><i class='fa fa-bell-slash'></i></span>{% endif %}
+                </div>
+                <div class='col-xs-4'>
+                    {{ proxy.detail.version|e }}
+                </div>
+                <div class='col-xs-1'>
+                    {{ widgets.stat_icon('proxy', proxy.host, proxy.port) }}
+                </div>
+            </div>
+        {% endfor %}
+        </div>
     {% else %}
-        <span class='label label-danger'>E</span>
+        <div class='text-center' data-localize='no-proxy'>No Proxy</div>
     {% endif %}
     </td>
-    <td>{% if proxy.suppress_alert %}<span class='label label-warning'><i class='fa fa-bell-slash'></i></span>{% endif %}</td>
-    <td>{{ proxy.detail.version|e }}</td>
-    <td>{{ (proxy.detail.sla * 100)|round(2) if proxy.detail.sla else '- ' }}%</td>
-    <td>
-    {% if stats_enabled %}
-      <a target='_blank' href='/stats/proxy?host={{ proxy.host|e }}&port={{ proxy.port }}'><span data-localize='history'>状态历史</span> {{ icon('line-chart') }}</a>
-    {% endif %}
-    </td>
-    </tr><tr {{ row_cls }}>
-    {% endfor %}
-{% else %}
-<td colspan='7' data-localize='no-proxy'>没有代理</td>
-{% endif %}
 </tr>

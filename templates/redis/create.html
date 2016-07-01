@@ -1,0 +1,65 @@
+{% extends './base.html' %}
+
+{% block title %}Register Redis{% endblock %}
+
+{% block body %}
+<div class="panel panel-success form-horizontal">
+  <div class="panel-heading" style='margin-bottom: 1em'><strong data-localize='register-node'>Register Redis</strong></div>
+  <div>
+      <div class='form-group'>
+          {{ label('Host', lcl='register-node-host') }}
+          {{ input(size=6, id='add-nodes-host') }}
+          {{ hint('IP or domain name', size=4, lcl='register-host-hint') }}
+      </div>
+      <div class='form-group'>
+          {{ label('Port', lcl='register-node-port') }}
+          {{ input(size=6, id='add-nodes-port') }}
+          {{ hint('Port number or range, like 6379, 6000-6020', size=4, lcl='register-port-hint') }}
+      </div>
+      <div class='form-group'>
+          {{ button('Register', size=2, offset=2, id='add-nodes', color='primary') }}
+          <div class='col-xs-2'>
+              <span id='add-node-info'></span>
+          </div>
+      </div>
+  </div>
+</div>
+
+<script>
+$('#add-nodes').click(function() {
+    var errorSpan = $('#add-node-info');
+    if ($('#add-nodes-host').val().length == 0) {
+        return $('#add-nodes-host').focus();
+    }
+
+    var portBegin = NaN, portEnd = 0;
+    var portRange = $('#add-nodes-port').val().split('-');
+    if (portRange.length === 1) {
+        portBegin = parseInt(portRange[0]);
+        portEnd = portBegin + 1;
+    } else if (portRange.length === 2) {
+        portBegin = parseInt(portRange[0]);
+        portEnd = parseInt(portRange[1]) + 1;
+    }
+    if (isNaN(portBegin) || isNaN(portEnd)) {
+        $('#add-nodes-port').focus();
+        return errorSpan.text(_('invalid port format'));
+    }
+
+    var btn = $(this).attr('disabled', 'disabled');
+    -function addNode(host, portBegin, portEnd) {
+        if (portBegin == portEnd) {
+            btn.removeAttr('disabled');
+            return errorSpan.text(_('ok'));
+        }
+        $.post('/redis/add', {
+            host: host,
+            port: portBegin,
+        }, function() {
+            addNode(host, portBegin + 1, portEnd);
+        });
+        errorSpan.text(_('registering') + ' :' + portBegin + '...');
+    }($('#add-nodes-host').val(), portBegin, portEnd);
+});
+</script>
+{% endblock %}

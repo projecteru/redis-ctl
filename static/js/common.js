@@ -1,11 +1,8 @@
 $(document).ready(function() {
     $('.check-suppress-alert').enableLabelCheck({
+        checkedClass: 'bell-slash-o',
+        uncheckedClass: 'bell',
         onClick: function(self) {
-            var root = self.parent();
-            while (root.length && !root.hasClass('alert-status-root')) {
-                root = root.parent();
-            }
-            root.toggleClass('alert-enabled');
             $.post('/set_alarm/' + self.data('ntype'), {
                 host: self.data('host'),
                 port: self.data('port'),
@@ -15,7 +12,7 @@ $(document).ready(function() {
     });
     $('.delete-proxy-btn').click(function() {
         var btn = $(this);
-        btn.attr('disabled', 'disabled').text('请稍候');
+        btn.attr('disabled', 'disabled').text(_('Please wait'));
         $.ajax({
             url: '/cluster/delete_proxy',
             type: 'POST',
@@ -24,18 +21,16 @@ $(document).ready(function() {
                 port: btn.data('port')
             },
             success: function() {
-                btn.text(_('此代理已被移除'));
+                btn.text(_('Proxy unregistered'));
             },
             error: function(e) {
-                btn.text(_('失败') + ': ' + e.responseText);
+                btn.text(_('failed') + ': ' + e.responseText);
             }
         });
     })
 
-    $('.toggle-next').click(function() {$(this).next().toggle();}).next().hide();
-
     $('.panel-heading-hide-content').click(function() {
-       $(this).next().fadeToggle('slow');
+       $(this).next().slideToggle();
     });
 });
 

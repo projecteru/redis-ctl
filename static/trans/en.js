@@ -1,25 +1,17 @@
 window.TRANSLATIONS = {
-    'master': 'Master',
-    'slave': 'Slave',
-
+    'update': 'Update',
+    'delete': 'Delete',
     'yes': 'Yes',
     'no': 'No',
-
+    'failed': 'Failed',
+    'master': 'Master',
+    'slave': 'Slave',
     'enabled': 'Enabled',
     'disabled': 'Disabled',
 
-    '不正确的端口范围格式': 'invalid port format',
-    '正在注册': 'registering',
-
-    '失败': 'Failed',
-    'failed': 'Failed',
-
-    '尚未获取节点详细信息': 'WAITING FOR POLLING',
-    '此代理已被移除': 'Proxy removed',
-    '正在载入集群信息': 'Loading cluster nodes',
-    '节点不在集群中': 'Not in a cluster',
-    '已注册': 'Registered',
-    '移除此节点': 'Remove',
+    'waiting for polling': 'WAITING FOR POLLING',
+    'serving': 'Serving',
+    'ready': 'Ready',
 
     'task_step_launch': 'Launch',
     'task_step_fix_migrate': 'Fix migrating',
@@ -36,9 +28,29 @@ window.TRANSLATIONS = {
     'processing': 'Processing',
     'completed': 'Done',
 
-    '节点已被移除': 'Removed',
-    '当前节点': 'Myself',
-    'im_slave': 'This is a slave',
+    'redis-containerize-port-range-invalid': 'Port should between 6000 and 7999',
+    'proxy-containerize-port-range-invalid': 'Port should between 8000 and 9999',
+    'not reachable': 'Not reachable',
+
+    'stats-used_cpu_user': 'User',
+    'stats-used_cpu_sys': 'Sys',
+    'stats-used_memory': 'Memory',
+    'stats-used_memory_rss': 'RSS',
+    'stats-connected_clients': 'Clients',
+    'stats-total_commands_processed': 'QPS',
+    'stats-expired_keys': 'Expired keys',
+    'stats-evicted_keys': 'Evicted keys',
+    'stats-keyspace_hits': 'Keyspace hits',
+    'stats-keyspace_misses': 'Keyspace misses',
+    'stats-keys': 'Keys',
+    'stats-mem_buffer_alloc': 'Buffering memory',
+    'stats-completed_commands': 'QPS',
+    'stats-command_elapse': 'Total',
+    'stats-remote_cost': 'Remote',
+
+    /* BEGIN containerization exception detail */
+    'Not enough core resources': 'Insufficient resource in specified host',
+    /* END */
 
     '': ''
 };

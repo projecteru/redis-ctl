@@ -31,9 +31,9 @@
     </div>
 
     <div>
-        <button class='btn btn-primary' id='plan-confirm' data-localize='confirm'>确认</button>
+        <button class='btn btn-primary' id='plan-confirm' data-localize='confirm'>Confirm</button>
         <span class='label label-danger' id='plan-error' style='display: none'></span>
-        <span class='label label-success' id='plan-ok' style='display: none' data-localize='saved'>已经设置</span>
+        <span class='label label-success' id='plan-ok' style='display: none' data-localize='saved'>Saved</span>
     </div>
 </div>
 
@@ -101,7 +101,7 @@
                 },
                 error: function(e) {
                     btn.removeAttr('disabled');
-                    errorLabel.show().text(_('失败') + ': ' + e.responseText);
+                    errorLabel.show().text(_('failed') + ': ' + e.responseText);
                 }
             });
         }
@@ -127,7 +127,7 @@
             },
             error: function(e) {
                 btn.removeAttr('disabled');
-                errorLabel.show().text(_('失败') + ': ' + e.responseText);
+                errorLabel.show().text(_('failed') + ': ' + e.responseText);
             }
         })
     });

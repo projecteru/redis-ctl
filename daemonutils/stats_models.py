@@ -67,9 +67,16 @@ class RedisNodeStatus(RedisStatsBase):
             'evicted_keys': self.details['evicted_keys'],
             'keyspace_hits': self.details['keyspace_hits'],
             'keyspace_misses': self.details['keyspace_misses'],
+            'keys': self.details['keys'],
             'used_cpu_sys': self.details['used_cpu_sys'],
             'used_cpu_user': self.details['used_cpu_user'],
         }
+
+    def _keys(self, db0):
+        try:
+            return int(db0.split(',')[0].split('=')[1])
+        except (ValueError, LookupError) as e:
+            return 0
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
@@ -103,6 +110,7 @@ class RedisNodeStatus(RedisStatsBase):
                 'keyspace_misses': int(details['keyspace_misses']),
                 'aof_enabled': details['aof_enabled'] == '1',
             })
+            node_info['keys'] = self._keys(details.get('db0', ''))
             node_info['version'] = details['redis_version']
             node_info['stat'] = True
             self.details.update(node_info)
@@ -156,8 +164,7 @@ class ProxyStatus(ProxyStatsBase):
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
-        with Talker(self.details['host'], self.details['port'],
-                    CONNECT_TIMEOUT) as t:
+        with Talker(self.host, self.port, CONNECT_TIMEOUT) as t:
             i = t.talk_raw(CMD_PROXY)
             lines = i.split('\n')
             st = {}
@@ -197,6 +204,7 @@ class ProxyStatus(ProxyStatsBase):
             if cluster_ok:
                 self.set_available()
             else:
-                self.send_alarm('Cluster failed for Cerberus %s:%d' % (
-                    self.details['host'], self.details['port']), '')
+                self.send_alarm(
+                    'Cluster failed behind %s:%d' % (self.host, self.port),
+                    None)
                 self.set_unavailable()

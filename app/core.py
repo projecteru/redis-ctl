@@ -16,6 +16,9 @@ blueprints = (
     'command',
     'task',
     'audit',
+    'prune',
+    'myself',
+    'translation',
 )
 
 
@@ -42,6 +45,11 @@ class RedisCtl(Flask):
         self.jinja_env.globals['user_valid'] = self.access_ctl_user_valid
         self.jinja_env.globals['login_url'] = self.login_url
 
+        self.jinja_env.globals['stats_enabled'] = self.stats_enabled
+        self.jinja_env.globals['alarm_enabled'] = self.alarm_enabled
+        self.jinja_env.globals['container_enabled'] = self.container_enabled
+        self.jinja_env.globals['body_classes'] = self.body_classes
+
         for u in dir(render_utils):
             if u.startswith('g_'):
                 self.jinja_env.globals[u[2:]] = getattr(render_utils, u)
@@ -49,7 +57,7 @@ class RedisCtl(Flask):
                 self.jinja_env.filters[u[2:]] = getattr(render_utils, u)
 
         init_logging(config)
-        self.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
+        self.config['SQLALCHEMY_DATABASE_URI'] = self.db_uri(config)
         self.config_node_max_mem = config.NODE_MAX_MEM
         self.debug = config.DEBUG == 1
 
@@ -67,6 +75,11 @@ class RedisCtl(Flask):
         logging.info('Polling file: %s', self.polling_file)
         logging.info('Instance detail file: %s', self.instance_detail_file)
 
+    def db_uri(self, config):
+        return 'mysql://%s:%s@%s:%d/%s' % (
+            config.MYSQL_USERNAME, config.MYSQL_PASSWORD,
+            config.MYSQL_HOST, config.MYSQL_PORT, config.MYSQL_DATABASE)
+
     def register_blueprints(self):
         self.secret_key = os.urandom(24)
         self.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -77,6 +90,7 @@ class RedisCtl(Flask):
             self.register_blueprint(import_bp_string('statistics'))
         if self.container_enabled():
             self.register_blueprint(import_bp_string('containerize'))
+            self.register_blueprint(import_bp_string('cont_image'))
 
         for bp in self.ext_blueprints():
             self.register_blueprint(bp)
@@ -101,6 +115,9 @@ class RedisCtl(Flask):
         return None
 
     def access_ctl_user_valid(self):
+        return True
+
+    def access_ctl_user_adv(self):
         return True
 
     def login_url(self):
@@ -139,6 +156,10 @@ class RedisCtl(Flask):
     def write_polling_targets(self):
         file_ipc.write_nodes_proxies_from_db()
 
+    def on_loop_begin(self):
+        if self.alarm_client is not None:
+            self.alarm_client.on_loop_begin()
+
     def init_stats_client(self, config):
         if config.OPEN_FALCON and config.OPEN_FALCON['db']:
             from thirdparty.openfalcon import Client
@@ -164,24 +185,32 @@ class RedisCtl(Flask):
         self.stats_client.write_points(addr, points)
 
     def init_alarm_client(self, config):
-        if config.ALGALON and config.ALGALON['dsn']:
-            from thirdparty.algalon_cli import AlgalonClient
-            return AlgalonClient(**config.ALGALON)
         return None
 
     def alarm_enabled(self):
         return self.alarm_client is not None
 
-    def send_alarm(self, message, trace):
+    def send_alarm(self, endpoint, message, exception):
         if self.alarm_client is not None:
-            self.do_send_alarm(message, trace)
+            self.do_send_alarm(endpoint, message, exception)
 
-    def do_send_alarm(self, message, trace):
-        self.alarm_client.send_alarm(message, trace)
+    def do_send_alarm(self, endpoint, message, exception):
+        self.alarm_client.send_alarm(endpoint, message, exception)
 
     def init_container_client(self, config):
-        from thirdparty.eru_utils import DockerClient
-        return None if config.ERU_URL is None else DockerClient(config)
+        return None
 
     def container_enabled(self):
         return self.container_client is not None
+
+    def body_classes(self):
+        c = []
+        if not self.stats_enabled():
+            c.append('no-stats-mode')
+        if not self.alarm_enabled():
+            c.append('no-alarm-mode')
+        if not self.container_enabled():
+            c.append('no-container-mode')
+        if not self.access_ctl_user_adv():
+            c.append('no-adv-user-mode')
+        return c

@@ -126,23 +126,23 @@ def launch_cluster():
 
 @bp.route_post_json('/join')
 def join_cluster():
-    c = models.cluster.get_by_id(int(request.form['cluster_id']))
+    req_json = request.get_json(force=True)
+    c = models.cluster.get_by_id(int(req_json['cluster_id']))
     if c is None or len(c.nodes) == 0:
         raise ValueError('no such cluster')
     task = models.task.ClusterTask(
         cluster_id=c.id, task_type=models.task.TASK_TYPE_JOIN,
         user_id=bp.app.get_user_id())
-    node = models.node.get_by_host_port(
-        request.form['host'], int(request.form['port']))
-    if node is None:
-        raise ValueError('no such node')
-    if node.assignee_id is not None:
-        raise ValueError('node already serving')
-
-    task.add_step(
-        'join', cluster_id=c.id,
-        cluster_host=c.nodes[0].host, cluster_port=c.nodes[0].port,
-        newin_host=node.host, newin_port=node.port)
+    for n in req_json['nodes']:
+        node = models.node.get_by_host_port(n['host'], int(n['port']))
+        if node is None:
+            raise ValueError('no such node')
+        if node.assignee_id is not None:
+            raise ValueError('node already serving')
+        task.add_step(
+            'join', cluster_id=c.id,
+            cluster_host=c.nodes[0].host, cluster_port=c.nodes[0].port,
+            newin_host=node.host, newin_port=node.port)
     db.session.add(task)
 
 
@@ -175,14 +175,51 @@ def batch_tasks():
         cluster_id=c.id, task_type=models.task.TASK_TYPE_BATCH,
         user_id=bp.app.get_user_id())
     has_step = False
+
+    nodes0 = c.nodes[0]
+    for n in req_json.get('joins', []):
+        has_step = True
+        node = models.node.get_by_host_port(n['host'], int(n['port']))
+        if node is None:
+            raise ValueError('no such node')
+        if node.assignee_id is not None:
+            raise ValueError('node already serving')
+        task.add_step(
+            'join', cluster_host=nodes0.host, cluster_port=nodes0.port,
+            newin_host=node.host, newin_port=node.port, cluster_id=c.id)
+        node.assignee_id = c.id
+        db.session.add(node)
+
+    for n in req_json.get('replicas', []):
+        has_step = True
+        node = models.node.get_by_host_port(n['slhost'], int(n['slport']))
+        if node is None:
+            raise ValueError('no such node')
+        if node.assignee_id is not None:
+            raise ValueError('node already serving')
+
+        master = models.node.get_by_host_port(n['mhost'], int(n['mport']))
+        if master is None:
+            raise ValueError('no such node')
+        if master.assignee_id != c.id:
+            raise ValueError('master not in the cluster')
+
+        task.add_step(
+            'replicate', master_host=master.host, master_port=master.port,
+            slave_host=node.host, slave_port=node.port, cluster_id=c.id)
+        node.assignee_id = c.id
+        db.session.add(node)
+
     for n in req_json.get('migrs', []):
         has_step = True
         task.add_step(
             'migrate', src_host=n['src_host'], src_port=n['src_port'],
             dst_host=n['dst_host'], dst_port=n['dst_port'], slots=n['slots'])
+
     for n in req_json.get('quits', []):
         has_step = True
         task.add_step('quit', cluster_id=c.id, host=n['host'], port=n['port'])
+
     if has_step:
         db.session.add(task)
 

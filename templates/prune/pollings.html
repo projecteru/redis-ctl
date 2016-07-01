@@ -1,0 +1,40 @@
+{% extends './pollings.html' %}
+
+{% block title %}Pollings Prune{% endblock %}
+
+{% block head %}
+<script src='/static/js/prune.js'></script>
+{% endblock %}
+
+{% block prune %}{% endblock %}
+
+{% block body %}
+    {% if first is not none %}
+        {{ super() }}
+        <div class='form-horizontal form-submit'>
+          <div class='from-group'>
+            <div class='col-xs-5'>
+              <div class='control-label'>
+                <span data-localize='prune-pollings'>Click to prune pollings before</span>
+                <span>{{ datetime|strftime }}</span>
+              </div>
+            </div>
+            <div class='col-xs-3'>
+              <button class='btn btn-primary btn-block' data-localize='prune' data-id='{{ first.id|tojson }}' onclick='prune($(this), "/prune/do_pollings")'>Prune</button>
+            </div>
+
+            <div class='col-xs-offset-2 col-xs-2'>
+              <div class='control-label'>
+                <a href='/stats/pollings' data-localize='back'>Back</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <hr style='visibility: hidden'>
+    {% else %}
+        <p>
+            <span data-localize='prune-no-records'>No records to prune.</span>
+            <a href='/stats/pollings' data-localize='back'>Back</a>
+        </p>
+    {% endif %}
+{% endblock %}

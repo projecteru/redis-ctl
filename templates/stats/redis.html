@@ -1,13 +1,12 @@
 {% extends './stats/base.html' %}
-{% block title %}节点状态历史{% endblock %}
+{% block title %}Redis Status History{% endblock %}
 
 {% block graph %}
 <div>
-    <div><p>CPU 状况</p><svg id='usages_cpu'></svg></div>
-    <div><p>内存状况</p><svg id='usages_mem'></svg></div>
-    <div><p>连接</p><svg id='connections'></svg></div>
-    <div><p>响应时间</p><svg id='response_time'></svg></div>
-    <div><p>存储</p><svg id='keys'></svg></div>
+    <div><p>CPU</p><svg id='usages_cpu'></svg></div>
+    <div><p data-localize='node-memory-usage'>Memory Usage</p><svg id='usages_mem'></svg></div>
+    <div><p data-localize='connections'>Connections</p><svg id='connections'></svg></div>
+    <div><p data-localize='storage'>Storage</p><svg id='keys'></svg></div>
 </div>
 <script>
 statistics({
@@ -20,53 +19,46 @@ statistics({
     connected_clients: [],
     total_commands_processed: [],
 
-    response_time: [],
-
     evicted_keys: [],
     expired_keys: [],
     keyspace_hits: [],
-    keyspace_misses: []
+    keyspace_misses: [],
+    keys: []
 }, '/stats/fetchredis', {{ host|tojson }}, {{ port|tojson }}, [{
     selector: '#usages_cpu',
     fields: [
-        {keyName: 'used_cpu_user', keyDisp: '用户态', color: '#0c0', deriv: true},
-        {keyName: 'used_cpu_sys', keyDisp: '内核态', color: 'navy', deriv: true}
+        {keyName: 'used_cpu_user', color: '#0c0', deriv: true},
+        {keyName: 'used_cpu_sys', color: 'navy', deriv: true}
     ],
     yMapF: function(y) {return y * 100;},
-    title: 'CPU (%)'
+    title: _('CPU') + ' (%)'
 }, {
     selector: '#usages_mem',
     fields: [
-        {keyName: 'used_memory', keyDisp: '内存', color: '#880'},
-        {keyName: 'used_memory_rss', keyDisp: 'RSS', color: 'navy'}
+        {keyName: 'used_memory', color: '#880'},
+        {keyName: 'used_memory_rss', color: 'navy'}
     ],
     yMapF: function(y) {return y / 1048576;},
-    title: '内存 (MB)'
+    title: _('Memory') + ' (MB)'
 }, {
     selector: '#connections',
     fields: [
-        {keyName: 'connected_clients', keyDisp: '客户端连接数', color: '#088'},
-        {keyName: 'total_commands_processed', keyDisp: '平均每秒指令数', color: '#f66', deriv: true}
+        {keyName: 'connected_clients', color: '#088'},
+        {keyName: 'total_commands_processed', color: '#f66', deriv: true}
     ],
     yMapF: function(y) {return y;},
-    title: '连接'
-}, {
-    selector: '#response_time',
-    fields: [
-        {keyName: 'response_time', keyDisp: '平均', color: 'black'},
-    ],
-    yMapF: function(y) {return y * 1000;},
-    title: '响应时间 (ms)'
+    title: _('Connections')
 }, {
     selector: '#keys',
     fields: [
-        {keyName: 'expired_keys', keyDisp: 'Expired keys', color: '#880'},
-        {keyName: 'evicted_keys', keyDisp: 'Evicted keys', color: 'red'},
-        {keyName: 'keyspace_hits', keyDisp: 'Keyspace hits', color: '#088'},
-        {keyName: 'keyspace_misses', keyDisp: 'Keyspace misses', color: '#444'}
+        {keyName: 'expired_keys', color: '#880'},
+        {keyName: 'evicted_keys', color: 'red'},
+        {keyName: 'keyspace_hits', color: '#268'},
+        {keyName: 'keyspace_misses', color: '#444'},
+        {keyName: 'keys', color: '#2c2'}
     ],
     yMapF: function(y) {return y;},
-    title: '存储'
+    title: _('Storage')
 }]);
 </script>
 {% endblock %}

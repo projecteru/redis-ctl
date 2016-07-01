@@ -1,0 +1,9 @@
+{% extends './base.html' %}
+
+{% block title %}Thirdparty utilities{% endblock %}
+
+{% block body %}
+<p>Containerize: {{ app.container_client }}</p>
+<p>Statistic: {{ app.stats_client }}</p>
+<p>Alarm: {{ app.alarm_client }}</p>
+{% endblock %}

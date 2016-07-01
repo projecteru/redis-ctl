@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from werkzeug.utils import cached_property
 
-from base import db, Base, DB_STRING_TYPE
+from base import db, Base, DB_STRING_TYPE, commit_session
 
 
 class Cluster(Base):
@@ -70,7 +70,6 @@ def remove_empty_cluster(cluster_id):
     c = get_by_id(cluster_id)
     if len(c.nodes) == 0:
         logging.info('Remove cluster %d', cluster_id)
-        c.proxies = []
-        db.session.add(c)
-        db.session.flush()
+        c.del_balance_plan()
         db.session.delete(c)
+        commit_session()

@@ -8,7 +8,6 @@ class InstanceManagement(base.TestCase):
         nm.create_instance('10.1.201.10', 9000)
         nm.create_instance('10.1.201.10', 9001)
         nm.create_instance('10.1.201.12', 6376)
-        cluster_id = clu.create_cluster('forgot-me-not')
 
         i = sorted(list(nm.list_all_nodes()), key=lambda x: (x.host, x.port))
         self.assertEqual(3, len(i))

@@ -1,0 +1,75 @@
+{% extends './base.html' %}
+
+{% block title %}Create Cluster{% endblock %}
+
+{% block head %}
+<script src='/static/js/cluster_task.js'></script>
+<script src='/static/js/redis_node.js'></script>
+{% endblock %}
+
+{% block body %}
+<div class='panel panel-primary'>
+  <div class='panel-heading' data-localize='basic-settings'>Create new cluster</div>
+    <form role='form' class='form-horizontal form-submit' style='padding-top: 12px'>
+      <div class='form-group'>
+        <div class='col-xs-3 control-label' data-localize='cluster-description'>
+          Description
+        </div>
+        <div class='col-xs-7'>
+          <input id='cluster-descr-inp' class='form-control input-block-level'>
+        </div>
+      </div>
+      <div class='form-group'>
+        <div class='col-xs-3 control-label' data-localize='select-free-nodes'>
+          Select Redis instances:
+        </div>
+      </div>
+      <div id='redis-selects'></div>
+      <div class='form-group'>
+        <div class='col-xs-offset-2 col-xs-2'>
+          <button type='button' class='btn btn-primary btn-block' disabled='disabled' id='create-cluster' data-localize='start-cluster'>Launch</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+enableMultipleRedisOp($('#redis-selects'), function() {
+    $('#create-cluster').removeAttr('disabled');
+});
+
+$('#create-cluster').click(function() {
+    var descr = $('#cluster-descr-inp').val();
+    if (descr.length === 0) {
+        return $('#cluster-descr-inp').focus();
+    }
+    checkMultipleRedisSelection(function(masters, slaveries) {
+        $('#create-cluster').attr('disabled', 'disabled');
+        createAndLaunchCluster(descr, masters, function(e, clusterId) {
+            if (e) {
+                console.error(e);
+                return alert(_('failed') + ': ' + e.responseText);
+            }
+            (function addSlave(index) {
+                if (index === slaveries.length) {
+                    window.location = '/cluster/panel/' + clusterId;
+                }
+                replicateTask(
+                    slaveries[index].mhost, slaveries[index].mport,
+                    slaveries[index].slhost, slaveries[index].slport,
+                    function(e) {
+                        if (e) {
+                            console.error(e);
+                            console.error('error at', index)
+                            return alert(_('failed') + ': ' + e.responseText);
+                        } else {
+                            addSlave(index + 1);
+                        }
+                    });
+            })(0);
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,5 +1,5 @@
 function delContainer() {
-    if (!confirm('确定要下线此容器吗?')) {
+    if (!confirm(_('This container will be removed, are you sure?'))) {
         return;
     }
     var self = $(this).attr('disabled', 'disabled');
@@ -11,7 +11,11 @@ function delContainer() {
             type: self.data('type')
         },
         success: function() {
-            window.location.reload();
+            if (delContainer.deleted) {
+                delContainer.deleted(self);
+            } else {
+                window.location.reload();
+            }
         },
         error: function(e) {
             self.text(_('failed') + ':' + e.responseText);

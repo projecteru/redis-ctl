@@ -1,0 +1,22 @@
+{% extends './audit/nodes.html' %}
+
+{% block title %}Audit Prune{% endblock %}
+
+{% block head %}
+<script src='/static/js/prune.js'></script>
+{% endblock %}
+
+{% block pagination %}{% endblock %}
+
+{% block body %}
+    {% if first is not none %}
+        {{ super() }}
+        <div>
+            <span data-localize='prune-audit'>Click to prune audit logs before</span>
+            <span>{{ datetime|strftime }}</span>
+            <button class='btn btn-primary' data-localize='prune' data-id='{{ first.id|tojson }}' onclick='prune($(this), "/prune/do_audit")'>Prune</button>
+        </div>
+    {% else %}
+        <p data-localize='prune-no-records'>No records to prune</p>
+    {% endif %}
+{% endblock %}
