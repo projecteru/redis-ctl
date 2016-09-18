@@ -8,7 +8,6 @@ from redistrib.exceptions import RedisStatusError
 from werkzeug.utils import cached_property
 from sqlalchemy.exc import IntegrityError
 
-from bgtask.proc import TASK_MAP
 from base import db, Base, DB_TEXT_TYPE
 from cluster import Cluster
 
@@ -160,14 +159,14 @@ class TaskStep(Base):
         db.session.add(self)
         db.session.commit()
 
-    def execute(self):
+    def execute(self, task_map):
         if self.start_time is None:
             self.start_time = datetime.now()
             db.session.add(self)
             db.session.commit()
 
         try:
-            if TASK_MAP[self.command](self, **self.args):
+            if task_map[self.command](self, **self.args):
                 self.complete(None)
             return True
         except (ValueError, LookupError, IOError, SocketError, HiredisError,

@@ -1,6 +1,7 @@
 import logging
 from retrying import retry
-from redistrib.clusternode import Talker, pack_command, ClusterNode
+from redistrib.connection import Connection, pack_command
+from redistrib.clusternode import ClusterNode
 from hiredis import ReplyError
 
 from config import REDIS_CONNECT_TIMEOUT as CONNECT_TIMEOUT
@@ -80,8 +81,8 @@ class RedisNodeStatus(RedisStatsBase):
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
-        with Talker(self.details['host'], self.details['port'],
-                    CONNECT_TIMEOUT) as t:
+        with Connection(self.details['host'], self.details['port'],
+                        CONNECT_TIMEOUT) as t:
             details = _info_detail(t)
             cluster_enabled = details.get('cluster_enabled') == '1'
             node_info = {'cluster_enabled': cluster_enabled}
@@ -164,7 +165,7 @@ class ProxyStatus(ProxyStatsBase):
 
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
-        with Talker(self.host, self.port, CONNECT_TIMEOUT) as t:
+        with Connection(self.host, self.port, CONNECT_TIMEOUT) as t:
             i = t.talk_raw(CMD_PROXY)
             lines = i.split('\n')
             st = {}

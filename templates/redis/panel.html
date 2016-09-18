@@ -378,14 +378,21 @@ function addMode(m) {
         var body = $('#cluster-nodes').html('');
 
         function appendNode(n, extra_char) {
+            var fix = [];
+            if (n.myself && n.migrating) {
+                fix = [' ', bscp.btn(_('Fix migrating'), 'warning', 'btn-xs').click(taskFixMigrating).data({host: n.host, port: n.port})];
+            }
+
+            var addr = n.address;
+            if (!n.myself) {
+                addr = $('<a>').attr('href', '/redis/panel/' + n.host + '/' + n.port).text(n.address);
+            }
+
             body.append(bscp.row()
-                            .append(bscp.grid(3).addClass('text-center').append(bscp.label(n.node_id, n.slave ? 'warning' : 'info')))
-                            .append(bscp.grid(2).text(extra_char + ' ' + n.address + ' ').append(n.myself && n.migrating ? bscp.btn(_('Fix migrating'), 'warning', 'btn-xs')
-                                                                                                                               .click(taskFixMigrating)
-                                                                                                                               .data({host: n.host, port: n.port})
-                                                                                                                         : ''))
-                            .append(bscp.grid(2).append(rolesLabels(n.flags)))
-                            .append(bscp.grid(5).text(n.slots_text))
+                    .append(bscp.grid(3).addClass('text-center').append(bscp.label(n.node_id, n.slave ? 'warning' : 'info')))
+                    .append(bscp.grid(2).text(extra_char + ' ').append(addr).append(fix))
+                    .append(bscp.grid(2).append(rolesLabels(n.flags)))
+                    .append(bscp.grid(5).text(n.slots_text))
             );
         }
 

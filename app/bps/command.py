@@ -1,7 +1,7 @@
 import json
 from flask import request, abort
 from hiredis import ReplyError
-from redistrib.clusternode import Talker
+from redistrib.connection import Connection
 from redistrib.command import list_masters
 
 from app.utils import json_response
@@ -20,7 +20,7 @@ def access_control():
 def _simple_cmd(host, port, *command):
     status = 200
     try:
-        with Talker(host, port) as t:
+        with Connection(host, port) as t:
             try:
                 r = t.talk(*command)
             except ReplyError as e:
@@ -85,7 +85,7 @@ def exec_command():
     models.audit.raw_event(
         host, port, models.audit.EVENT_TYPE_EXEC, bp.app.get_user_id(), args)
     try:
-        with Talker(host, port) as t:
+        with Connection(host, port) as t:
             try:
                 r = t.talk(*args)
             except ValueError as e:
@@ -112,7 +112,7 @@ def set_max_mem():
         host, port, models.audit.EVENT_TYPE_CONFIG, bp.app.get_user_id(),
         {'max_mem': max_mem})
 
-    with Talker(host, port) as t:
+    with Connection(host, port) as t:
         m = t.talk('config', 'set', 'maxmemory', str(max_mem))
         if 'ok' != m.lower():
             raise ValueError('CONFIG SET MAXMEMROY redis %s:%d returns %s' % (
@@ -135,7 +135,7 @@ def set_aof():
         host, port, models.audit.EVENT_TYPE_CONFIG, bp.app.get_user_id(),
         {'aof': aof})
 
-    with Talker(host, port) as t:
+    with Connection(host, port) as t:
         m = t.talk('config', 'set', 'appendonly', aof)
         if 'ok' != m.lower():
             raise ValueError('CONFIG SET APPENDONLY redis %s:%d returns %s' % (

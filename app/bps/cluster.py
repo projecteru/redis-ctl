@@ -2,7 +2,7 @@ import logging
 from flask import render_template, abort, request
 from sqlalchemy.exc import IntegrityError
 import redistrib.command
-from redistrib.clusternode import Talker
+from redistrib.connection import Connection
 from redistrib.exceptions import RedisStatusError
 
 from app.bpbase import Blueprint
@@ -119,7 +119,7 @@ def set_all_nodes_aof():
         raise ValueError('no such cluster')
     aof = request.form['aof']
     for n in c.nodes:
-        with Talker(n.host, n.port) as t:
+        with Connection(n.host, n.port) as t:
             t.talk('config', 'set', 'appendonly', aof)
     return ''
 
@@ -133,7 +133,7 @@ def proxy_sync_remote():
     cmd = ['setremotes']
     for n in p.cluster.nodes:
         cmd.extend([n.host, str(n.port)])
-    with Talker(p.host, p.port) as t:
+    with Connection(p.host, p.port) as t:
         t.talk(*cmd)
 
 
@@ -203,7 +203,7 @@ def cluster_shutdown():
     if c is None or len(c.nodes) == 0:
         raise ValueError('no such cluster')
     n = c.nodes[0]
-    with Talker(n.host, n.port) as t:
+    with Connection(n.host, n.port) as t:
         try:
             redistrib.command.shutdown_cluster(n.host, n.port)
             n.assignee_id = None

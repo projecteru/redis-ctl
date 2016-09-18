@@ -1,8 +1,7 @@
-from flask import request, render_template, g, abort
+from flask import request, render_template, abort
 from datetime import datetime, timedelta
 
 from app.bpbase import Blueprint
-from app.utils import json_response, timestamp_to_datetime
 from models.audit import NodeEvent
 from models.polling_stat import PollingStat
 from models.task import ClusterTask, TaskStep
