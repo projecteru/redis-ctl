@@ -135,6 +135,7 @@ def proxy_sync_remote():
         cmd.extend([n.host, str(n.port)])
     with Connection(p.host, p.port) as t:
         t.talk(*cmd)
+    return ''
 
 
 @bp.route('/autodiscover')
