@@ -2,8 +2,19 @@
 
 {% block title %}Thirdparty utilities{% endblock %}
 
+{% macro line(item, title, lcl) %}
+<div class='form-group'>
+    <div class='col-xs-8 col-xs-offset-2'>
+        <div class='dt {{ 'dt-success' if item else 'dt-default' }}' data-localize='{{ lcl }}'>{{ title }}</div>
+        <div class='dd'>{{ item }}</div>
+    </div>
+</div>
+{% endmacro %}
+
 {% block body %}
-<p>Containerize: {{ app.container_client }}</p>
-<p>Statistic: {{ app.stats_client }}</p>
-<p>Alarm: {{ app.alarm_client }}</p>
+<div class='form-horizontal dl-hori'>
+    {{ line(app.container_client, 'containerize', 'Containerize') }}
+    {{ line(app.stats_client, 'statistic', 'Statistic') }}
+    {{ line(app.alarm_client, 'alarm', 'Alarm') }}
+</div>
 {% endblock %}

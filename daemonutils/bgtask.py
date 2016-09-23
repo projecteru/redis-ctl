@@ -14,8 +14,8 @@ from models.cluster import remove_empty_cluster
 # Particularly, slots migrating task may need several runs
 
 def _launch(command, host_port_list):
-    redistrib.command.start_cluster_on_multi(
-        {(a['host'], a['port']) for a in host_port_list})
+    redistrib.command.create({(a['host'], a['port']) for a in host_port_list},
+                             max_slots=256)
     return True
 
 
@@ -25,8 +25,8 @@ def _fix_migrating(_, host, port):
 
 
 def _join(_, cluster_id, cluster_host, cluster_port, newin_host, newin_port):
-    redistrib.command.join_no_load(cluster_host, cluster_port, newin_host,
-                                   newin_port)
+    redistrib.command.add_node(cluster_host, cluster_port, newin_host,
+                               newin_port)
     n = get_node_by_host_port(newin_host, newin_port)
     if n is None:
         return True

@@ -5,6 +5,7 @@ import traceback
 from datetime import datetime
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
+from bgtask import TASK_MAP
 from models.base import db, commit_session
 from models.task import ClusterTask, TaskStep
 import models.task
@@ -31,7 +32,7 @@ class TaskRunner(threading.Thread):
                     return task.check_completed()
 
                 logging.info('Execute step %d', step.id)
-                if not step.execute():
+                if not step.execute(TASK_MAP):
                     task.fail('Step fails')
                     commit_session()
                     return

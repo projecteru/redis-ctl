@@ -3,7 +3,7 @@ import threading
 import logging
 from flask import request, render_template, g, abort
 from sqlalchemy.exc import IntegrityError
-from redistrib.clusternode import Talker
+from redistrib.connection import Connection
 
 from app.bpbase import Blueprint
 from app.utils import json_response
@@ -91,7 +91,7 @@ def create_redis():
 def _set_proxy_remote(proxy_addr, proxy_port, redis_host, redis_port):
     def set_remotes():
         time.sleep(1)
-        with Talker(proxy_addr, proxy_port) as t:
+        with Connection(proxy_addr, proxy_port) as t:
             t.talk('SETREMOTES', redis_host, redis_port)
     threading.Thread(target=set_remotes).start()
 
