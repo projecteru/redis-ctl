@@ -75,10 +75,11 @@ class RedisCtl(Flask):
         logging.info('Polling file: %s', self.polling_file)
         logging.info('Instance detail file: %s', self.instance_detail_file)
 
-    def db_uri(self, config):
-        return 'mysql://%s:%s@%s:%d/%s' % (
+    @staticmethod
+    def db_uri(config):
+        return 'mysql://%s:%s@%s:%d/%s?charset=%s' % (
             config.MYSQL_USERNAME, config.MYSQL_PASSWORD,
-            config.MYSQL_HOST, config.MYSQL_PORT, config.MYSQL_DATABASE)
+            config.MYSQL_HOST, config.MYSQL_PORT, config.MYSQL_DATABASE, config.MYSQL_CHARSET)
 
     def register_blueprints(self):
         self.secret_key = os.urandom(24)
