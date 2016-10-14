@@ -281,9 +281,10 @@ $('#shutdown-cluster').click(function() {
   <div class="panel-heading panel-heading-hide-content" id='proxies' data-localize='proxy'>Proxy</div>
   <div class='form-horizontal' style='text-align: center'>
   {%- for proxy in cluster.proxies %}
-    <div class='form-group' id='proxy-{{ proxy.host|e }}-{{ proxy.port }}'>
-        <div class='col-sm-2'>
+    <div class='form-group' id='proxy-{{ proxy.host|e }}-{{ proxy.port }}' style="margin: 10px">
+        <div class='col-sm-3 text-left'>
             <label>{{ proxy.host|e }}:{{ proxy.port }}</label>
+            <span class='label label-info'>{{ proxy.proxy_typename() }}</span>
             {%- if proxy.details.read_slave %}
             <span class='label label-info' data-localize='read-only'>Read Only</span>
             {% endif %}
@@ -298,8 +299,8 @@ $('#shutdown-cluster').click(function() {
         </div>
 
         {{ button('INFO', size=1, cls=['info-btn', 'btn-block'], data={'type': 'proxy', 'host': proxy.host, 'port': proxy.port}) }}
-        {{ button('Send cmd', size=1, cls=['btn-block'], data={'toggle': 'modal', 'target': '#commandConsole', 'host': proxy.host, 'port': proxy.port}, lcl='btn-direct-command') }}
-        {{ button('Sync remote', size=1, cls=['sync-remotes-btn', 'btn-block'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-sync-slots-map') }}
+        {{ button('Send cmd', size=2, cls=['btn-block'], data={'toggle': 'modal', 'target': '#commandConsole', 'host': proxy.host, 'port': proxy.port}, lcl='btn-direct-command') }}
+        {{ button('Sync remote', size=2, cls=['sync-remotes-btn', 'btn-block'], data={'host': proxy.host, 'port': proxy.port}, lcl='btn-sync-slots-map') }}
 
         {%- if proxy.containerized %}
           {{ button('Remove Container', size=2, color='danger', cls=['btn-del-container', 'btn-block'], data={'type': 'proxy', 'cid': proxy.eru_container_id}, lcl='btn-remove-container') }}
@@ -318,6 +319,7 @@ $('#shutdown-cluster').click(function() {
     <div class='form-group'>
         <div class='col-xs-2 control-label' data-localize='reg-cluster-proxy'>Register existent proxy</div>
         {{ input(size=4, id='new-proxy-addr', placeholder='example: 127.0.0.1:8889') }}
+        {{ select(size=2, id='new-proxy-type', options=[[0, 'cerberus'], [1, 'corvus']]) }}
         {{ button('Register', size=2, id='new-proxy-btn', color='primary', lcl='register') }}
         <div class='col-sm-2'>
           <span class='label label-danger' id='new-proxy-error' style='display: none'></span>
@@ -352,6 +354,8 @@ $('#new-proxy-btn').click(function() {
     if (isNaN(port) || !host_port[0]) {
         return $('#new-proxy-error').show().text(_('Invalid address'));
     }
+    
+    var type = parseInt($("#new-proxy-type").val());
 
     var btn = $(this);
     btn.attr('disabled', 'disabled').text(_('Please wait'));
@@ -361,7 +365,8 @@ $('#new-proxy-btn').click(function() {
         data: {
             cluster_id: {{ cluster.id|tojson }},
             host: host_port[0],
-            port: port
+            port: port,
+            type: type
         },
         success: function() {
             window.location.reload();

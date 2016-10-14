@@ -30,3 +30,13 @@ def datetime_str_to_timestamp(dt_str, fmt='%Y-%m-%d %H:%M:%S'):
 
 def timestamp_to_datetime(ts):
     return datetime.utcfromtimestamp(ts)
+
+def parse_config(config):
+    lines = config.split('\n')
+    st = {}
+    for ln in lines:
+        ln = ln.strip(" \t\n\r")
+        if len(ln) > 0 and ln[0] != '#' and ln.find(':') > 0:
+            k, v = ln.split(':', 1)
+            st[k] = v
+    return st

@@ -8,11 +8,12 @@ from config import REDIS_CONNECT_TIMEOUT as CONNECT_TIMEOUT
 import auto_balance
 from models.stats_base import RedisStatsBase, ProxyStatsBase
 from models.cluster_plan import get_balance_plan_by_addr
+import time
+from app.utils import parse_config
 
 CMD_INFO = pack_command('info')
 CMD_GET_MAXMEM = pack_command('config', 'get', 'maxmemory')
 CMD_CLUSTER_NODES = pack_command('cluster', 'nodes')
-CMD_PROXY = '+PROXY\r\n'
 
 
 def _info_slots(t):
@@ -166,42 +167,69 @@ class ProxyStatus(ProxyStatsBase):
     @retry(stop_max_attempt_number=5, wait_fixed=500)
     def _collect_stats(self):
         with Connection(self.host, self.port, CONNECT_TIMEOUT) as t:
-            i = t.talk_raw(CMD_PROXY)
-            lines = i.split('\n')
-            st = {}
-            for ln in lines:
-                k, v = ln.split(':', 1)
-                st[k] = v
-            conns = sum([int(c) for c in st['clients_count'].split(',')])
-            mem_buffer_alloc = sum([int(m) for m in
-                                    st['mem_buffer_alloc'].split(',')])
-            cluster_ok = st.get('cluster_ok') != '0'
+            info = ''
+            if self.typename == 'Corvus':
+                info = t.talk('INFO')
+            elif self.typename == 'Cerberus':
+                info = t.talk_raw('+PROXY\r\n')
+            else:
+                raise NotImplementedError()
+            st = parse_config(info)
+            conns = 0
+            cluster_ok = read_slave = False
+            threads = 0
+            version = ''
+            used_cpu_sys = used_cpu_user = completed_commands = total_process_elapse = mem_buffer_alloc = 0
+            command_elapse = remote_cost = 0
+            if self.typename == 'Corvus':
+                cluster_ok = True
+                conns = st['connected_clients'] # not equal to clients_count, that is clients + backends
+                threads = st['threads']
+                used_cpu_sys = st['used_cpu_sys']
+                used_cpu_user = st['used_cpu_user']
+                completed_commands = st['completed_commands']
+                total_process_elapse = st['total_latency']
+                command_elapse = max([float(x) for x in st['last_command_latency'].split(',')])
+                # read "proxy info"
+                info = t.talk("PROXY", "INFO")
+                info_dict = parse_config(info)
+                mem_buffer_alloc = info_dict['in_use_buffers'] + info_dict['free_buffers']
+            elif self.typename == 'Cerberus':
+                conns = sum([int(c) for c in st['clients_count'].split(',')])
+                mem_buffer_alloc = sum([int(m) for m in
+                                        st['mem_buffer_alloc'].split(',')])
+                cluster_ok = st.get('cluster_ok') != '0'
+                threads = st['threads']
+                version = st['version']
+                used_cpu_sys = float(st.get('used_cpu_sys', 0))
+                used_cpu_user = float(st.get('used_cpu_user', 0))
+                completed_commands = int(st['completed_commands'])
+                total_process_elapse = float(st['total_process_elapse'])
+                read_slave = st.get('read_slave') == '1'
+                if 'last_command_elapse' in st:
+                    command_elapse = max(
+                        [float(x) for x in st['last_command_elapse'].split(',')])
+                if 'last_remote_cost' in st:
+                    remote_cost = max(
+                        [float(x) for x in st['last_remote_cost'].split(',')])
+            else:
+                raise NotImplementedError()
+
             self.details.update({
                 'stat': cluster_ok,
-                'threads': st['threads'],
-                'version': st['version'],
-                'used_cpu_sys': float(st.get('used_cpu_sys', 0)),
-                'used_cpu_user': float(st.get('used_cpu_user', 0)),
+                'threads': threads,
+                'version': version,
+                'used_cpu_sys': used_cpu_sys,
+                'used_cpu_user': used_cpu_user,
                 'connected_clients': conns,
-                'completed_commands': int(st['completed_commands']),
-                'total_process_elapse': float(st['total_process_elapse']),
+                'completed_commands': completed_commands,
+                'total_process_elapse': total_process_elapse,
                 'mem_buffer_alloc': mem_buffer_alloc,
-                'read_slave': st.get('read_slave') == '1',
+                'read_slave': read_slave,
                 'cluster_ok': cluster_ok,
             })
-
-            if 'last_command_elapse' in st:
-                self.details['command_elapse'] = max(
-                    [float(x) for x in st['last_command_elapse'].split(',')])
-            else:
-                self.details['command_elapse'] = 0
-
-            if 'last_remote_cost' in st:
-                self.details['remote_cost'] = max(
-                    [float(x) for x in st['last_remote_cost'].split(',')])
-            else:
-                self.details['remote_cost'] = 0
-
+            self.details['command_elapse'] = command_elapse
+            self.details['remote_cost'] = remote_cost
             if cluster_ok:
                 self.set_available()
             else:

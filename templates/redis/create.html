@@ -18,7 +18,7 @@
       </div>
       <div class='form-group'>
           {{ button('Register', size=2, offset=2, id='add-nodes', color='primary') }}
-          <div class='col-xs-2'>
+          <div class='col-xs-6'>
               <span id='add-node-info'></span>
           </div>
       </div>
@@ -28,6 +28,7 @@
 <script>
 $('#add-nodes').click(function() {
     var errorSpan = $('#add-node-info');
+    errorSpan.html('')
     if ($('#add-nodes-host').val().length == 0) {
         return $('#add-nodes-host').focus();
     }
@@ -50,15 +51,27 @@ $('#add-nodes').click(function() {
     -function addNode(host, portBegin, portEnd) {
         if (portBegin == portEnd) {
             btn.removeAttr('disabled');
-            return errorSpan.text(_('ok'));
+            return errorSpan.append('<div style="color: green">' + _('ok') + "</div>");
         }
-        $.post('/redis/add', {
-            host: host,
-            port: portBegin,
-        }, function() {
-            addNode(host, portBegin + 1, portEnd);
-        });
-        errorSpan.text(_('registering') + ' :' + portBegin + '...');
+        var $div = $("<div>" +  _('registering') + ' <span style="color: green">' + host + ':' + portBegin + '</span>...</div>');
+    	errorSpan.append($div);
+    	$.ajax({
+    	    url: "/redis/add",
+    	    type: "POST",
+    	    data: {
+    	    	host: host,
+                port: portBegin,
+    	    },
+    	    dataType:"json",
+    	    success: function(data) {
+    	    	if (data.status == 0) {
+            		$div.append('<span style="color: green; padding-left: 10px;">' + _('success') + "</span>");
+    	    	} else {
+    	    		$div.append('<span style="color: red; padding-left: 10px;">' + _(data.reason) + "</span>");
+    	    	}
+    	    	addNode(host, portBegin + 1, portEnd);
+    	    }
+    	});
     }($('#add-nodes-host').val(), portBegin, portEnd);
 });
 </script>

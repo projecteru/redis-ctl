@@ -4,6 +4,7 @@ from hiredis import ReplyError
 from models.base import db, Base
 import models.node
 import models.proxy
+from models.proxy import TYPE_CORVUS
 
 
 class StatsBase(Base):
@@ -22,8 +23,14 @@ class StatsBase(Base):
         self.details = {}
         self.app = None
         self.typename = ''
-        self.host = None
-        self.port = None
+        if len(self.addr) > 0 and self.addr.find(':') > 0:
+            self.host, port = self.addr.split(':')
+            self.port = int(port)
+        else:
+            self.host = None
+            self.port = None
+        self.details['host'] = self.host
+        self.details['port'] = self.port
 
     def get_endpoint(self):
         raise NotImplementedError()
@@ -37,10 +44,6 @@ class StatsBase(Base):
             db.session.add(n)
             db.session.flush()
         n.init()
-        n.details['host'] = host
-        n.details['port'] = port
-        n.host = host
-        n.port = port
         return n
 
     def set_available(self):
@@ -110,7 +113,11 @@ class ProxyStatsBase(StatsBase):
 
     def init(self):
         StatsBase.init(self)
-        self.typename = 'Cerberus'
+        proxy = self.get_endpoint()
+        if proxy.proxy_type == TYPE_CORVUS:
+            self.typename = 'Corvus'
+        else:
+            self.typename = 'Cerberus'
 
     def get_endpoint(self):
         return models.proxy.get_by_host_port(self.host, self.port)

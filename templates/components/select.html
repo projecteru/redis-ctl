@@ -1,0 +1,12 @@
+{% extends 'components/grid-group.html' %}
+
+{% block content %}
+<select class='form-control {{ ' '.join(cls) }}'
+    {% if id %}id='{{ id }}'{% endif %}
+    {% if lcl %}data-localize='{{ lcl }}'{% endif %}
+    {% if readonly %}readonly='readonly'{% endif %}>
+    {% for opt in options %}data-=""
+    <option value="{{ opt[0] }}"{% if value == opt[0] %} selected{% endif %}>{{ opt[1] }}</option>
+    {% endfor %}
+</select>
+{% endblock %}
