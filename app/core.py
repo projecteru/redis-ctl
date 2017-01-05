@@ -6,6 +6,8 @@ from werkzeug.utils import import_string
 import file_ipc
 import render_utils
 from models.base import init_db
+from thirdparty.alarm import Base as AlarmBase
+from thirdparty import containerize
 
 blueprints = (
     'index',
@@ -186,6 +188,8 @@ class RedisCtl(Flask):
         self.stats_client.write_points(addr, points)
 
     def init_alarm_client(self, config):
+        if config.ALARM is not None and isinstance(config.ALARM, AlarmBase):
+            return config.ALARM
         return None
 
     def alarm_enabled(self):
@@ -199,6 +203,8 @@ class RedisCtl(Flask):
         self.alarm_client.send_alarm(endpoint, message, exception)
 
     def init_container_client(self, config):
+        if config.CONTAINER is not None and isinstance(config.CONTAINER, containerize.Base):
+            return config.CONTAINER
         return None
 
     def container_enabled(self):

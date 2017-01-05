@@ -52,8 +52,8 @@
       <td class='label-cell' data-localize='operating'>Ops</td>
       <td colspan='2'>
         <button class='btn btn-primary' id='cluster-fix-migrating' data-localize='cluster-fix-migrating'>Fix slots migration</button>
-        <button class='btn btn-primary' id='cluster-enable-all-nodes-alert' data-suppress='1' data-localize='cluster-enable-all-nodes-alert'>Enable all Redis alarm</button>
-        <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert' data-suppress='0' data-localize='cluster-suppress-all-nodes-alert'>Disable all Redis alarm</button>
+        <button class='btn btn-primary' id='cluster-enable-all-nodes-alert' data-suppress='0' data-localize='cluster-enable-all-nodes-alert'>Enable all Redis alarm</button>
+        <button class='btn btn-danger' id='cluster-suppress-all-nodes-alert' data-suppress='1' data-localize='cluster-suppress-all-nodes-alert'>Disable all Redis alarm</button>
         <div style='margin: 1em'></div>
         <button class='btn btn-info' id='cluster-enable-all-nodes-aof' data-aof='yes' data-localize='cluster-enable-all-nodes-aof'>Enable all Redis AOF</button>
         <button class='btn btn-danger' id='cluster-disable-all-nodes-aof' data-aof='no' data-localize='cluster-disable-all-nodes-aof'>Disable all Redis AOF</button>
@@ -354,7 +354,7 @@ $('#new-proxy-btn').click(function() {
     if (isNaN(port) || !host_port[0]) {
         return $('#new-proxy-error').show().text(_('Invalid address'));
     }
-    
+
     var type = parseInt($("#new-proxy-type").val());
 
     var btn = $(this);

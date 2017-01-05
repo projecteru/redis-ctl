@@ -38,6 +38,12 @@ OPEN_FALCON = {
     'interval': int(os.getenv('OPEN_FALCON_ANTICIPATED_INTERVAL', 30)),
 }
 
+# ALARM need to be set to actually subclass of thirdparty.alarm.Base
+# eg: ALARM = HttpAlarm("http://your-alarm-msg-sending-api")
+ALARM = None
+
+CONTAINER = None
+
 try:
     from override_config import *
 except ImportError:
