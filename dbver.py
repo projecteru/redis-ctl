@@ -1,7 +1,6 @@
 import sqlalchemy, os, sys, config
 from migrate.versioning import api as versioning_api
 from macpath import curdir
-from gtk.keysyms import currency
 
 _ENGINE = None
 
@@ -9,7 +8,7 @@ def get_engine():
     global _ENGINE
     if _ENGINE:
         return _ENGINE
-    
+
     sql_connection = config.App.db_uri(config)
     engine_args = {
                     "pool_recycle": 3600,

@@ -32,6 +32,14 @@ def g_input(size=2, offset=0, id=None, cls=None, value=None, placeholder=None,
                      addon=addon, readonly=readonly, data=data or {})
 
 
+def g_select(size=1, offset=0, id=None, cls=None, value=None,
+            addon=None, readonly=False, options=None, lcl=None):
+    if lcl is None and id is not None:
+        lcl = 'select-' + id
+    return component('select', size=size, offset=offset, id=id, cls=cls or [],
+                     value=value or '', addon=addon, readonly=readonly, options=options or [])
+
+
 def g_button(text, size=2, offset=0, color='default', id=None, cls=None,
              icon=None, data=None, lcl=None):
     if lcl is None and id is not None:

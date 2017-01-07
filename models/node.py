@@ -2,6 +2,7 @@ from werkzeug.utils import cached_property
 
 from base import db, Base
 from cluster import Cluster
+from models.base import commit_session
 
 
 class RedisNode(Base):
@@ -47,8 +48,9 @@ def list_all_nodes():
 
 def create_instance(host, port):
     node = RedisNode(host=host, port=port)
-    db.session.add(node)
-    db.session.flush()
+    if get_by_host_port(host, port) is None:
+        db.session.add(node)
+        db.session.flush()
     return node
 
 
@@ -59,8 +61,9 @@ def list_free():
 
 def create_eru_instance(host, port, eru_container_id):
     node = RedisNode(host=host, port=port, eru_container_id=eru_container_id)
-    db.session.add(node)
-    db.session.flush()
+    if get_by_host_port(host, port) is None:
+        db.session.add(node)
+        db.session.flush()
     return node
 
 

@@ -10,6 +10,8 @@ from app.utils import json_response
 from models.base import db
 import models.cluster
 import models.node as nm
+import models.proxy as pr
+from models.proxy import TYPE_CORVUS
 
 bp = Blueprint('cluster', __name__, url_prefix='/cluster')
 
@@ -98,7 +100,7 @@ def register_proxy():
     if c is None:
         raise ValueError('no such cluster')
     models.proxy.get_or_create(
-        request.form['host'], int(request.form['port']), c.id)
+        request.form['host'], int(request.form['port']), c.id, proxy_type=int(request.form['type']))
 
 
 @bp.route_post_json('/suppress_all_nodes_alert')
@@ -130,9 +132,19 @@ def proxy_sync_remote():
         request.form['host'], int(request.form['port']))
     if p is None or p.cluster is None:
         raise ValueError('no such proxy')
-    cmd = ['setremotes']
-    for n in p.cluster.nodes:
-        cmd.extend([n.host, str(n.port)])
+    if p.proxy_type == TYPE_CORVUS:
+        cmd = ['config', 'set', 'node']
+        hosts = ''
+        for n in p.cluster.nodes:
+            if len(hosts) > 0:
+                hosts += ','
+            hosts += n.host + ':' + str(n.port)
+        cmd.extend([hosts])
+        print cmd
+    else:
+        cmd = ['setremotes']
+        for n in p.cluster.nodes:
+            cmd.extend([n.host, str(n.port)])
     with Connection(p.host, p.port) as t:
         t.talk(*cmd)
     return ''
